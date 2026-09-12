@@ -1,7 +1,9 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import type { EventIndex } from './data/types.ts';
 import { PlaybackEngine } from './playback/engine.ts';
-import { GlobeScene } from './globe/GlobeScene.tsx';
+import { Brand } from './components/Brand.tsx';
+import { initializeTelegram } from './platform/telegram.ts';
+const GlobeScene = lazy(() => import('./globe/GlobeScene.tsx').then(module => ({ default: module.GlobeScene })));
 import { DayLedger } from './components/DayLedger.tsx';
 import { Timeline } from './components/Timeline.tsx';
 import { ShotPanel } from './director/ShotPanel.tsx';
@@ -11,7 +13,8 @@ import { playShot } from './director/shots.ts';
 function LoadedApp({ index }: { index: EventIndex }) {
   const [engine] = useState(() => new PlaybackEngine(index));
   const state = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
-  const [director, setDirector] = useState(false);
+  const [director, setDirector] = useState(false), [ledgerOpen, setLedgerOpen] = useState(false);
+  const openDirector = () => { engine.update({ recording: false }); setLedgerOpen(false); setDirector(v => !v); };
   useEffect(() => {
     let last = performance.now(), raf = 0;
     const tick = (now: number) => {
@@ -35,14 +38,15 @@ function LoadedApp({ index }: { index: EventIndex }) {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('keydown', keyboard); document.removeEventListener('visibilitychange', visibility); };
   }, [engine]);
   const tesla = [...index.firms.values()].some(f => f.id.toLowerCase().includes('tesla'));
-  return <main className={`app ${state.recording ? 'recording' : ''} ${state.shot && state.shot >= 6 ? 'overlay-active' : ''}`}>
-    <GlobeScene engine={engine} />
-    <header className="topbar"><a className="brand" href="./" aria-label="Cascade home"><svg width="35" height="35" viewBox="0 0 36 36" aria-hidden="true"><path d="M5 8h26M5 18h19M5 28h12" stroke="currentColor" strokeWidth="4" /></svg><span>cascade<span className="brand-dot">.</span></span></a>
+  return <main className={`app ${state.recording ? 'recording' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot && state.shot >= 6 ? 'overlay-active' : ''}`}>
+    <Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense>
+    <header className="topbar"><Brand onDirector={openDirector} />
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>
       <div className="network-status"><span className="status-dot" />PAYMENTS IN MOTION</div>
     </header>
     <section className="scene-heading" aria-label="Cascade introduction"><span className="eyebrow">MONEY THAT MOVES THROUGH TIME</span><h1>One dollar.<br />Many payments.</h1><p>Money that pays bills<br />before it becomes cash.</p></section>
     <div className="globe-coordinate" aria-hidden="true"><span>CASCADE</span><span>GLOBAL PAYMENT NETWORK</span></div>
+    <button className="ledger-toggle" aria-expanded={ledgerOpen} aria-controls="daily-ledger" onClick={() => setLedgerOpen(v => !v)}>{ledgerOpen ? 'Close transactions' : 'Transactions'}<span aria-hidden="true">{ledgerOpen ? '−' : '+'}</span></button>
     <DayLedger index={index} day={state.day} cursor={state.cursor} />
     <Timeline engine={engine} state={state} />
     {state.shot === 1 && <div className="location-card"><span className="eyebrow">CUPERTINO, CALIFORNIA</span><h2>Apple Park</h2><p>September 9, 2025</p></div>}
@@ -53,6 +57,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
   </main>;
 }
 export default function App() {
+  useEffect(() => initializeTelegram(window.Telegram?.WebApp, document.documentElement), []);
   const [index, setIndex] = useState<EventIndex>(), [error, setError] = useState('');
   useEffect(() => {
     const worker = new Worker(new URL('./data/loader.worker.ts', import.meta.url), { type: 'module' });

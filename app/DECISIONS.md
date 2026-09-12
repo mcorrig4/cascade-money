@@ -88,3 +88,27 @@ summaries from the concurrently generated `artifacts/apple-365.ndjson`, with no
 summary reconciliation errors. The file was still growing; this was a partial
 snapshot check, not validation of a completed year or its browser memory budget.
 The baked root fixture was not replaced.
+
+## Phone, geographic alignment and initial loading
+
+This checkpoint adds captured rotate/pinch gestures, explicit zoom limits, a fixed
+non-scrolling viewport, safe-area-only Telegram integration, a phone ledger sheet,
+stacked timeline/counters and a cancellable logo long-press director shortcut.
+User interaction cancels a scripted flight instead of leaving OrbitControls locked.
+No Telegram SDK, analytics or theme palette is loaded. Feature detection supports
+ordinary browser tabs as well as Mini Apps; host-native navigation still needs
+real-device acceptance.
+
+The NASA atlas was visually inspected and the installed three-globe rotation
+checked: its −π/2 Y rotation maps the -180° atlas seam correctly. CPU raycasts pass
+for all five requested sites. Browser diagnostics raycast the real scene and save
+North America/East Asia frames; the sandbox continues to block Chrome's socket
+initialization, so these are not reported as rendered. Named secondary sites use
+v2 coordinates without altering the event index or firm's payment endpoints.
+
+The existing manual globe chunk now sits behind React.lazy/Suspense. The initial
+HTML has no globe preload. Day imagery loads at 4K after the shell paint, then
+upgrades after another paint/idle period if maxTextureSize permits 5400. Night
+imagery is a deferred 4K derivative: the original is 13500×6750, too expensive to
+upload routinely on a phone. Old fallback textures and pending callbacks are
+released on upgrade/unmount. No dependency or lockfile changes.

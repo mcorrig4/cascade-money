@@ -112,3 +112,49 @@ Black Marble (`earth-night-3km.jpg`) supplies night lights, blended only onto
 the dark side by the surface-normal/sun-direction dot product. No cloud layer
 is added. A thin Fresnel atmosphere, sparse dim stars and selective arc bloom
 complete the globe. Apple Park's ring remains a bundled stylized SVG decal.
+
+## Phone and Telegram preview
+
+At phone widths the ledger opens with **Transactions** above the stacked timeline
+and counters. Hold the Cascade logo for **650 ms** to open the director; moving
+your finger cancels the hold. A short tap still goes home. The director can also
+exit recording mode on a phone. Its sheet and the ledger scroll internally;
+the page itself never scrolls.
+
+Drag the globe with one finger; pinch with two to zoom and rotate. Desktop wheel
+and trackpad zoom remain available. Gestures take over from a scripted camera
+flight. Altitude limits are 0.00001–4 globe radii above the surface, covering both
+Apple Park and the whole Earth. Canvas touch listeners prevent browser defaults,
+with touch-action and overscroll containment on the full-viewport surface.
+
+When Telegram exposes `window.Telegram.WebApp`, startup calls ready, expand and
+(disabling vertical swipes where supported). Safe-area changes update layout;
+Cascade retains its dark colors. The [Telegram API](https://core.telegram.org/bots/webapps)
+provides safe areas separately from theme colors. Ordinary in-app browser tabs
+may expose no Mini App bridge; CSS/touch protections still apply. Native edge
+navigation and pull-to-close need a final check inside the owner's Telegram app.
+
+`pnpm --dir app check:browser --static` now covers 1920×1080 and 390×844, wheel,
+pinch and two-axis drag, page scroll containment, the ledger, logo long-press,
+and a mocked Telegram bridge. It also raycasts the actual Earth mesh at Cupertino,
+Taiwan, Asan, Kentucky and Kolwezi and compares UV coordinates with the NASA atlas.
+Additional outputs in `app/artifacts/`:
+
+- `north-america-1920x1080.png` — Cupertino, altitude 1.2.
+- `east-asia-1920x1080.png` — 30°N, 120°E, altitude 1.2.
+- `globe-390x844.png`, `ledger-390x844.png`, `director-390x844.png`.
+
+Chrome still exits on the agent sandbox's socket restriction; these frames are
+written when the check runs outside it. The CPU geometry test passes all five
+reference locations. The atlas already has −180° at its left seam; no compensating
+rotation or mirror is applied. Named operational sites such as Glencore Kolwezi
+also appear when v2 supplies them, without moving a firm's headquarters or payments.
+
+The React shell no longer statically imports the 3D scene. Vite's manual globe
+chunk is fetched through a lazy scene boundary, so the initial HTML does not
+preload it. NASA Blue Marble first loads at 4096×2048, then upgrades to 5400×2700
+after a painted frame and an idle callback. GPUs capped at 4096 retain the fallback.
+Night lights use a deferred 4096×2048 derivative of the bundled 13500×6750 NASA
+original, avoiding its large decode and GPU upload on phones. Both 4K assets are
+geographically unchanged resizes made with the installed ffmpeg; no dependencies
+were added. The source originals remain bundled.

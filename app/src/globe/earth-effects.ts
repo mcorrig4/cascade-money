@@ -1,5 +1,5 @@
 import {
-  ACESFilmicToneMapping, AdditiveBlending, BufferGeometry, Color, Float32BufferAttribute,
+  ACESFilmicToneMapping, AdditiveBlending, BufferGeometry, Color, DataTexture, Float32BufferAttribute,
   Mesh, Points, PointsMaterial, ShaderMaterial, SphereGeometry, SRGBColorSpace,
   TextureLoader, Vector3,
 } from 'three';
@@ -21,13 +21,30 @@ const vertexShader = /* glsl */ `
 `;
 export function createEarthEffects(globe: GlobeInstance) {
   const loader = new TextureLoader();
-  const day = loader.load(`${import.meta.env.BASE_URL}textures/earth-blue-marble-5400.jpg`);
-  const night = loader.load(`${import.meta.env.BASE_URL}textures/earth-night-3km.jpg`);
-  day.colorSpace = night.colorSpace = SRGBColorSpace;
-  day.anisotropy = night.anisotropy = Math.min(4, globe.renderer().capabilities.getMaxAnisotropy());
+  let disposed = false;
+  const textures = new Set<import('three').Texture>();
+  const pendingFrames = new Set<number>();
+  let idle: number | undefined;
+  const black = new DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1); black.needsUpdate = true;
+  textures.add(black);
+  const afterPaint = (run: () => void) => {
+    const frame = requestAnimationFrame(() => {
+      pendingFrames.delete(frame);
+      const second = requestAnimationFrame(() => { pendingFrames.delete(second); if (!disposed) run(); });
+      pendingFrames.add(second);
+    }); pendingFrames.add(frame);
+  };
+  const load = (file: string, done: (texture: import('three').Texture) => void) => {
+    const texture = loader.load(`${import.meta.env.BASE_URL}textures/${file}`, loaded => {
+      if (disposed) { loaded.dispose(); return; }
+      loaded.colorSpace = SRGBColorSpace;
+      loaded.anisotropy = Math.min(4, globe.renderer().capabilities.getMaxAnisotropy());
+      done(loaded);
+    }); textures.add(texture);
+  };
   const sunDirection = new Vector3(0.1, 0.35, -1).normalize();
   const earth = new ShaderMaterial({
-    uniforms: { dayMap: { value: day }, nightMap: { value: night }, sunDirection: { value: sunDirection } },
+    uniforms: { dayMap: { value: black }, nightMap: { value: black }, sunDirection: { value: sunDirection } },
     vertexShader,
     fragmentShader: /* glsl */ `
       uniform sampler2D dayMap;
@@ -50,6 +67,23 @@ export function createEarthEffects(globe: GlobeInstance) {
     `,
   });
   globe.globeMaterial(earth).showAtmosphere(false);
+  earth.userData.textureStage = 'pending';
+  afterPaint(() => load('earth-blue-marble-4k.jpg', low => {
+    earth.uniforms.dayMap.value = low; earth.userData.textureStage = '4k';
+    afterPaint(() => {
+      const upgrade = () => {
+        if (disposed) return;
+        load('earth-night-4k.jpg', night => { earth.uniforms.nightMap.value = night; });
+        // Devices capped at 4096 retain the fallback instead of resizing a larger upload.
+        if (globe.renderer().capabilities.maxTextureSize >= 5400) load('earth-blue-marble-5400.jpg', high => {
+          earth.uniforms.dayMap.value = high; earth.userData.textureStage = '5400';
+          low.dispose(); textures.delete(low);
+        });
+      };
+      if ('requestIdleCallback' in window) idle = window.requestIdleCallback(upgrade, { timeout: 2000 });
+      else upgrade();
+    });
+  }));
   const atmosphereMaterial = new ShaderMaterial({
     uniforms: { sunDirection: { value: sunDirection } }, vertexShader,
     fragmentShader: /* glsl */ `
@@ -96,7 +130,9 @@ export function createEarthEffects(globe: GlobeInstance) {
       composer.removePass(bloom); composer.removePass(output); bloom.dispose(); output.dispose();
       globe.scene().remove(atmosphere, stars);
       atmosphere.geometry.dispose(); atmosphereMaterial.dispose(); starsGeometry.dispose(); stars.material.dispose();
-      earth.dispose(); day.dispose(); night.dispose();
+      disposed = true; pendingFrames.forEach(cancelAnimationFrame);
+      if (idle !== undefined) window.cancelIdleCallback(idle);
+      earth.dispose(); textures.forEach(texture => texture.dispose());
     },
   };
 }

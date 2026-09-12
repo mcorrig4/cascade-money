@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 import type { GlobeInstance } from 'globe.gl';
-import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, SRGBColorSpace, TextureLoader } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, SRGBColorSpace, TextureLoader, TOUCH, Raycaster, Vector3 } from 'three';
 import type { PerspectiveCamera, Group } from 'three';
 import { isPayment } from '../data/types.ts';
 import type { Firm } from '../data/types.ts';
@@ -12,6 +12,7 @@ import type { LiveArc } from './arc-pool.ts';
 import { AmountLayer, visibleFromCamera } from './amount-layer.ts';
 import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
+import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import parkUrl from '../assets/apple-park.svg';
 
 const MONEY = '#69e6c0';
@@ -24,7 +25,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     let globe: GlobeInstance;
     try { globe = new Globe(root, { animateIn: false, rendererConfig: { antialias: true, alpha: true } }); }
     catch { setError('A WebGL-capable browser is needed to open the globe.'); return; }
-    const firms = [...engine.index.firms.values()].filter(f => f.lat != null && f.lng != null);
+    const firms = [...engine.index.firms.values()].flatMap(f => [f, ...(f.named ? (f.sites ?? []).filter(site => site.lat !== f.lat || site.lng !== f.lng).map(site => ({ ...f, id: `${f.id}:${site.id}`, name: `${f.name} · ${site.city ?? site.id}`, lat: site.lat, lng: site.lng })) : [])]).filter(f => f.lat != null && f.lng != null);
     const named = firms.filter(f => f.named), pool = new ArcPool(), layer = new AmountLayer(amounts.current);
     let visibleLabels = new Set<string>();
     let time = 250, last = performance.now(), lastColor = 0, lastLabels = 0, raf = 0;
@@ -50,11 +51,21 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     const effects = createEarthEffects(globe), fifth = createFifthAvenueCube(globe);
     let lastInteraction = performance.now();
-    const interact = () => { lastInteraction = performance.now(); };
+    const interact = () => {
+      lastInteraction = performance.now();
+      if (engine.state.shot !== null) engine.stopShot();
+      flight = undefined; cameraId = engine.state.camera.id;
+    };
+    const captureTouch = (event: TouchEvent) => { if (event.cancelable) event.preventDefault(); };
+    root.addEventListener('touchstart', captureTouch, { passive: false });
+    root.addEventListener('touchmove', captureTouch, { passive: false });
+    const controls = globe.controls();
+    controls.enableZoom = true; controls.enableRotate = true; controls.enablePan = false;
+    controls.touches.ONE = TOUCH.ROTATE; controls.touches.TWO = TOUCH.DOLLY_ROTATE;
     globe.controls().addEventListener('start', interact);
     const camera = globe.camera() as PerspectiveCamera;
     camera.near = 0.000005; camera.updateProjectionMatrix();
-    globe.controls().minDistance = globe.getGlobeRadius() + 0.00008;
+    globe.controls().minDistance = globe.getGlobeRadius() * (1 + 0.00001);
     globe.controls().maxDistance = globe.getGlobeRadius() * 5;
 
     // A curved, geographically registered local SVG decal: no tile service or satellite dependency.
@@ -73,7 +84,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const park = new Mesh(geometry, material); park.visible = false; globe.scene().add(park);
     const resize = () => {
       globe.width(root.clientWidth).height(root.clientHeight);
-      globe.globeOffset([root.clientWidth > 1100 ? -190 : -100, -40]);
+      globe.globeOffset([root.clientWidth <= 600 ? 0 : root.clientWidth > 1100 ? -190 : -100, root.clientWidth <= 600 ? -95 : -40]);
     };
     const observer = new ResizeObserver(resize); observer.observe(root); resize();
     const colorAccessor = (d: object) => `rgba(105,230,192,${(d as LiveArc).alpha})`;
@@ -95,7 +106,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           lng: flight.from.lng + deltaLng * eased, altitude: flight.from.altitude + (flight.to.altitude - flight.from.altitude) * eased }, 0);
         if (t === 1) flight = undefined;
       }
-      globe.controls().enabled = state.shot === null;
+      globe.controls().enabled = true;
       globe.controls().autoRotate = !flight && ((!moving && state.shot === null && !state.recording && now - lastInteraction > 6000) || (state.shot === 10 && state.stage === 'wide' && state.shotRunning));
       globe.controls().autoRotateSpeed = 0.12;
       const isClose = globe.pointOfView().altitude < 0.02;
@@ -126,8 +137,8 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (nextRings.length !== pulseRings.length || incoming.length) globe.ringsData(nextRings);
         pulseRings = nextRings;
       }
-      const ledgerLeft = root.clientWidth > 1100 ? root.clientWidth - 450 : root.clientWidth - 330;
-      layer.update(globe, pool.arcs, time, ledgerLeft, root.clientHeight - 230);
+      const ledgerLeft = root.clientWidth <= 600 ? root.clientWidth - 12 : root.clientWidth > 1100 ? root.clientWidth - 450 : root.clientWidth - 330;
+      layer.update(globe, pool.arcs, time, ledgerLeft, root.clientHeight - (root.clientWidth <= 600 ? 330 : 230));
       if (now - lastLabels > 150) {
         lastLabels = now;
         const boxes: { x: number; y: number; width: number }[] = [], next = new Set<string>();
@@ -136,7 +147,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         for (const f of ordered) {
           if (close || !visibleFromCamera(globe, f.lat!, f.lng!, 0.008)) continue;
           const p = globe.getScreenCoords(f.lat!, f.lng!, 0.008), width = f.name.length * 10 + 20;
-          if (p.x < 30 || p.x + width > ledgerLeft || p.y < 110 || p.y > root.clientHeight - 250 || boxes.some(b => Math.abs(b.x - p.x) < (b.width + width) / 2 && Math.abs(b.y - p.y) < 30)) continue;
+          if (p.x < 30 || p.x + width > ledgerLeft || p.y < 110 || p.y > root.clientHeight - (root.clientWidth <= 600 ? 330 : 250) || boxes.some(b => Math.abs(b.x - p.x) < (b.width + width) / 2 && Math.abs(b.y - p.y) < 30)) continue;
           boxes.push({ ...p, width }); next.add(f.id);
         }
         if ([...next].join('|') !== [...visibleLabels].join('|')) {
@@ -148,7 +159,17 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     };
     raf = requestAnimationFrame(frame);
     if (new URLSearchParams(location.search).has('inspect')) {
-      window.__cascade = { engine, globe, pool, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time); globe.arcColor((d: object) => colorAccessor(d)); },
+      window.__cascade = { engine, globe, pool,
+        geography: () => {
+          let earth: Mesh | undefined;
+          globe.scene().traverse(object => { if ((object as Mesh).material === globe.globeMaterial()) earth = object as Mesh; });
+          globe.scene().updateMatrixWorld(true);
+          return GEO_REFERENCES.map(site => {
+            const coords = globe.getCoords(site.lat, site.lng, 2), origin = new Vector3(coords.x, coords.y, coords.z);
+            const hit = earth && new Raycaster(origin, origin.clone().negate().normalize()).intersectObject(earth)[0];
+            return { ...site, expected: atlasUv(site.lat, site.lng), uv: hit?.uv ? { u: hit.uv.x, v: hit.uv.y } : null };
+          });
+        }, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time); globe.arcColor((d: object) => colorAccessor(d)); },
         geometry: () => pool.arcs.map(a => {
           const group = (a as LiveArc & { __threeObjArc?: Group }).__threeObjArc;
           const mesh = group?.children[0] as Mesh | undefined;
@@ -157,6 +178,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         }) };
     }
     return () => {
+      root.removeEventListener('touchstart', captureTouch); root.removeEventListener('touchmove', captureTouch);
       cancelAnimationFrame(raf); observer.disconnect(); layer.dispose();
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
       globe.controls().removeEventListener('start', interact); effects.dispose(); fifth.dispose();

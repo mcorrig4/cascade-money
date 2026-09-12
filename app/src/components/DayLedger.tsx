@@ -23,7 +23,7 @@ export function DayLedger({ index, day, cursor }: { index: EventIndex; day: numb
   const events = index.days[day].events.slice(0, cursor).filter(e => !['run_started', 'run_completed', 'story', 'day_summary', 'checkpoint', 'day_opened', 'scenario_result'].includes(e.type)).reverse();
   useEffect(() => { if (host.current) host.current.scrollTop = 0; setScroll(0); }, [day]);
   const rowHeight = 160, start = Math.max(0, Math.floor(scroll / rowHeight) - 2), visible = events.slice(start, start + 12);
-  return <aside className="ledger" aria-label="Current day transaction ledger">
+  return <aside id="daily-ledger" className="ledger" aria-label="Current day transaction ledger">
     <div className="ledger-heading"><div><span className="eyebrow">TRANSACTIONS</span><h2>{displayDate(day, true)}</h2></div><span className="count">{events.length.toLocaleString('en-US')}</span></div>
     <div className="ledger-columns"><span>PAYMENT FLOW</span><span>USD</span></div>
     <div className="ledger-scroll" ref={host} onScroll={e => setScroll(e.currentTarget.scrollTop)}>
