@@ -14,7 +14,7 @@ export const SHOTS = [
   { id: 11, title: 'Architecture', detail: 'Dated dollars on Arc', seconds: 5 },
   { id: 12, title: 'Cascade', detail: 'App · repository · contract', seconds: 20 },
 ].map(s => ({ ...s, duration: `${s.seconds}s` }));
-const APPLE = { lat: 37.3349, lng: -122.009, altitude: 0.00022 };
+const APPLE = { lat: 37.3349, lng: -122.009, altitude: 760 / 6_371_000 };
 export function position(engine: PlaybackEngine, event: Event, after = false) {
   const events = engine.index.days[event.day].events;
   return event.day + eventPosition(events.indexOf(event), events.length) + (after ? 0.000001 : -0.000001);
@@ -57,7 +57,7 @@ export function playShot(engine: PlaybackEngine, id: number) {
   engine.beginShot(id, shot.seconds);
   const hold = () => engine.after(shot.seconds, () => engine.update({ shotRunning: false }));
   if (id === 1 || id === 2) {
-    engine.setPosition(0, true); engine.fly(APPLE.lat, APPLE.lng, APPLE.altitude, 0);
+    engine.setPosition(0, true); engine.fly(APPLE.lat, APPLE.lng, APPLE.altitude, 0, 'apple-park');
     if (id === 1) hold();
     else {
       engine.after(0.3, () => engine.fly(APPLE.lat, APPLE.lng, 2.15, 3000));
@@ -113,8 +113,8 @@ export function playShot(engine: PlaybackEngine, id: number) {
     engine.fly(25, -145, 2.3); const maturity = engine.index.checkpoints.find(e => Number(e.data.matured_cents) > 0);
     if (maturity) engine.playRange(Math.max(0, maturity.day - 1), Math.min(365, maturity.day + 1.999), shot.seconds); else hold();
   } else if (id === 10) {
-    engine.update({ stage: 'cube' }); engine.fly(40.7637, -73.9723, 0.05, 0);
-    engine.after(0.3, () => engine.fly(40.7637, -73.9723, 0.000012, 3500));
+    engine.update({ stage: 'cube' }); engine.fly(40.7638, -73.9730, 0.05, 0);
+    engine.after(0.3, () => engine.fly(40.7638, -73.9730, 2.4 / 6_371_000, 3500, 'fifth-avenue'));
     engine.after(7.5, () => { engine.update({ stage: 'wide' }); engine.fly(30, -65, 2.6, 6000); }); hold();
   } else { engine.fly(30, -145, 2.3); hold(); }
 }

@@ -5,7 +5,7 @@ export type Speed = 1 | 10 | 50 | 'year';
 export interface PlaybackState {
   position: number; day: number; cursor: number; playing: boolean; speed: Speed;
   revision: number; shot: number | null; shotRunning: boolean; story: string;
-  recording: boolean; camera: { lat: number; lng: number; altitude: number; duration: number; id: number };
+  recording: boolean; camera: { lat: number; lng: number; altitude: number; duration: number; id: number; site?: 'apple-park' | 'fifth-avenue' };
   showDebt: boolean; caption: boolean; shotElapsed: number; shotDuration: number; stage: 'main' | 'cube' | 'wide'; focusInvoices: string[] | null;
 }
 export const eventPosition = (index: number, count: number) => 0.08 + (index + 1) / (count + 1) * 0.84;
@@ -67,8 +67,8 @@ export class PlaybackEngine {
     this.range = { start, end, seconds, elapsed: 0, complete };
     this.update({ playing: true });
   }
-  fly(lat: number, lng: number, altitude: number, duration = 1800) {
-    this.update({ camera: { lat, lng, altitude, duration, id: this.state.camera.id + 1 } });
+  fly(lat: number, lng: number, altitude: number, duration = 1800, site?: 'apple-park' | 'fifth-avenue') {
+    this.update({ camera: { lat, lng, altitude, duration, site, id: this.state.camera.id + 1 } });
   }
   tick(seconds: number) {
     if (this.state.shotRunning) {

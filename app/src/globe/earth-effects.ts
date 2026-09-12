@@ -1,5 +1,5 @@
 import {
-  ACESFilmicToneMapping, AdditiveBlending, BufferGeometry, Color, DataTexture, Float32BufferAttribute,
+  AmbientLight, DirectionalLight, ACESFilmicToneMapping, AdditiveBlending, BufferGeometry, Color, DataTexture, Float32BufferAttribute,
   Mesh, Points, PointsMaterial, ShaderMaterial, SphereGeometry, SRGBColorSpace,
   TextureLoader, Vector3,
 } from 'three';
@@ -129,15 +129,22 @@ export function createEarthEffects(globe: GlobeInstance) {
   const output = new OutputPass(), composer = globe.postProcessingComposer();
   composer.addPass(bloom); composer.addPass(output);
   const sunClock = new SunClock();
+  const previousLights = globe.lights();
+  const ambient = new AmbientLight('#c8d6e8', 0.75), sunlight = new DirectionalLight('#fff0d9', 3);
+  globe.lights([ambient, sunlight]);
   return {
-    update(position: number, elapsed: number, campusScale: boolean, holdSun: boolean) {
+    update(position: number, elapsed: number, campusScale: boolean, holdSun: boolean, shotSun?: Vector3, dusk = false) {
       const sun = sunClock.update(position, elapsed, holdSun);
       const direction = globe.getCoords(sun.lat, sun.lng, 0);
       earth.userData.sunLongitude = sun.lng;
       sunDirection.set(direction.x, direction.y, direction.z).normalize();
+      if (shotSun) sunDirection.copy(shotSun);
+      sunlight.position.copy(sunDirection).multiplyScalar(globe.getGlobeRadius() * 4);
+      sunlight.color.set(dusk ? '#ffc48e' : '#fff0d9'); sunlight.intensity = dusk ? 1.6 : 3;
       atmosphere.visible = !campusScale; bloom.enabled = !campusScale;
     },
     dispose() {
+      globe.lights(previousLights);
       composer.removePass(bloom); composer.removePass(output); bloom.dispose(); output.dispose();
       globe.scene().remove(atmosphere, stars);
       atmosphere.geometry.dispose(); atmosphereMaterial.dispose(); starsGeometry.dispose(); stars.material.dispose();

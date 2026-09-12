@@ -6,6 +6,7 @@ declare global {
     Telegram?: { WebApp?: import('./platform/telegram.ts').TelegramApp };
     __cascade?: {
       engine: PlaybackEngine; globe: GlobeInstance; pool: ArcPool;
+      models: () => { id: string; pending: boolean; missing: boolean; loaded: boolean; fade: number }[];
       geography: () => { name: string; lat: number; lng: number; expected: { u: number; v: number }; uv: { u: number; v: number } | null }[];
       ageArcs: (milliseconds: number) => void;
       geometry: () => { seq: number; geometry?: string; alpha: number | null; clipStart: number; clipEnd: number; groundKm: number; depthTest?: boolean }[];

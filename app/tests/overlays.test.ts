@@ -60,7 +60,8 @@ test('all overlay shots start independently, pause and cancel scheduled flights'
     engine.tick(60); assert.equal(engine.state.camera.id, camera);
   }
   playShot(engine, 10); engine.tick(4); assert.equal(engine.state.stage, 'cube');
-  assert.equal(engine.state.camera.altitude, 0.000012);
+  assert.equal(engine.state.camera.altitude, 2.4 / 6_371_000);
+  assert.equal(engine.state.camera.site, 'fifth-avenue');
   engine.tick(4); assert.equal(engine.state.stage, 'wide');
 });
 test('legacy v1 without geographic enrichment still gets its five presentation positions', () => {

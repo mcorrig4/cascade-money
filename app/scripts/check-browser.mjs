@@ -27,7 +27,7 @@ async function routeStatic(context) {
   if (staticMode) {
     // Fulfill the built app over an intercepted origin; no listening socket or port allocation.
     const root = resolve('dist');
-    const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png', '.ndjson': 'application/x-ndjson' };
+    const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png', '.ndjson': 'application/x-ndjson', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm' };
     await context.route('http://cascade.test/**', async route => {
       const pathname = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\//, '');
       const file = resolve(root, pathname || 'index.html');
@@ -43,7 +43,8 @@ try {
   await routeStatic(context);
   const page = await context.newPage();
   page.setDefaultTimeout(90000);
-  const textureRequests = [];
+  const textureRequests = [], modelRequests = [];
+  page.on('request', request => { if (/\/(models|draco)\//.test(request.url())) modelRequests.push(request.url()); });
   page.on('request', request => { if (request.url().includes('/textures/')) textureRequests.push(request.url().split('/').at(-1)); });
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => { if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text()); });
@@ -116,18 +117,21 @@ try {
     return { min: controls.minDistance / radius - 1, max: controls.maxDistance / radius - 1, zoom: controls.enableZoom };
   });
   assert.ok(limits.zoom && limits.min < 0.00022 && limits.max >= 3, 'Apple Park and the whole Earth are reachable');
+  assert.equal(modelRequests.length,0,'Models and Draco are never fetched on first paint or distant views');
   await page.keyboard.press('Shift+D');
   await page.getByRole('region', { name: 'Shot director' }).waitFor();
   await page.locator('.shot-list button').nth(0).click();
   await page.keyboard.press('Shift+D');
   await page.waitForTimeout(500);
   await page.waitForFunction(() => window.__cascade.globe.scene().getObjectByName('Apple Park ring decal')?.material.map.image?.complete);
+  await page.waitForFunction(() => window.__cascade.models().some(m => m.id === 'apple-park' && (m.missing || m.fade === 1)));
   const parkPose = await page.evaluate(() => {
-    const { globe } = window.__cascade, park = globe.scene().getObjectByName('Apple Park ring decal');
-    return { camera: globe.pointOfView(), visible: park?.visible, loaded: !!park?.material.map.image?.complete };
+    const { globe, models } = window.__cascade, park = globe.scene().getObjectByName('Apple Park ring decal');
+    return { camera: globe.pointOfView(), fallback: park?.visible, model: models().find(m => m.id === 'apple-park'), target: globe.controls().target.length() };
   });
-  assert.ok(Math.abs(parkPose.camera.lat - 37.3349) < 0.00001 && Math.abs(parkPose.camera.lng + 122.009) < 0.00001);
-  assert.ok(Math.abs(parkPose.camera.altitude - 0.00022) < 0.000001 && parkPose.visible && parkPose.loaded, 'Exact shot-1 pose with the ring texture loaded');
+  assert.ok(parkPose.camera.altitude < .0002 && parkPose.target > 99,'Shot 1 looks at the campus from an oblique local camera');
+  assert.ok(parkPose.model.loaded ? !parkPose.fallback : parkPose.fallback,'Model replaces decal only after its fade completes');
+  if (staticMode && existsSync('dist/models/apple-park.glb')) assert.ok(parkPose.model.loaded,'Bundled Apple Park decodes successfully');
   await page.screenshot({ path: 'artifacts/apple-park-1920x1080.png' });
   await page.keyboard.press('Escape');
   const totals = await page.evaluate(() => {
@@ -143,8 +147,13 @@ try {
     await page.getByTestId(`overlay-${shot}`).waitFor();
     if (shot === 10) {
       await page.waitForTimeout(4300);
+      await page.evaluate(() => window.__cascade.engine.update({ playing:false, shotRunning:false }));
+      await page.waitForFunction(() => window.__cascade.models().some(m => m.id === 'fifth-avenue' && (m.missing || m.fade === 1)));
+      if (staticMode && existsSync('dist/models/fifth-avenue.glb')) assert.ok(await page.evaluate(() => window.__cascade.models().find(m => m.id === 'fifth-avenue').loaded),'Bundled Fifth Avenue decodes successfully');
       await page.screenshot({ path: 'artifacts/fifth-avenue-1920x1080.png' });
-      await page.evaluate(() => window.__cascade.engine.tick(8));
+      await page.evaluate(() => { window.__cascade.engine.update({ shotRunning:true }); window.__cascade.engine.tick(3.3); });
+      await page.waitForTimeout(6500);
+      assert.ok(await page.evaluate(() => window.__cascade.models().every(m => !m.loaded && !m.pending)), 'Pullback releases site models');
     }
     await page.screenshot({ path: `artifacts/shot-${shot}-1920x1080.png` });
   }
