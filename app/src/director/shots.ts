@@ -1,7 +1,7 @@
 import { eventPosition, PlaybackEngine } from '../playback/engine.ts';
 import type { Event, EventIndex } from '../data/types.ts';
 export const SHOTS = [
-  { id: 1, title: 'Apple Park', detail: 'Cupertino · September 9, 2025', seconds: 3 },
+  { id: 1, title: 'Apple Park', detail: 'Cupertino · September 9, 2025', seconds: 14 },
   { id: 2, title: 'The network', detail: 'Pull back · $56 billion', seconds: 8 },
   { id: 3, title: 'The proof', detail: 'Cupertino → Asan', seconds: 12 },
   { id: 4, title: 'The cascade', detail: 'Follow the dollars', seconds: 12 },
@@ -10,7 +10,7 @@ export const SHOTS = [
   { id: 7, title: 'The yield curve', detail: 'Discount-window trades', seconds: 27 },
   { id: 8, title: 'Conservation laws', detail: 'Principal · yield · loss', seconds: 20 },
   { id: 9, title: 'The vault', detail: 'Balance sheet through maturity', seconds: 15 },
-  { id: 10, title: 'The reframe', detail: 'Fifth Avenue → the world', seconds: 15 },
+  { id: 10, title: 'The reframe', detail: 'Fifth Avenue → the world', seconds: 17 },
   { id: 11, title: 'Architecture', detail: 'Dated dollars on Arc', seconds: 5 },
   { id: 12, title: 'Cascade', detail: 'App · repository · contract', seconds: 20 },
 ].map(s => ({ ...s, duration: `${s.seconds}s` }));
@@ -58,7 +58,7 @@ export function playShot(engine: PlaybackEngine, id: number) {
   const hold = () => engine.after(shot.seconds, () => engine.update({ shotRunning: false }));
   if (id === 1 || id === 2) {
     engine.setPosition(0, true); engine.fly(APPLE.lat, APPLE.lng, APPLE.altitude, 0, 'apple-park');
-    if (id === 1) hold();
+    if (id === 1) { engine.after(8, () => engine.fly(31, -133, 2.15, 5000)); hold(); }
     else {
       engine.after(0.3, () => engine.fly(APPLE.lat, APPLE.lng, 2.15, 3000));
       engine.after(1.2, () => engine.update({ showDebt: true }));
@@ -113,8 +113,9 @@ export function playShot(engine: PlaybackEngine, id: number) {
     engine.fly(25, -145, 2.3); const maturity = engine.index.checkpoints.find(e => Number(e.data.matured_cents) > 0);
     if (maturity) engine.playRange(Math.max(0, maturity.day - 1), Math.min(365, maturity.day + 1.999), shot.seconds); else hold();
   } else if (id === 10) {
-    engine.update({ stage: 'cube' }); engine.fly(40.7638, -73.9730, 0.05, 0);
-    engine.after(0.3, () => engine.fly(40.7638, -73.9730, 8 / 6_371_000, 3500, 'fifth-avenue'));
-    engine.after(5.8, () => { engine.update({ stage: 'wide' }); engine.fly(30, -65, 2.6, 6000); }); hold();
+    engine.update({ stage: 'cube' }); engine.fly(40.7638, -73.9730, 0.035, 0);
+    engine.after(0.15, () => engine.fly(40.7638, -73.9730, 8 / 6_371_000, 1600, 'fifth-avenue'));
+    engine.after(8.3, () => engine.fly(28, -66, 2.6, 6200));
+    engine.after(9.1, () => engine.update({ stage: 'wide' })); hold();
   } else { engine.fly(30, -145, 2.3); hold(); }
 }

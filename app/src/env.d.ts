@@ -8,6 +8,7 @@ declare global {
     __cascade?: {
       engine: PlaybackEngine; globe: GlobeInstance; pool: ArcPool;
       cameraFlightActive: () => boolean;
+      tiles: () => { site: 'apple-park' | 'fifth-avenue' | null; ready: boolean; failed: boolean; progress: number; visibleTiles: number; opacity: number; ground: number | null; modelSize: [number, number, number] | null };
       models: () => { id: string; pending: boolean; missing: boolean; loaded: boolean; fade: number }[];
       geography: () => { name: string; lat: number; lng: number; expected: { u: number; v: number }; uv: { u: number; v: number } | null }[];
       ageArcs: (milliseconds: number) => void;

@@ -7,7 +7,8 @@
   "scripts": {
     "prepare:data": "node scripts/prepare-data.mjs",
     "dev": "pnpm prepare:data && pnpm prepare:onchain && node scripts/serve.mjs",
-    "build": "pnpm prepare:data && pnpm prepare:onchain && tsc -b && vite build",
+    "build": "pnpm prepare:data && pnpm prepare:onchain && tsc -b && VITE_ENABLE_TILES=0 vite build && node scripts/check-no-google-tiles.mjs",
+    "build:local-tiles": "pnpm prepare:data && pnpm prepare:onchain && tsc -b && VITE_ENABLE_TILES=1 vite build",
     "preview": "node scripts/serve.mjs --preview",
     "test": "node --experimental-strip-types --test --experimental-test-isolation=none tests/*.test.ts",
     "check:browser": "node scripts/check-browser.mjs",
@@ -17,6 +18,7 @@
     "prepare:onchain": "node --experimental-strip-types scripts/onchain-manifest.ts"
   },
   "dependencies": {
+    "3d-tiles-renderer": "0.5.2",
     "globe.gl": "2.46.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",

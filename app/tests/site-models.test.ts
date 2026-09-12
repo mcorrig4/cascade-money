@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Vector3, Group, Mesh, BoxGeometry, MeshBasicMaterial } from 'three';
-import { EARTH_METERS, metersToScene, nearSite, SITES, siteFrame, sitePoint, siteCamera, siteSun } from '../src/globe/site-math.ts';
+import { EARTH_METERS, ecefToSiteMatrix, geodeticToEcef, globePointToSite, metersToScene, nearSite, SITES, siteFrame, sitePoint, siteCamera, siteLocalCamera, siteSun } from '../src/globe/site-math.ts';
 import { disposeModel } from '../src/globe/load-site-model.ts';
 const near = (a: number, b: number, epsilon = 1e-10) => assert.ok(Math.abs(a-b) < epsilon, `${a} != ${b}`);
 test('meters convert linearly using the actual globe radius', () => {
@@ -27,16 +27,37 @@ test('local camera and lighting use real height, true north and southwest sun', 
   for (const id of Object.keys(SITES) as (keyof typeof SITES)[]) {
     const frame=siteFrame(SITES[id].lat,SITES[id].lng,100), pose=siteCamera(id,100), sun=siteSun(id,100);
     near(sitePoint(id,100,0,0,0).distanceTo(frame.position),0);
-    near(pose.position.clone().sub(frame.position).dot(frame.up),metersToScene(id==='apple-park'?608:8,100));
+    near(pose.position.clone().sub(frame.position).dot(frame.up),metersToScene(id==='apple-park'?600:5.5,100));
     if (id === 'fifth-avenue') {
       const offset = pose.position.clone().sub(frame.position);
-      near(Math.hypot(offset.dot(frame.east), offset.dot(frame.north)), metersToScene(35,100));
+      near(Math.hypot(offset.dot(frame.east), offset.dot(frame.north)), metersToScene(42,100));
       assert.ok(pose.target.clone().sub(pose.position).dot(frame.up) > 0, 'Cube view looks slightly upward');
+      assert.ok(offset.dot(frame.east) < 0 && offset.dot(frame.north) < 0, 'Cube camera is southwest so the tower sits behind it');
     }
     assert.ok(sun.dot(frame.east)<0 && sun.dot(frame.north)<0 && sun.dot(frame.up)>0);
     assert.ok(nearSite(id,SITES[id].lat,SITES[id].lng,.0001));
     assert.equal(nearSite(id,SITES[id].lat,SITES[id].lng,1),false);
     assert.equal(nearSite(id,-SITES[id].lat,SITES[id].lng+180,.0001),false);
+  }
+});
+test('WGS84 ECEF converts to the model ENU convention at both hero sites', () => {
+  for (const site of Object.values(SITES)) {
+    const phi=site.lat*Math.PI/180, lambda=site.lng*Math.PI/180;
+    const origin=geodeticToEcef(site.lat,site.lng), matrix=ecefToSiteMatrix(site.lat,site.lng);
+    const east=new Vector3(-Math.sin(lambda),Math.cos(lambda),0);
+    const up=new Vector3(Math.cos(phi)*Math.cos(lambda),Math.cos(phi)*Math.sin(lambda),Math.sin(phi));
+    const north=new Vector3(-Math.sin(phi)*Math.cos(lambda),-Math.sin(phi)*Math.sin(lambda),Math.cos(phi));
+    near(origin.clone().applyMatrix4(matrix).length(),0,1e-6);
+    near(origin.clone().addScaledVector(east,25).applyMatrix4(matrix).distanceTo(new Vector3(25,0,0)),0,1e-6);
+    near(origin.clone().addScaledVector(up,12).applyMatrix4(matrix).distanceTo(new Vector3(0,12,0)),0,1e-6);
+    near(origin.clone().addScaledVector(north,40).applyMatrix4(matrix).distanceTo(new Vector3(0,0,-40)),0,1e-6);
+  }
+});
+test('globe and local hero cameras map into the same metre frame', () => {
+  for (const id of Object.keys(SITES) as (keyof typeof SITES)[]) {
+    const local=siteLocalCamera(id), globe=siteCamera(id,100);
+    near(globePointToSite(id,100,globe.position).distanceTo(local.position),0,1e-6);
+    near(globePointToSite(id,100,globe.target).distanceTo(local.target),0,1e-6);
   }
 });
 test('shared model resources dispose once and the model detaches', () => {

@@ -145,6 +145,17 @@ try {
   if (staticMode && existsSync('dist/models/apple-park.glb')) assert.ok(parkPose.model.loaded,'Bundled Apple Park decodes successfully');
   await page.waitForFunction(() => window.__cascade.engine.state.shotElapsed >= 3 && !window.__cascade.cameraFlightActive());
   await page.screenshot({ path: 'artifacts/shot1-apple-park.png' });
+  const localTiles = !staticMode && await page.locator('.site-scene canvas').count() > 0;
+  if (localTiles) {
+    await page.evaluate(() => window.__cascade.engine.update({ playing: false, shotRunning: false }));
+    await page.waitForFunction(() => {
+      const tiles = window.__cascade.tiles();
+      return tiles.site === 'apple-park' && (tiles.failed || (tiles.ready && tiles.ground !== null && tiles.opacity > .98));
+    });
+    assert.equal(await page.evaluate(() => window.__cascade.tiles().failed), false, 'Apple Park tiles load without falling back');
+    assert.ok((await page.locator('.site-attribution').innerText()).includes('Google'), 'Tile frame carries Google attribution');
+    await page.screenshot({ path: 'artifacts/shot1-tiles.png' });
+  }
   await page.keyboard.press('Escape');
   const totals = await page.evaluate(() => {
     const { engine } = window.__cascade;
@@ -171,9 +182,18 @@ try {
         const target = model.worldToLocal(globe.controls().target.clone());
         return { distance: Math.hypot(eye.x,eye.z), height:eye.y, targetHeight:target.y };
       });
-      if (cubePose) { assert.ok(Math.abs(cubePose.distance-35)<.1); assert.ok(Math.abs(cubePose.height-8)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
+      if (cubePose) { assert.ok(Math.abs(cubePose.distance-42)<.1); assert.ok(Math.abs(cubePose.height-5.5)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
       assert.ok(modelRequests.filter(url => url.includes('/models/')).every(url => /[?]v=[a-f0-9]{16}$/.test(url)), 'Model URLs carry their build content hashes');
       await page.screenshot({ path: 'artifacts/shot10-cube.png' });
+      if (localTiles) {
+        await page.evaluate(() => window.__cascade.engine.update({ shotElapsed: 6.5 }));
+        await page.waitForFunction(() => {
+          const tiles = window.__cascade.tiles();
+          return tiles.site === 'fifth-avenue' && (tiles.failed || (tiles.ready && tiles.ground !== null && tiles.opacity > .98));
+        });
+        assert.equal(await page.evaluate(() => window.__cascade.tiles().failed), false, 'Fifth Avenue tiles load without falling back');
+        await page.screenshot({ path: 'artifacts/shot10-tiles.png' });
+      }
       await page.evaluate(() => { window.__cascade.engine.update({ shotRunning:true }); window.__cascade.engine.tick(2.1); });
       await page.waitForTimeout(6500);
       assert.ok(await page.evaluate(() => window.__cascade.models().every(m => !m.loaded && !m.pending)), 'Pullback releases site models');

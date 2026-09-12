@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 
-const modelVersions = Object.fromEntries(['apple-park', 'fifth-avenue'].map(id => {
+const modelVersions = Object.fromEntries(['apple-park', 'fifth-avenue', 'fifth-avenue-tiles'].map(id => {
   const file = new URL(`./public/models/${id}.glb`, import.meta.url);
   return [id, existsSync(file) ? createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 16) : 'missing'];
 }));
