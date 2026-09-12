@@ -17,3 +17,26 @@ export function brandFor(name: string) {
   const key = Object.keys(BRANDS).find(key => name.toLowerCase().startsWith(key.toLowerCase()));
   return key ? BRANDS[key] : { mark: name.slice(0, 2).toUpperCase(), color: '#bcced0' };
 }
+
+// Official wordmark/logo SVGs (public/logos/<slug>.svg), single-color normalized for the dark
+// globe. Keyed the same way as BRANDS (case-insensitive prefix match on firm.name). A brand with
+// no entry here keeps the local monogram fallback from BRANDS/brandFor above — either because no
+// clean, freely-licensed vector mark exists (Shell's pecten, Luxshare) or none was sourced yet.
+// See public/logos/LICENSES.md for source + license per file.
+export const LOGOS: Record<string, string> = {
+  Apple: 'apple', Tesla: 'tesla', Foxconn: 'foxconn', TSMC: 'tsmc', Samsung: 'samsung',
+  Corning: 'corning', Sony: 'sony', LG: 'lg', Panasonic: 'panasonic', CATL: 'catl',
+  Glencore: 'glencore', Exxon: 'exxon', Dow: 'dow', BASF: 'basf', Qualcomm: 'qualcomm',
+  Broadcom: 'broadcom', 'SK Hynix': 'sk-hynix', Murata: 'murata', Pegatron: 'pegatron',
+  Wacker: 'wacker',
+};
+// Real-named companies with no logo file: their official mark could not be sourced as a clean,
+// freely-licensed SVG (Shell's pecten and Luxshare's mark are not available under a free license
+// on Wikimedia Commons; Sumco's Commons file was unreachable — rate-limited — at the time this
+// shipped), so they keep the monogram fallback deliberately.
+export const MONOGRAM_ONLY = ['Shell', 'Luxshare', 'Sumco'];
+
+export function logoFor(name: string): string | undefined {
+  const key = Object.keys(LOGOS).find(key => name.toLowerCase().startsWith(key.toLowerCase()));
+  return key ? LOGOS[key] : undefined;
+}
