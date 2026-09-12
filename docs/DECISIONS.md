@@ -1,10 +1,8 @@
 # Cascade implementation decisions
 
 Authority: [Tier One v3.1](spec-tier1-v3.1.md). These interpretations were approved
-after the Stage 1 plan. Quotes below reproduce the rule being resolved. Phase A
-implements accounts, invoices, Issue, Transfer and Pay only. Decisions concerning
-daily income, Claim, Extend, Withdraw, Sell, the full world or comparative metrics
-are recorded now, but their operations are deferred to Phase B.
+after the Stage 1 plan. Quotes below reproduce the rule being resolved. Phase B implements the remaining operations, checkpoints, scenarios, metrics
+and the illustrative geographic world. The legacy Phase A fixture is preserved.
 
 ## 1. Loss detection and capital flows
 
@@ -41,7 +39,7 @@ Use that frozen principal, never current principal, backing value or active
 entitlement notional. Issue records its capital inflow separately and does not
 rewrite the frozen denominator. I(0)=1 is the bootstrap index. In Phase A, only
 the day-zero bootstrap batch exists; the initial previous-checkpoint principal
-remains zero. Phase B must seal the bootstrap batch's backing and principal as
+remains zero. The day-zero checkpoint seals the bootstrap batch's backing and principal as
 the opening baseline before processing day 1. There is no division or income
 checkpoint in Phase A.
 
@@ -129,7 +127,7 @@ Use seven-day buckets, anchored at day zero, rounding accepted bounds down befor
 creditor approval and invoice creation. Do not round a delivered date beyond an
 existing signed M. Issue always mints at the resulting M, even when it gives an
 empty earning interval. Paired runs share exogenous inputs; report that their
-creditor-approved bound policies differ. Implementation belongs to Phase B.
+creditor-approved bound policies differ. The `compare` command runs both policies against identical generated inputs.
 
 ## 10. Story counters and circulation efficiency
 
@@ -197,9 +195,9 @@ Candidate ledger records are immutable. Validate the full transition and encode
 its event before publishing state. A protocol rejection or invariant failure
 leaves ledger, replay set and settlement counters unchanged and emits a rejection
 event against the unchanged snapshot. Programming/serialization exceptions also
-leave state unchanged but may prevent emitting a rejection event. No file I/O
-occurs inside a protocol transaction; Phase A writes its canonical event lines
-to NDJSON after constructing the small fixture.
+leave state unchanged but may prevent emitting a rejection event. The full world writes each encoded event before publishing its candidate state.
+An output error aborts the run; a partially written file must be discarded. The
+small legacy fixture retains events and writes them after construction.
 
 ## 13. Other agreed simulation defaults (Phase B)
 
@@ -221,7 +219,7 @@ Executed discount-volume reporting stays separate from payment metrics.
 
 Do not repeatedly add daily observations of the same payable shortfall to its
 run total. Extension share counts successful Pay operations with an explicitly
-linked preceding extension. Full metric implementations remain Phase B work.
+linked preceding extension. Metrics are implemented independently in `sim/metrics.py`.
 
 ## 14. Phase A fixture horizon and event coverage
 
@@ -229,8 +227,96 @@ The approved Phase A contains no daily checkpoint engine. `--days 5` records the
 requested viewing horizon; all four scripted settlements execute on bootstrap
 day zero. It does not claim five elapsed days, publish synthetic flat indices,
 or run operations from Phase B. `run_completed.daily_checkpoints_executed` is 0.
-The fixture has five accounts and four invoices; the 2,000-supplier network is
-deferred. The seed is recorded, but this scripted fixture has no random choices.
-The only event types currently implemented are documented in [EVENTS.md](EVENTS.md).
-Extend, checkpoint, Claim, Withdraw and Sell events will be specified alongside
-their implementations in Phase B, not emitted as placeholders now.
+The legacy fixture has five accounts and four invoices; the full world is a
+separate runner. The seed is recorded, but this scripted fixture has no random choices.
+All implemented schema-v2 event types are documented in [EVENTS.md](EVENTS.md).
+
+
+## 15. Calendar, locations and illustrative purchases
+
+The product direction sets day zero to 2025-09-09. A 365-day run covers day 0
+through day 364 (2026-09-08), with a summary and checkpoint on every day. The
+bootstrap checkpoint seals I(0)=1 without earnings; there are 364 elapsed earning
+intervals. Longer runs use the same epoch and consecutive integer days.
+
+Coordinates are approximate city/site pins, not surveyed plant entrances.
+Generated locations use a small embedded cluster table with seeded jitter.
+All purchases and commercial links are illustrative, not claims about actual
+contracts or the iPhone's bill of materials. `story_annotations.json` is the
+single editable source for named scripted invoices. Delivery sites can belong
+to a third-party assembler: the explicit product examples resolve the phrase
+"payee-side site" in favor of the physical destination, not creditor ownership.
+The full Apple story starts with processors and reaches 400M/100M on day 3;
+the separate legacy fixture preserves its original Foxconn-first route.
+
+## 16. World funding, schedules and wallet policies
+
+> The wallet default is a preference, not a protocol rule.
+
+The default world has 2,000 suppliers plus Apple and Tesla, and 12,000 generated
+invoices plus scripted invoices. Both anchor CLI names run this shared world.
+Generated invoices have bounded Pareto sizes, 30/60/90-day terms and seeded
+policy choices. Naive firms pay the earliest eligible date, idle spot and
+withdraw on cash need. Treasury firms additionally extend to the signed bound,
+claim matured entitlements, sweep idle spot and sell dated holdings on shortfall.
+Mixed firms choose a seeded policy each day. Cash needs default to 10% of Issue
+and Pay inflows and are configurable in whole basis points.
+
+> funded by the window's own participants, never by the reserve.
+
+The window starts with explicitly backed $100M spot and the vault has $1M
+explicitly backed opening reserve. This capital is reported in opening state;
+it is not counted as newly committed Issue principal. The illustrative return
+is 4% annualized using a 365-day divisor and whole-cent daily backing marks.
+The window quotes 6.5% annualized simple discounts (whole basis points, at least
+one), with actual funded trades at 7, 30, 60, 90 and 180 days on day 4. Quotes are
+simulation inputs, not a market discovery mechanism or promised yield.
+
+## 17. Daily and full-run metrics
+
+> Funding deficit: for each payable, the eligible shortfall by amount and deadline, and its sum over the run.
+
+Record each invoice's eligible shortfall once on its due day. The headline is
+the sum of these historical deadline shortfalls, even if subsequently settled.
+Unpaid invoices due beyond the run are reported separately as projected funding
+shortfalls. Unmet off-network cash needs are also separate and never netted.
+Daily issued/settled invoice counts count registrations and invoices reaching
+full settlement; settled cents include partial settlements. Principal committed
+means cumulative fresh Issue deposits, not the sum of repeated extensions.
+Daily summaries include both flow counters and the closing balance sheet.
+
+Extension share is the number of Pay operations linked to actual prior Extend
+request IDs divided by all successful Pay operations. A link must belong to the
+payer, match the amount/date delivered and never have been counted previously.
+Multiple extension requests may support one Pay. Ratio settled-to-committed and
+circulation efficiency remain separate; no denominator silently includes the
+window's opening capital or repeated commitment of the same units.
+
+## 18. Invariant execution and output cost
+
+> Every operation is atomic.
+
+> Every invariant is checked after every operation and after every checkpoint.
+
+Every checker runs on each candidate transition. Immutable unchanged records
+retain their established checks; changed records are found from actual ledger
+identity differences, not from caller-declared affected accounts. Ledger maps and
+replay sets use immutable CRC32-sharded storage: a transition copies touched
+shards, while identity comparisons prove that all other shards are unchanged.
+Iteration order is independent of Python hash randomization. Every daily
+checkpoint, explicit audit and rejection fully reconciles ledger aggregates.
+Full accrual reconciliation groups equal entitlement intervals before exact
+arithmetic; it is algebraically identical to summing each entitlement. No hard
+check is sampled or disabled for large runs. Timings are diagnostic CLI output,
+excluded from deterministic NDJSON. The stream can be written without retaining
+all previous event lines in memory.
+
+## 19. Total asset loss
+
+> The loss is charged to the reserve.
+
+A zero dollar backing mark retains the worthless asset quantity, exhausts reserve
+and records deficit. An Issue cannot price a fresh deposit at zero, and rejects
+until a positive valuation is restored. Recovery of that quantity follows the
+same capital-flow-adjusted repair waterfall. No replacement asset or bailout is
+created automatically.
