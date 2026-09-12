@@ -183,7 +183,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     };
     raf = requestAnimationFrame(frame);
     if (new URLSearchParams(location.search).has('inspect')) {
-      window.__cascade = { engine, globe, pool, models: models.status,
+      window.__cascade = { engine, globe, pool, models: models.status, cameraFlightActive: () => !!flight,
         geography: () => {
           let earth: Mesh | undefined;
           globe.scene().traverse(object => { if ((object as Mesh).material === globe.globeMaterial()) earth = object as Mesh; });

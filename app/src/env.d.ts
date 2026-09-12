@@ -2,10 +2,12 @@ import type { GlobeInstance } from 'globe.gl';
 import type { PlaybackEngine } from './playback/engine.ts';
 import type { ArcPool } from './globe/arc-pool.ts';
 declare global {
+  const __SITE_MODEL_VERSIONS__: Record<string, string>;
   interface Window {
     Telegram?: { WebApp?: import('./platform/telegram.ts').TelegramApp };
     __cascade?: {
       engine: PlaybackEngine; globe: GlobeInstance; pool: ArcPool;
+      cameraFlightActive: () => boolean;
       models: () => { id: string; pending: boolean; missing: boolean; loaded: boolean; fade: number }[];
       geography: () => { name: string; lat: number; lng: number; expected: { u: number; v: number }; uv: { u: number; v: number } | null }[];
       ageArcs: (milliseconds: number) => void;

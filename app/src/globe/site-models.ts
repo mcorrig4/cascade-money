@@ -4,6 +4,11 @@ import type { Object3D, Mesh } from 'three';
 import { metersToScene, nearSite, SITES, siteFrame } from './site-math.ts';
 import type { SiteId } from './site-math.ts';
 
+export function siteModelUrl(id: SiteId) {
+  const version = typeof __SITE_MODEL_VERSIONS__ === 'undefined' ? 'development' : __SITE_MODEL_VERSIONS__[id];
+  return `${import.meta.env?.BASE_URL ?? '/'}models/${id}.glb?v=${version}`;
+}
+
 type Loaded = { root: Group; fade: number; materials: { material: Material; opacity: number; transparent: boolean; depthWrite: boolean }[]; release: () => void };
 export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId, Object3D>, open = () => import('./load-site-model.ts')) {
   let disposed = false;
@@ -14,7 +19,7 @@ export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId,
     try {
       const { loadSiteModel, disposeModel } = await open();
       if (disposed || !entry.wanted) return;
-      const scene = await loadSiteModel(`${(import.meta.env?.BASE_URL ?? '/')}models/${entry.id}.glb`, controller.signal);
+      const scene = await loadSiteModel(siteModelUrl(entry.id), controller.signal);
       if (!scene) { if (!controller.signal.aborted) entry.missing = true; return; }
       if (disposed || !entry.wanted) { disposeModel(scene); return; }
       const root = new Group(), site = SITES[entry.id], frame = siteFrame(site.lat, site.lng, globe.getGlobeRadius());

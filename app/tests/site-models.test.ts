@@ -27,7 +27,12 @@ test('local camera and lighting use real height, true north and southwest sun', 
   for (const id of Object.keys(SITES) as (keyof typeof SITES)[]) {
     const frame=siteFrame(SITES[id].lat,SITES[id].lng,100), pose=siteCamera(id,100), sun=siteSun(id,100);
     near(sitePoint(id,100,0,0,0).distanceTo(frame.position),0);
-    near(pose.position.clone().sub(frame.position).dot(frame.up),metersToScene(id==='apple-park'?760:2.4,100));
+    near(pose.position.clone().sub(frame.position).dot(frame.up),metersToScene(id==='apple-park'?608:8,100));
+    if (id === 'fifth-avenue') {
+      const offset = pose.position.clone().sub(frame.position);
+      near(Math.hypot(offset.dot(frame.east), offset.dot(frame.north)), metersToScene(35,100));
+      assert.ok(pose.target.clone().sub(pose.position).dot(frame.up) > 0, 'Cube view looks slightly upward');
+    }
     assert.ok(sun.dot(frame.east)<0 && sun.dot(frame.north)<0 && sun.dot(frame.up)>0);
     assert.ok(nearSite(id,SITES[id].lat,SITES[id].lng,.0001));
     assert.equal(nearSite(id,SITES[id].lat,SITES[id].lng,1),false);

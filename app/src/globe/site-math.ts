@@ -20,10 +20,10 @@ export function sitePoint(site: SiteId, radius: number, east: number, height: nu
   return f.position.addScaledVector(f.east, east * scale).addScaledVector(f.up, height * scale).addScaledVector(f.north, north * scale);
 }
 export function siteCamera(site: SiteId, radius: number, orbit = 0) {
-  const campus = site === 'apple-park', distance = campus ? 910 : 29;
+  const campus = site === 'apple-park', distance = campus ? 910 : 35;
   const bearing = ((campus ? 155 : 135) + orbit) * Math.PI / 180;
-  return { position: sitePoint(site, radius, Math.sin(bearing) * distance, campus ? 760 : 2.4, Math.cos(bearing) * distance),
-    target: sitePoint(site, radius, 0, campus ? 8 : 5, campus ? -45 : 0),
+  return { position: sitePoint(site, radius, Math.sin(bearing) * distance, campus ? 608 : 8, Math.cos(bearing) * distance),
+    target: sitePoint(site, radius, campus ? -Math.cos(bearing) * 60 : 0, campus ? 8 : 12, campus ? -45 + Math.sin(bearing) * 60 : 0),
     up: siteFrame(SITES[site].lat, SITES[site].lng, radius).up };
 }
 export function siteSun(site: SiteId, radius: number) {

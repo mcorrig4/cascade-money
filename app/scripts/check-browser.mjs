@@ -132,7 +132,8 @@ try {
   assert.ok(parkPose.camera.altitude < .0002 && parkPose.target > 99,'Shot 1 looks at the campus from an oblique local camera');
   assert.ok(parkPose.model.loaded ? !parkPose.fallback : parkPose.fallback,'Model replaces decal only after its fade completes');
   if (staticMode && existsSync('dist/models/apple-park.glb')) assert.ok(parkPose.model.loaded,'Bundled Apple Park decodes successfully');
-  await page.screenshot({ path: 'artifacts/apple-park-1920x1080.png' });
+  await page.waitForFunction(() => window.__cascade.engine.state.shotElapsed >= 3 && !window.__cascade.cameraFlightActive());
+  await page.screenshot({ path: 'artifacts/shot1-apple-park.png' });
   await page.keyboard.press('Escape');
   const totals = await page.evaluate(() => {
     const { engine } = window.__cascade;
@@ -146,12 +147,23 @@ try {
     await page.keyboard.press('Shift+D');
     await page.getByTestId(`overlay-${shot}`).waitFor();
     if (shot === 10) {
-      await page.waitForTimeout(4300);
+      await page.waitForFunction(() => window.__cascade.engine.state.camera.site === 'fifth-avenue' && !window.__cascade.cameraFlightActive() && window.__cascade.globe.pointOfView().altitude < .000002);
       await page.evaluate(() => window.__cascade.engine.update({ playing:false, shotRunning:false }));
       await page.waitForFunction(() => window.__cascade.models().some(m => m.id === 'fifth-avenue' && (m.missing || m.fade === 1)));
       if (staticMode && existsSync('dist/models/fifth-avenue.glb')) assert.ok(await page.evaluate(() => window.__cascade.models().find(m => m.id === 'fifth-avenue').loaded),'Bundled Fifth Avenue decodes successfully');
-      await page.screenshot({ path: 'artifacts/fifth-avenue-1920x1080.png' });
-      await page.evaluate(() => { window.__cascade.engine.update({ shotRunning:true }); window.__cascade.engine.tick(3.3); });
+      const cubePose = await page.evaluate(() => {
+        const { globe } = window.__cascade;
+        globe.scene().updateMatrixWorld(true);
+        const model = globe.scene().getObjectByName('Site model: fifth-avenue');
+        if (!model) return null;
+        const eye = model.worldToLocal(globe.camera().position.clone());
+        const target = model.worldToLocal(globe.controls().target.clone());
+        return { distance: Math.hypot(eye.x,eye.z), height:eye.y, targetHeight:target.y };
+      });
+      if (cubePose) { assert.ok(Math.abs(cubePose.distance-35)<.1); assert.ok(Math.abs(cubePose.height-8)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
+      assert.ok(modelRequests.filter(url => url.includes('/models/')).every(url => /[?]v=[a-f0-9]{16}$/.test(url)), 'Model URLs carry their build content hashes');
+      await page.screenshot({ path: 'artifacts/shot10-cube.png' });
+      await page.evaluate(() => { window.__cascade.engine.update({ shotRunning:true }); window.__cascade.engine.tick(2.1); });
       await page.waitForTimeout(6500);
       assert.ok(await page.evaluate(() => window.__cascade.models().every(m => !m.loaded && !m.pending)), 'Pullback releases site models');
     }
