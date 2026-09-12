@@ -2,8 +2,17 @@
  * Scene 16 — Beneath it. Script-v6-liam.md: "And underneath that product...
  * is an invisible chain of promises between thousands of companies. Cascade
  * lets those promises move. Before the cash does." Composited over the
- * continuing shot-12-cascade hall capture (stage12-directive: "the year's
- * payment graph drawn as a line network fading up behind the stair").
+ * scene-16 capture (stage12-directive: "the year's payment graph drawn as a
+ * line network fading up behind the stair").
+ *
+ * CAPTION OWNERSHIP: this layer draws NO text. The captured app already
+ * burns the scene's caption into the footage — the director's `promises`
+ * overlay (app/src/director/ShotOverlays.tsx) renders
+ * "An invisible chain of promises." and swaps it to "Before the cash does."
+ * at t >= 7.2s — so a Remotion-drawn copy of that same line stacked a second
+ * rendering of "Before the cash does." on top of the burned-in one (draft v4,
+ * film seconds ~248-265). The capture is the single source for this line;
+ * this component contributes only the node/edge network behind it.
  *
  * A generic node/edge network, drawn in with an SVG stroke-dashoffset
  * reveal — it represents the SHAPE of the payment graph (thousands of
@@ -12,8 +21,7 @@
  */
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {enter} from '../../motion/timing';
-import {color, font} from '../../brand/tokens';
+import {color} from '../../brand/tokens';
 
 // Small hand-placed node graph — deterministic, no randomness (frame-stable).
 const NODES: [number, number][] = [
@@ -25,24 +33,22 @@ const EDGES: [number, number][] = [
   [6, 8], [6, 9], [7, 9], [7, 10], [9, 11], [9, 12], [10, 12],
 ];
 
-// Minor fix (verified issue #3): the underlying shot-12-cascade capture puts
-// its "Verify on Arc" CTA + body-text region at bottom-center of frame — the
-// same footprint as this scene's own "Before the cash does." caption below.
-// Several decorative edges/nodes drew straight through it. Rather than
-// hand-tune each edge's path around a region we can't pixel-measure without
-// rendering (forbidden on this box), the whole network is masked out of that
-// rectangle: nothing decorative draws there, so it never competes with the
-// CTA or the caption sitting on top of it. Flagged for a visual QA pass by
-// whoever can render — this rectangle is a reasonable-fit estimate, not a
-// measured one.
+// Minor fix (verified issue #3): the underlying capture puts its caption /
+// "Verify on Arc" CTA / body-text region at bottom-center of frame. Several
+// decorative edges/nodes drew straight through it. Rather than hand-tune each
+// edge's path around a region we can't pixel-measure without rendering
+// (forbidden on this box), the whole network is masked out of that rectangle:
+// nothing decorative draws there, so it never competes with the capture's own
+// caption or CTA. Now that the caption lives ONLY in the capture, this mask is
+// the single thing keeping the graphic clear of it. Flagged for a visual QA
+// pass by whoever can render — this rectangle is a reasonable-fit estimate,
+// not a measured one.
 const CTA_MASK_RECT = {x: 560, y: 760, width: 800, height: 320};
 
 export const ChainOfPromises: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
   const frame = useCurrentFrame();
   const drawEnd = dur * 0.55;
-  const lineAt = dur * 0.6;
   const drawProgress = Math.min(1, frame / drawEnd);
-  const line = enter(frame, 30, lineAt, 'fade');
 
   return (
     <AbsoluteFill>
@@ -89,21 +95,6 @@ export const ChainOfPromises: React.FC<{durationInFrames: number}> = ({durationI
         })}
         </g>
       </svg>
-      <AbsoluteFill style={{display: 'grid', placeItems: 'end center', paddingBottom: 130}}>
-        <div
-          style={{
-            fontFamily: font.family,
-            fontSize: 42,
-            fontWeight: 450,
-            color: color.fg,
-            opacity: line.opacity,
-            transform: line.transform,
-            textShadow: '0 2px 20px rgba(0,0,0,0.6)',
-          }}
-        >
-          Before the cash does.
-        </div>
-      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
