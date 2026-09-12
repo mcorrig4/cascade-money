@@ -1,17 +1,20 @@
 /**
- * Scene 6 — "The question", the shortest beat (v5: "So what if that future
- * payment could move today, as a dated dollar?"). No capture exists; a
- * single-line motion graphic, 90f / 3s, held inside the browser frame.
+ * Scene 6 — The question. Script-v6-liam.md: "So what if that future
+ * payment could move today? Not as cash. As a dollar with a date." No
+ * capture exists; held inside the browser frame. Beats sized as fractions
+ * of the scene's own duration so the hold/exit timing tracks whatever
+ * length narration.json ultimately assigns this scene.
  */
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {enter, exit} from '../../motion/timing';
 import {bgGradient, color, font} from '../../brand/tokens';
 
-export const TheQuestion: React.FC = () => {
+export const TheQuestion: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
   const frame = useCurrentFrame();
   const e = enter(frame, 30, 4, 'settle');
-  const x = exit(frame, 68, 16, 'fade');
+  const exitAt = Math.max(dur - 22, 10);
+  const x = exit(frame, exitAt, 16, 'fade');
   const opacity = Math.min(e.opacity, x.opacity);
 
   return (
@@ -23,17 +26,19 @@ export const TheQuestion: React.FC = () => {
             fontSize: 58,
             fontWeight: 450,
             letterSpacing: -2,
-            lineHeight: 1.25,
+            lineHeight: 1.3,
             color: color.fg,
             opacity,
             transform: e.transform,
+            textAlign: 'center',
           }}
         >
-          What if that future payment could move today — as a{' '}
-          <span style={{color: color.money}}>dated dollar</span>?
+          So what if that future payment could move today?
+          <br />
+          Not as cash. As a{' '}
+          <span style={{color: color.money}}>dollar with a date</span>.
         </div>
       </AbsoluteFill>
     </AbsoluteFill>
   );
 };
-export const THE_QUESTION_DURATION = 90;

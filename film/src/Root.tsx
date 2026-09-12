@@ -1,16 +1,34 @@
 import React from 'react';
-import {Composition} from 'remotion';
-import {CascadeFilm, CASCADE_FILM_DURATION} from './compositions/CascadeFilm';
+import {CalculateMetadataFunction, Composition} from 'remotion';
+import {CascadeFilm, CascadeFilmProps} from './compositions/CascadeFilm';
+import {ESTIMATED_TOTAL_DURATION, SCENES} from './compositions/schedule';
+import {loadCaptureOverrides, loadNarration} from './compositions/narration';
+
+const FPS = 30;
+
+const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async () => {
+  const [narration, captureOverrides] = await Promise.all([
+    loadNarration(FPS),
+    loadCaptureOverrides(SCENES.map((sc) => sc.num)),
+  ]);
+  const durationInFrames = SCENES.reduce(
+    (acc, sc) => acc + (narration[sc.num]?.durationInFrames ?? sc.estimateFrames),
+    0,
+  );
+  return {durationInFrames, props: {narration, captureOverrides}};
+};
 
 export const RemotionRoot: React.FC = () => {
   return (
     <Composition
       id="CascadeFilm"
       component={CascadeFilm}
-      durationInFrames={CASCADE_FILM_DURATION}
-      fps={30}
+      durationInFrames={ESTIMATED_TOTAL_DURATION}
+      fps={FPS}
       width={1920}
       height={1080}
+      defaultProps={{narration: {}, captureOverrides: {}}}
+      calculateMetadata={calculateMetadata}
     />
   );
 };
