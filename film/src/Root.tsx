@@ -6,7 +6,7 @@ import {loadCaptureOverrides, loadNarration} from './compositions/narration';
 
 const FPS = 30;
 
-const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async () => {
+const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async ({props}) => {
   const [narration, captureOverrides] = await Promise.all([
     loadNarration(FPS),
     loadCaptureOverrides(SCENES.map((sc) => sc.num)),
@@ -15,7 +15,11 @@ const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async () 
     (acc, sc) => acc + applyDurationFloors(sc, narration[sc.num]?.durationInFrames ?? sc.estimateFrames),
     0,
   );
-  return {durationInFrames, props: {narration, captureOverrides}};
+  // Spread the incoming props (defaultProps merged with any --props override,
+  // e.g. reviewLabels from the CLI) so calculateMetadata only ever ADDS the
+  // live-computed narration/captureOverrides — it never drops a prop the
+  // caller passed in.
+  return {durationInFrames, props: {...props, narration, captureOverrides}};
 };
 
 export const RemotionRoot: React.FC = () => {
@@ -27,7 +31,10 @@ export const RemotionRoot: React.FC = () => {
       fps={FPS}
       width={1920}
       height={1080}
-      defaultProps={{narration: {}, captureOverrides: {}}}
+      // reviewLabels: true renders a review-only top-left scene-number chip
+      // (see CascadeFilm.tsx / ReviewLabelOverlay). Pick it up with:
+      //   npx remotion render CascadeFilm --props='{"reviewLabels":true}'
+      defaultProps={{narration: {}, captureOverrides: {}, reviewLabels: false}}
       calculateMetadata={calculateMetadata}
     />
   );

@@ -15,7 +15,7 @@
  *     shot file, or a pure motion graphic if none matches the new beat).
  */
 import React from 'react';
-import {AbsoluteFill, Audio, Sequence, Series, staticFile, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Audio, Sequence, Series, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {ensureFontsLoaded} from '../brand/fonts';
 import {color} from '../brand/tokens';
 import {CaptureScene} from '../components/CaptureScene';
@@ -39,6 +39,16 @@ ensureFontsLoaded();
 export interface CascadeFilmProps extends Record<string, unknown> {
   narration: NarrationMap;
   captureOverrides: Record<number, boolean>;
+  /**
+   * REVIEW-ONLY. When true, overlays a fixed top-left chip on every frame
+   * showing the scene number/title and scene-local timecode (e.g.
+   * "S07 · The cascade · 00:12"), so the product owner can refer to beats
+   * by number while drafting. Defaults to false (see Root.tsx's
+   * defaultProps) and must never render for a real deliverable. Pick it up
+   * with:
+   *   npx remotion render CascadeFilm --props='{"reviewLabels":true}'
+   */
+  reviewLabels?: boolean;
 }
 
 /** The resolved duration for a scene: real VO length+0.4s, else the word-count estimate. */
@@ -130,7 +140,62 @@ const SceneVO: React.FC<{num: number; narration: NarrationMap}> = ({num, narrati
   return <Audio src={staticFile(`narration/${entry.file}`)} />;
 };
 
-export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverrides}) => {
+const pad2 = (n: number): string => String(n).padStart(2, '0');
+
+/**
+ * REVIEW-ONLY overlay (CascadeFilmProps.reviewLabels). Sits as a sibling of
+ * <Series>, so useCurrentFrame() here is the ABSOLUTE composition frame
+ * (Series's own children are the ones offset per-scene, not this). Walks
+ * `durations` — same array, same order as SCENES — to find which scene the
+ * current absolute frame falls in and how far into that scene it is, then
+ * renders "S<NN> · <title> · mm:ss" (scene-local timecode) as a fixed
+ * top-left pill. Never rendered unless reviewLabels is explicitly true.
+ */
+const ReviewLabelOverlay: React.FC<{durations: number[]}> = ({durations}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+
+  let sceneStart = 0;
+  let sceneIndex = durations.length - 1;
+  for (let i = 0; i < durations.length; i++) {
+    if (frame < sceneStart + durations[i]) {
+      sceneIndex = i;
+      break;
+    }
+    sceneStart += durations[i];
+  }
+
+  const sc = SCENES[sceneIndex];
+  const localFrame = Math.max(0, frame - sceneStart);
+  const totalSeconds = Math.floor(localFrame / fps);
+  const mm = pad2(Math.floor(totalSeconds / 60));
+  const ss = pad2(totalSeconds % 60);
+
+  return (
+    <AbsoluteFill style={{pointerEvents: 'none'}}>
+      <div
+        style={{
+          position: 'absolute',
+          top: 24,
+          left: 24,
+          padding: '10px 20px',
+          borderRadius: 999,
+          background: 'rgba(0,0,0,0.75)',
+          color: color.white,
+          fontFamily: "'SF Mono', 'Menlo', 'Consolas', monospace",
+          fontSize: 28,
+          fontWeight: 600,
+          letterSpacing: 0.5,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {`S${pad2(sc.num)} · ${sc.title} · ${mm}:${ss}`}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverrides, reviewLabels = false}) => {
   const durations = SCENES.map((sc) => durationFor(sc, narration));
 
   const sc15 = sceneByNum(15);
@@ -348,6 +413,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
           <SceneVO num={17} narration={narration} />
         </Series.Sequence>
       </Series>
+      {reviewLabels ? <ReviewLabelOverlay durations={durations} /> : null}
     </AbsoluteFill>
   );
 };
