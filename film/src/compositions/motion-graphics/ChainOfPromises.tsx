@@ -25,6 +25,18 @@ const EDGES: [number, number][] = [
   [6, 8], [6, 9], [7, 9], [7, 10], [9, 11], [9, 12], [10, 12],
 ];
 
+// Minor fix (verified issue #3): the underlying shot-12-cascade capture puts
+// its "Verify on Arc" CTA + body-text region at bottom-center of frame — the
+// same footprint as this scene's own "Before the cash does." caption below.
+// Several decorative edges/nodes drew straight through it. Rather than
+// hand-tune each edge's path around a region we can't pixel-measure without
+// rendering (forbidden on this box), the whole network is masked out of that
+// rectangle: nothing decorative draws there, so it never competes with the
+// CTA or the caption sitting on top of it. Flagged for a visual QA pass by
+// whoever can render — this rectangle is a reasonable-fit estimate, not a
+// measured one.
+const CTA_MASK_RECT = {x: 560, y: 760, width: 800, height: 320};
+
 export const ChainOfPromises: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
   const frame = useCurrentFrame();
   const drawEnd = dur * 0.55;
@@ -35,6 +47,19 @@ export const ChainOfPromises: React.FC<{durationInFrames: number}> = ({durationI
   return (
     <AbsoluteFill>
       <svg width={1920} height={1080} style={{position: 'absolute', inset: 0, opacity: 0.85}}>
+        <defs>
+          <mask id="chain-avoid-cta" maskUnits="userSpaceOnUse" x={0} y={0} width={1920} height={1080}>
+            <rect x={0} y={0} width={1920} height={1080} fill="#fff" />
+            <rect
+              x={CTA_MASK_RECT.x}
+              y={CTA_MASK_RECT.y}
+              width={CTA_MASK_RECT.width}
+              height={CTA_MASK_RECT.height}
+              fill="#000"
+            />
+          </mask>
+        </defs>
+        <g mask="url(#chain-avoid-cta)">
         {EDGES.map(([a, b], i) => {
           const [x1, y1] = NODES[a];
           const [x2, y2] = NODES[b];
@@ -62,6 +87,7 @@ export const ChainOfPromises: React.FC<{durationInFrames: number}> = ({durationI
             <circle key={i} cx={x} cy={y} r={7} fill={color.fg} opacity={visible * 0.9} />
           );
         })}
+        </g>
       </svg>
       <AbsoluteFill style={{display: 'grid', placeItems: 'end center', paddingBottom: 130}}>
         <div

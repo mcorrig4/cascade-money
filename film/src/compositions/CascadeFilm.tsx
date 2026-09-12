@@ -21,7 +21,7 @@ import {color} from '../brand/tokens';
 import {CaptureScene} from '../components/CaptureScene';
 import {BrowserFrame, FrameMode} from '../components/BrowserFrame';
 import {PhoneHero} from '../components/PhoneHero';
-import {SCENES, SceneDef, sceneByNum} from './schedule';
+import {applyDurationFloors, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 
 import {RewindSequence} from './motion-graphics/RewindSequence';
@@ -43,7 +43,7 @@ export interface CascadeFilmProps extends Record<string, unknown> {
 
 /** The resolved duration for a scene: real VO length+0.4s, else the word-count estimate. */
 const durationFor = (sc: SceneDef, narration: NarrationMap): number =>
-  narration[sc.num]?.durationInFrames ?? sc.estimateFrames;
+  applyDurationFloors(sc, narration[sc.num]?.durationInFrames ?? sc.estimateFrames);
 
 export const filmDuration = (narration: NarrationMap): number =>
   SCENES.reduce((acc, sc) => acc + durationFor(sc, narration), 0);

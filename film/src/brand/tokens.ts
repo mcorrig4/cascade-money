@@ -29,7 +29,7 @@ export const font = {
 export const type = {
   kicker: 13,
   lawEyebrow: 13,
-  lawBody: 19,
+  lawBody: 30,
   cardTitle: 56,
   cardBody: 24,
   statNumber: 120,

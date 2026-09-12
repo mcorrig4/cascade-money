@@ -7,11 +7,21 @@
  * Figures (docs/verified-figures-v6.md): sim.scenarios.stress(ops=10000,
  * seed=1) -> 10,000 ops, 0 hard-invariant violations. Beats sized as
  * fractions of the scene's own duration.
+ *
+ * Fix (verified issue #1): the two laws used to enter on a stagger with no
+ * exit, so by the second law's entrance both were on screen at once (the
+ * "dim duplicate behind" — law 1 still fully opaque under law 2). Each law
+ * now owns an exclusive time slot: it enters, holds, then fades out and
+ * rises away before the next one enters — never two at once. The
+ * 10,000-ops/0-violations figure is no longer a big competing beat; it is
+ * a small persistent line pinned to the bottom of the frame for the whole
+ * scene, so the eye always has the headline number without it fighting the
+ * law that's currently on screen.
  */
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {countUp, enter} from '../../motion/timing';
-import {color, font, scrim} from '../../brand/tokens';
+import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
+import {enter, CLAMP} from '../../motion/timing';
+import {color, font, type, scrim} from '../../brand/tokens';
 
 const LAWS = [
   {
@@ -26,69 +36,81 @@ const LAWS = [
   },
 ];
 
+const ENTER_DUR = 20;
+const EXIT_DUR = 16;
+
+/** Fade + rise-away exit — the mirror of `enter(..., 'rise')`. */
+const exitUp = (frame: number, at: number, dur: number) => {
+  const p = interpolate(frame, [at, at + dur], [0, 1], CLAMP);
+  return {opacity: 1 - p, transform: `translateY(${-28 * p}px)`};
+};
+
 export const ConservationLaws: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
   const frame = useCurrentFrame();
-  const lawStep = Math.max(20, Math.floor(dur * 0.28));
-  const statAt = Math.round(dur * 0.62);
-  const ops = countUp(frame, statAt, statAt + 40, 10_000);
-  const statEnter = enter(frame, 30, statAt, 'settle');
+  const n = LAWS.length;
+  // Pace the laws evenly across the whole scene: one exclusive slot each.
+  const slot = Math.floor(dur / n);
+
+  const footerLine = enter(frame, 30, 24, 'fade');
 
   return (
     <AbsoluteFill style={{background: scrim, fontFamily: font.family, color: color.fg}}>
       <AbsoluteFill style={{display: 'grid', placeItems: 'center'}}>
-        <div style={{width: 970, display: 'flex', flexDirection: 'column'}}>
+        <div style={{width: 970, height: 260, position: 'relative'}}>
           {LAWS.map((law, i) => {
-            const e = enter(frame, 30, i * lawStep, 'rise');
+            const start = i * slot;
+            const isLast = i === n - 1;
+            const exitAt = start + slot - EXIT_DUR;
+            const e = enter(frame, 30, start, 'rise');
+            let opacity = e.opacity;
+            let transform = e.transform;
+            if (!isLast && frame >= exitAt) {
+              const x = exitUp(frame, exitAt, EXIT_DUR);
+              opacity = x.opacity;
+              transform = x.transform;
+            }
             return (
               <div
                 key={law.eyebrow}
                 style={{
+                  position: 'absolute',
+                  inset: 0,
                   borderTop: `1px solid ${color.hairline}`,
                   padding: '20px 0',
-                  opacity: e.opacity,
-                  transform: e.transform,
+                  opacity,
+                  transform,
                 }}
               >
                 <span
                   style={{
                     display: 'block',
                     color: law.accent,
-                    fontSize: 13,
+                    fontSize: type.lawEyebrow,
                     letterSpacing: 2,
                     marginBottom: 10,
                     fontWeight: 600,
                   }}
                 >
-                  {law.eyebrow}
+                  {String(i + 1).padStart(2, '0')}/{law.eyebrow}
                 </span>
-                <p style={{fontSize: 22, margin: '8px 0 0', lineHeight: 1.4, color: color.fg}}>
+                <p style={{fontSize: type.lawBody, margin: '8px 0 0', lineHeight: 1.4, color: color.fg}}>
                   {law.body}
                 </p>
               </div>
             );
           })}
-          <div
-            style={{
-              borderTop: `1px solid ${color.hairline}`,
-              padding: '26px 0 0',
-              marginTop: 6,
-              opacity: statEnter.opacity,
-              transform: statEnter.transform,
-              display: 'flex',
-              gap: 60,
-            }}
-          >
-            <div>
-              <div style={{fontSize: 64, fontWeight: 450, letterSpacing: -2, color: color.fg}}>
-                {ops.toLocaleString()}
-              </div>
-              <div style={{fontSize: 18, color: color.fgDim, marginTop: 6}}>operations</div>
-            </div>
-            <div>
-              <div style={{fontSize: 64, fontWeight: 450, letterSpacing: -2, color: color.money}}>0</div>
-              <div style={{fontSize: 18, color: color.fgDim, marginTop: 6}}>violations</div>
-            </div>
-          </div>
+        </div>
+      </AbsoluteFill>
+      <AbsoluteFill style={{display: 'grid', placeItems: 'end center', paddingBottom: 56}}>
+        <div
+          style={{
+            fontSize: 20,
+            color: color.fgDim,
+            letterSpacing: 0.3,
+            opacity: footerLine.opacity,
+          }}
+        >
+          10,000 operations · <span style={{color: color.money}}>0 violations</span>
         </div>
       </AbsoluteFill>
     </AbsoluteFill>

@@ -61,6 +61,7 @@ export const Scene17Close: React.FC<{durationInFrames: number}> = ({durationInFr
             </div>
             <div
               style={{
+                fontFamily: font.family,
                 marginTop: 30,
                 fontSize: 28,
                 letterSpacing: 0.4,

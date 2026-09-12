@@ -1,7 +1,7 @@
 import React from 'react';
 import {CalculateMetadataFunction, Composition} from 'remotion';
 import {CascadeFilm, CascadeFilmProps} from './compositions/CascadeFilm';
-import {ESTIMATED_TOTAL_DURATION, SCENES} from './compositions/schedule';
+import {applyDurationFloors, ESTIMATED_TOTAL_DURATION, SCENES} from './compositions/schedule';
 import {loadCaptureOverrides, loadNarration} from './compositions/narration';
 
 const FPS = 30;
@@ -12,7 +12,7 @@ const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async () 
     loadCaptureOverrides(SCENES.map((sc) => sc.num)),
   ]);
   const durationInFrames = SCENES.reduce(
-    (acc, sc) => acc + (narration[sc.num]?.durationInFrames ?? sc.estimateFrames),
+    (acc, sc) => acc + applyDurationFloors(sc, narration[sc.num]?.durationInFrames ?? sc.estimateFrames),
     0,
   );
   return {durationInFrames, props: {narration, captureOverrides}};

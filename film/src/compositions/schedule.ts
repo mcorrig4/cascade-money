@@ -64,7 +64,31 @@ export const SCENES: SceneDef[] = [
   {num: 17, id: 'scene17', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
 ];
 
-export const ESTIMATED_TOTAL_DURATION = SCENES.reduce((a, sc) => a + sc.estimateFrames, 0);
+/**
+ * Scene 17 (Close) is a held outro card: white -> tag -> wordmark beats need
+ * a floor of screen time independent of how few words the VO speaks for it.
+ * Applied everywhere a scene's resolved duration is computed (this file's
+ * own ESTIMATED_TOTAL_DURATION, Root.tsx's calculateMetadata, and
+ * CascadeFilm.tsx's durationFor) so the sizing and rendering numbers never
+ * drift apart. Narration shorter than the floor just ends early and the
+ * card holds silently for the remainder; narration longer than the floor is
+ * unaffected (the floor is a minimum, not a cap).
+ *
+ * An 8s (240-frame) floor was the first pass, but with the rest of the
+ * schedule at its current word-count estimates that pushes the film's total
+ * from 3:54 to 3:57.9 — over the 3:54 target. Reduced to 5s (150 frames),
+ * the largest floor that still lands the total at 3:54 (234.93s, verified
+ * via `npx remotion compositions`).
+ */
+export const SCENE17_CLOSE_FLOOR_FRAMES = 150; // 5s @ 30fps
+
+export const applyDurationFloors = (sc: SceneDef, durationInFrames: number): number =>
+  sc.num === 17 ? Math.max(durationInFrames, SCENE17_CLOSE_FLOOR_FRAMES) : durationInFrames;
+
+export const ESTIMATED_TOTAL_DURATION = SCENES.reduce(
+  (a, sc) => a + applyDurationFloors(sc, sc.estimateFrames),
+  0,
+);
 
 export const sceneByNum = (num: number): SceneDef => {
   const sc = SCENES.find((s) => s.num === num);
