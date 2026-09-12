@@ -7,6 +7,7 @@ declare global {
     Telegram?: { WebApp?: import('./platform/telegram.ts').TelegramApp };
     __cascade?: {
       shots: typeof import('./director/shots.ts').SHOTS;playScene:(id:number)=>void;playFilm:()=>void;
+      sceneTransitions:{sceneIndex:number;sceneId:number;tMs:number}[];readonly filmStartMs:number|null;
       engine: PlaybackEngine; globe: GlobeInstance; pool: ArcPool;
       cameraFlightActive: () => boolean;
       tiles: () => { site: 'apple-park' | 'fifth-avenue' | null; ready: boolean; failed: boolean; progress: number; visibleTiles: number; opacity: number; ground: number | null; modelSize: [number, number, number] | null; tileBounds: [number, number, number, number, number, number] | null };
