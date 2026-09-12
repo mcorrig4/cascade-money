@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {CascadeVault} from "../src/CascadeVault.sol";
-import {MockUSDC} from "./MockUSDC.sol";
+import {TestUSDC as MockUSDC} from "./MockUSDC.sol";
 
 contract FragmentedGasTest is Test {
     CascadeVault vault;

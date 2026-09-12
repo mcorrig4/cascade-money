@@ -4,7 +4,7 @@ import {Test} from "forge-std/Test.sol";
 import {CascadeVault} from "../src/CascadeVault.sol";
 import {CascadeVaultUSYC} from "../src/CascadeVaultUSYC.sol";
 import {MockUSYC} from "../src/mocks/MockUSYC.sol";
-import {MockUSDC} from "./MockUSDC.sol";
+import {TestUSDC as MockUSDC} from "./MockUSDC.sol";
 
 contract USYCTest is Test {
     MockUSDC usdc;

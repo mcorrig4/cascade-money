@@ -1,9 +1,59 @@
-# Validation: USYC, wallet display and fork additions
+# Validation: plain local chain default
 
-`forge build --sizes`: **PASS**, Solidity 0.8.30 / Prague / optimizer 200.
-Shell/JavaScript syntax checks pass. **73 Solidity test/invariant entry points compile**,
-including 13 new cases. They have not been executed successfully in this sandbox.
-The previous revision's 60 passing tests, retained below, do not validate these additions.
+The standard test target is now plain Anvil, chain 31337, with a standard six-decimal
+OpenZeppelin ERC-20 MockUSDC. The default Foundry suite needs no RPC. The fault-injection test
+fixture is named `TestUSDC` (imported under its old alias) so the new deployable `MockUSDC`
+artifact is unambiguous. No vault accounting or live deployment code was changed.
+
+## Checks in this revision
+
+- `forge test`: **73 passed, 0 failed, 1 skipped** (74 tests across 11 suites).
+- `scripts/local-chain.sh --dry-run`, both demos with `--dry-run`, and optional fork dry runs:
+  argument parsing and manifest/NDJSON writing pass without any chain access.
+- JavaScript regression tests: **13 passed** across three files, covering journals, demo
+  identities, local/fork target guards, and exact Python-compatible rational serialization.
+- Shell/JavaScript syntax checks pass.
+
+Dry-run setup writes `.local/local.dry-run.json`, containing six account addresses, chain 31337,
+mock token and vault **illustrative predicted addresses**, and an explicit `dryRun` marker.
+The other previews use `.local/*.dry-run.json` and `.local/yield-demo.dry-run.ndjson`.
+They cannot replace execution manifests or `.local/yield-demo.ndjson`.
+No Anvil process, socket, live transaction, or actual yield story was run in this sandbox.
+The actual local-chain bootstrap and yield-demo receipts/balances remain to be validated on
+an unrestricted host; a successful schema preview is not a successful on-chain demo.
+
+## Confirmed Arc fork boundary
+
+The user's external host run successfully forked Arc testnet. It found no native-USDC balance
+mapping in slots 0–255, and `yield-demo` reverted on its first USDC transfer. Plain Anvil does
+not reproduce this custom proxy's native transfer path. This is confirmed execution evidence,
+not a DNS or faucet problem.
+
+The fork is now informational. `fork.sh` starts the fork and records its unsupported status;
+`fund-fork.mjs` no longer scans storage or attempts funding. The ordinary suite skips the
+real-proxy case unless `ARC_FORK_URL` is explicitly supplied. Opting into that case still
+requires independently prepared compatible execution and funding; it is not expected to pass
+against the unsupported plain-Anvil proxy.
+
+The **one existing live Arc testnet deployment stands**. No redeployment was made and
+`deployments/` was not modified. Local mock results do not establish native-USDC compatibility.
+
+## Shot 9 data contract
+
+Actual yield runs append a snapshot after every checkpoint and principal/claim step to
+`.local/yield-demo.ndjson`, and print the same JSON to stdout. The nested `balance_sheet`
+uses the Python core's nine field names. Exact accrued/claimable/reserve/deficit values use
+reduced rational strings; cents fields preserve micro-USDC precision. The index and active
+and unclaimed entitlement records accompany each snapshot. Claimability is determined from
+published I(E); claims remove the exact scaled accrued liability. Spot sums the supply of
+matured dates observed in the fresh variant's mint events, including today-dated claim mints.
+The conservative on-chain reserve uses rounded-up accrued liability; it can differ from a
+pure fractional identity by less than one micro-USDC. See README.md for field units and usage.
+Each yield invocation deploys a fresh variant and replaces its output; it is not resumable.
+
+## Last measured vault sizes (unchanged vault source)
+
+Solidity 0.8.30 / Prague / optimizer 200. These are the prior measured sizes, not a new gas run.
 
 | Contract | Runtime bytes | Initcode bytes (before arguments) |
 | --- | ---: | ---: |
@@ -12,38 +62,6 @@ The previous revision's 60 passing tests, retained below, do not validate these 
 | DateMetadata | 3,320 | 3,348 |
 | DatedDollarERC20 implementation | 2,860 | 3,047 |
 | MockUSYC | 4,086 | 4,845 |
-
-Each date's CREATE2 view clone has 45 bytes of runtime; its implementation is shared within the vault.
-Both vaults remain below 24,576 bytes. Metadata is rendered outside the vault runtime.
-New tests cover price-derived income excluding flows, extension intervals, losses/recovery/reserve floor,
-liquidity suspension, claimed yield preservation, mock Teller operations, dynamic base64 metadata,
-ISO dates, fixed ERC-20 symbols, CREATE2 addresses, shared balances/supply, date-scoped approvals,
-early-M protection through ERC-20 views, and a real-USDC proxy fork smoke case.
-
-## Execution blocked
-
-The required fork and demo commands were attempted, with these results:
-
-- `scripts/fork.sh`: upstream RPC DNS lookup denied/failed in the sandbox.
-- `forge test --fork-url http://127.0.0.1:8545 -vv`: fork initialization failed with
-  `Operation not permitted (os error 1)` opening the loopback TCP connection.
-- `node scripts/yield-demo.mjs`: `connect EPERM 127.0.0.1:8545` before any transaction
-  or balance-sheet output.
-
-No `SHEET` output is available; no yield-demo success is claimed. No transaction was broadcast.
-The fork-only testing directive was preserved; no isolated execution substitute was run.
-
-There is also an upstream execution-model limitation:
-[Circle's Arc compatibility guide](https://www.arc.io/blog/arc-compatibility-guide-for-existing-evm-apps)
-says ordinary Anvil cannot reproduce Arc's precompiles. Fork funding therefore verifies an actual
-USDC balance slot and fails closed if none works; it does not silently replace USDC code.
-Even after network access is restored, standard Anvil may require an Arc-aware replacement for
-real native-USDC transfers. The ordinary vault unit cases use local mocks on the fork; the
-separate real-proxy smoke test and USYC demo deliberately expose that compatibility boundary.
-
-The default deployment remains USDC-only. `deployments/` was not modified.
-Local fork/deployment state lives in ignored `.local/`; generated wallets are local-only unless
-the live demo is explicitly selected with `--live`.
 
 ---
 

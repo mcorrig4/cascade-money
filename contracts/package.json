@@ -6,7 +6,8 @@
     "demo": "node scripts/demo.mjs",
     "render": "node scripts/render-architecture.mjs",
     "test:scripts": "node --test scripts/*.test.mjs",
-    "test:contracts": "bash scripts/test-fork.sh",
+    "test:contracts": "forge test",
+    "local": "bash scripts/local-chain.sh",
     "yield-demo": "node scripts/yield-demo.mjs"
   },
   "dependencies": {

@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract MockUSDC is IERC20 {
+contract TestUSDC is IERC20 {
     uint8 public constant decimals = 6;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;

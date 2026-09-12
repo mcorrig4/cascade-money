@@ -10,6 +10,11 @@ if [[ -f ../.world/ports.yml ]]; then
   fork_port="$(port-for "$CASCADE_FORK_PURPOSE")"
 fi
 export CASCADE_FORK_RPC="http://127.0.0.1:$fork_port"
+if [[ "${1:-}" == --dry-run && "$#" == 1 ]]; then
+  node scripts/fund-fork.mjs --dry-run
+  exit 0
+fi
+[[ "$#" == 0 ]] || { echo 'Usage: scripts/fork.sh [--dry-run]' >&2; exit 1; }
 mkdir -p .local
 anvil --quiet --host 127.0.0.1 --port "$fork_port" --fork-url https://rpc.testnet.arc.io --chain-id 5042002 > .local/anvil.log 2>&1 &
 fork_pid=$!
@@ -23,5 +28,5 @@ done
 [[ "$ready" == true ]] || { echo 'Anvil did not become ready; inspect .local/anvil.log' >&2; exit 1; }
 kill -0 "$fork_pid" 2>/dev/null || { cat .local/anvil.log >&2; exit 1; }
 node scripts/fund-fork.mjs
-echo "Arc fork ready: $CASCADE_FORK_RPC (Ctrl-C stops it)"
+echo "Informational Arc fork ready (native USDC unsupported): $CASCADE_FORK_RPC (Ctrl-C stops it)"
 wait "$fork_pid"

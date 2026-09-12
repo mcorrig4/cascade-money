@@ -10,13 +10,13 @@ for argument in "$@"; do
   case "$argument" in
     --live) live=true ;;
     --broadcast) broadcast=true ;;
-    --help) echo 'Usage: scripts/deploy.sh [chains/testnet.json] [--broadcast] [--live]. Default: local fork.'; exit 0 ;;
+    --help) echo 'Usage: scripts/deploy.sh [chains/testnet.json] [--broadcast] [--live]. Default: plain local MockUSDC chain.'; exit 0 ;;
     --*) echo "Unknown argument: $argument" >&2; exit 1 ;;
     *) [[ -z "$config" ]] || exit 1; config="$argument" ;;
   esac
 done
 if [[ "$live" == false ]]; then
-  [[ "$broadcast" == true ]] || { echo 'Local fork target; add --broadcast to deploy locally.'; exit 0; }
+  [[ "$broadcast" == true ]] || { echo 'Local mock target; start scripts/local-chain.sh or add --broadcast to set up an existing plain Anvil.'; exit 0; }
   node scripts/deploy-local.mjs
   exit 0
 fi

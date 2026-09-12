@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {CascadeVault} from "../src/CascadeVault.sol";
-import {MockUSDC} from "./MockUSDC.sol";
+import {TestUSDC as MockUSDC} from "./MockUSDC.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract FalseReturnUSDC is MockUSDC {

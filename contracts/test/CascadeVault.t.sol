@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {CascadeVault} from "../src/CascadeVault.sol";
-import {MockUSDC} from "./MockUSDC.sol";
+import {TestUSDC as MockUSDC} from "./MockUSDC.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 contract Receiver is IERC1155Receiver {

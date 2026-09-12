@@ -4,7 +4,7 @@ import {Test} from "forge-std/Test.sol";
 import {CascadeVault} from "../src/CascadeVault.sol";
 import {DateMetadata} from "../src/DateMetadata.sol";
 import {DatedDollarERC20} from "../src/DatedDollarERC20.sol";
-import {MockUSDC} from "./MockUSDC.sol";
+import {TestUSDC as MockUSDC} from "./MockUSDC.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract WalletDisplayTest is Test {

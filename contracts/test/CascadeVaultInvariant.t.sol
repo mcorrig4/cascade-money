@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {CascadeVault} from "../src/CascadeVault.sol";
-import {MockUSDC} from "./MockUSDC.sol";
+import {TestUSDC as MockUSDC} from "./MockUSDC.sol";
 
 /// @dev Independent ledger: accrues each record each day, never using the vault's aggregate or index formula.
 contract VaultHandler is Test {

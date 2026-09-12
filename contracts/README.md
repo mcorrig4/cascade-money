@@ -3,59 +3,118 @@
 Small USDC-backed ERC-1155 vault for the Arc demo. Read [DECISIONS.md](DECISIONS.md) for the accepted
 spec interpretations, funded index, rounding, and limitations. No `sim/` dependency.
 
-## Standard target: local Arc fork
+## Standard target: plain local Anvil + mock USDC
 
-All further contract execution targets an Anvil fork of Arc testnet, chain ID 5042002.
-Builds are offline. Scripts never send live transactions unless `--live` is explicit.
-The USDC-only vault remains the default.
+The default chain is **31337**, with a standard six-decimal `MockUSDC` ERC-20 and open test
+minting. The vault needs the ERC-20 interface, not Arc's native gas-token implementation.
+The USDC-only vault remains the default deployment. Local gas is ETH; token balances are
+separate mock USDC. Scripts never send live transactions unless `--live` is explicit.
 
 ```bash
 export PATH="$HOME/.foundry/bin:$PATH"
 cd contracts
 npm ci
-forge build --sizes
 
-# Terminal 1: starts Anvil on 127.0.0.1:8545 and funds the local accounts.
-scripts/fork.sh
+# Terminal 1: build, start plain Anvil, deploy MockUSDC, fund all accounts and deploy vault.
+scripts/local-chain.sh
 
-# Terminal 2: contract tests, default vault and display-chain story, all on the fork.
-scripts/test-fork.sh
-scripts/deploy.sh --broadcast
+# Terminal 2: standard tests and the display-chain story.
+forge test
 node scripts/demo.mjs --broadcast
 
-# Fresh local USYC variant, mock prices, five accelerated daily checkpoints.
+# Fresh USYC variant with five accelerated daily checkpoints on the same local chain.
 node scripts/yield-demo.mjs
 ```
 
-`fork.sh` uses `anvil --fork-url https://rpc.testnet.arc.io --chain-id 5042002`.
-It sets native balances with `anvil_setBalance` and deals ERC-20 USDC by scanning mapping
-slots 0–255 on the proxy. Each candidate is restored immediately and checked through
-`balanceOf`; only a verified slot is used with `cast rpc anvil_setStorageAt`.
-If the scan fails, it stops: inspect the implementation and supply `ARC_USDC_BALANCE_SLOT`
-only if a conventional mapping actually exists. Arc's native-USDC implementation is not guaranteed
-to expose one. [Circle's compatibility guide](https://www.arc.io/blog/arc-compatibility-guide-for-existing-evm-apps)
-states that standard Anvil does not reproduce Arc precompiles, native transfer logs or blocklist
-enforcement. The script never substitutes a mock proxy or claims native compatibility from a fork.
-An Arc-aware execution engine may be required for the real-USDC smoke test and Teller transfers.
-The manipulation is fork-only and does not model the token's global supply accounting.
+The launcher binds loopback on the established port 8545 (override `CASCADE_LOCAL_PORT`).
+If a port declaration is added, it resolves `CASCADE_LOCAL_PURPOSE` through `port-for`.
+It sets 1,000 native ETH per account using `anvil_setBalance`, then deploys MockUSDC and mints
+1,000,000 mock USDC to the deployer and each of the five actors. `--funding` changes the token
+amount. No storage slot scans or Arc RPC are involved. Stop with Ctrl-C.
 
-The deployer and all five actors receive local funding. By default they are derived from public
-local seeds; no literal private key is stored. `ARC_DEPLOYER_KEY` can select another locally
-funded deployer, and `CASCADE_DEMO_SEED` selects actors. Use the same seed in both fork setup
-and demo execution. `CASCADE_FORK_RPC` overrides the default endpoint; scripts verify loopback,
-Anvil metadata and the chain ID. If a port declaration is added, `fork.sh` uses `port-for`
-with `CASCADE_FORK_PURPOSE`.
+The deployer uses a public deterministic local seed and ignores `ARC_DEPLOYER_KEY`.
+`--seed` or `CASCADE_DEMO_SEED` selects the actors; demos inherit the seed from the manifest.
+Use a public test seed only. `.local/local.json` contains the RPC, chain ID, instance ID,
+deployer, actor addresses, USDC and vault. It contains no private keys and is ignored by Git.
+Demos read this manifest by default; `--rpc` or `CASCADE_LOCAL_RPC` can override its RPC,
+but execution still checks loopback, plain Anvil and chain 31337. To bootstrap an already
+running plain chain, use `node scripts/deploy-local.mjs --rpc http://127.0.0.1:8545`.
+Setup creates fresh contracts each time; it is not a resumption of an old vault. A fresh instance
+ID isolates the payment journal from prior chain runs, even if contract addresses repeat.
 
-Local deployment details live in ignored `.local/`, separate from `deployments/`.
-The yield demo always deploys a fresh local MockUSYC and variant and refuses `--live`.
-It runs Apple → Samsung Display (folding OLED panels) → Corning (ultra-thin cover glass)
-→ silica supplier → freight carrier. Silica extends the date before paying freight.
-It advances day+1 through day+5, raises the mock price, claims Apple's original interval at
-day+3 and silica's added interval at day+5, then withdraws freight's principal as shares and
-sells them through the mock Teller. Every checkpoint and story step prints a balance sheet.
-These prices and accelerated dates demonstrate accounting, not real USYC income.
+The payment demo reuses the setup funding locally. Its transaction journal makes story retries
+resumable. Run it before the yield demo: the yield demo advances the entire chain five days,
+so other vaults become stale. A subsequent new payment run must use a fresh setup or explicitly
+accept `--zero-income-catch-up`. The yield demo creates a fresh USYC variant on every invocation;
+it overwrites its NDJSON output and does not resume an interrupted yield story.
+
+### Offline script validation
+
+These commands parse arguments and write separate, clearly marked dry-run manifests and a
+schema preview, without RPC calls, Anvil, or transactions. They never replace `local.json` or
+real yield output. Run setup's dry run first so the demos can read its manifest.
+
+```bash
+scripts/local-chain.sh --dry-run
+node scripts/demo.mjs --dry-run
+node scripts/yield-demo.mjs --dry-run
+scripts/fork.sh --dry-run
+node scripts/demo.mjs --fork --dry-run
+node scripts/yield-demo.mjs --fork --dry-run
+npm run test:scripts
+```
+
+### Optional informational Arc fork
+
+```bash
+scripts/fork.sh
+# Read-only/offline inspection of the fork configuration:
+node scripts/demo.mjs --fork
+```
+
+`fork.sh` still starts `anvil --fork-url https://rpc.testnet.arc.io --chain-id 5042002` and
+writes `.local/fork.json`, but **does not attempt USDC funding or storage manipulation**.
+The external host run confirmed that Arc's custom native-USDC proxy has no conventional
+balance mapping in slots 0–255 and its transfer path reverts on plain Anvil. The fork is
+informational, not a required test target or evidence of working native-USDC transfers.
+`--fork` retains the Arc configuration in both demos and prints the limitation. Executing a
+story there requires a compatible execution engine and independently funded accounts; plain
+Anvil will fail preflight or transfers. The optional real-proxy Foundry test runs only when
+`ARC_FORK_URL` is explicitly set and requires an independently prepared account.
+`CASCADE_FORK_RPC` overrides the informational fork endpoint.
+
+### Shot 9: machine-readable yield balance sheets
+
+The local story is Apple → Samsung Display (folding OLED panels) → Corning (ultra-thin cover
+glass) → silica supplier → freight carrier. Silica extends before paying freight. The yield
+demo raises prices at day+1 through day+5, claims Apple's original interval at day+3 and
+silica's added interval at day+5, then withdraws freight's principal as shares and sells them
+through the mock Teller. These prices demonstrate accounting, not real USYC income.
+
+Every checkpoint and principal/claim step prints a JSON snapshot and appends the same object
+to **`.local/yield-demo.ndjson`**. Transaction annotations remain on stdout; the NDJSON file
+contains only JSON. Each record includes `day` (UTC epoch day), `iso_date`, `checkpoint_day`,
+`index`, `active_entitlements`, `unclaimed_entitlements`, and a nested `balance_sheet`:
+
+- `backing_asset_units`, `backing_value_cents`, `principal_cents`, `dated_cents`, `spot_cents`
+- `unclaimed_accrued_cents`, `claimable_cents`, `reserve_cents`, `deficit_cents`
+
+These names match Python core's `balance_sheet`. Fractional accounting fields and `index` use
+reduced `numerator/denominator` strings, as Python does. Backing asset units are whole USYC
+shares, not microshares. The numeric principal/backing/dated/spot fields are in cents and can
+have four decimal places because Solidity amounts have six dollar decimals. Accrued and
+claimable yield retain exact scaled fractions; `claimable_cents` is the matured, unclaimed
+subset, not additional liability. Active records cover today's inclusive earning interval;
+`unclaimed_entitlements` also includes future intervals and matured records awaiting claim.
+Reserve/deficit reflect the contract's conservative rounded-up accrued liability, so micro-USDC
+rounding can differ from the exact Python identity. This output is a local shot-9 data source,
+not a complete Python event stream. Dry-run previews use `.local/yield-demo.dry-run.ndjson`
+and are explicitly marked as synthetic, with no chain results.
 
 ## Live deployment: explicit opt-in
+
+The existing live testnet deployment stands. This local-workflow change does not redeploy it
+or modify `deployments/`.
 
 `ARC_DEPLOYER_KEY` is read only from the environment. Never write it into repository files.
 
@@ -82,7 +141,7 @@ testnet. TSMC is not part of this display chain.
 Resume with the same seed, vault, amount and gas budget. Preserve ignored `.demo-runs/`:
 signed transactions are journaled before submission, and retries recover receipts or rebroadcast
 identical bytes. A mined failure stops for operator review; it is never silently replaced.
-Fork and live journals are separated. Use a new run/seed after changing the story or restarting
+Local, fork and live journals are separated. Use a new run/seed after changing the story or restarting
 with materially different contract code. Demo state never writes to `deployments/`.
 
 ## Wallet display and local USYC backing
@@ -138,5 +197,4 @@ when preparing a transaction near midnight.
 and observed deficit. `accruedValue(id)` returns rounded-down entitlement value and claimability.
 Date-level supply and events support a front-end balance sheet without contract-wide holder enumeration.
 
-The deployment-guard tests use mock tokens even when their EVM runs on the fork. They do not
-replace a final real-token fork smoke run. See VALIDATION.md for executed checks and remaining limits.
+The standard suite runs without a fork and uses mock tokens. It does not establish Arc native-USDC compatibility. See VALIDATION.md for executed checks and remaining limits.

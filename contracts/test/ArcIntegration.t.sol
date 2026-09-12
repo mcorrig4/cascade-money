@@ -2,7 +2,7 @@
 pragma solidity 0.8.30;
 import {Test} from "forge-std/Test.sol";
 import {Deploy} from "../script/Deploy.s.sol";
-import {MockUSDC} from "./MockUSDC.sol";
+import {TestUSDC as MockUSDC} from "./MockUSDC.sol";
 
 /// @notice Offline deployment guard tests. These never connect to the Arc RPC or sign transactions.
 contract ArcIntegrationTest is Test {
