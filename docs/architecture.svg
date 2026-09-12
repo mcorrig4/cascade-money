@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1730" height="1200" viewBox="0 0 1730 1200" role="img" aria-labelledby="title desc">
+<title id="title">Cascade: dated dollars on Arc</title>
+<desc id="desc">USDC funds CascadeVault and ERC-1155 date mints. Extension adds entitlement intervals. Claims mint spot and withdrawals return USDC. An independent reference implementation and participant-funded discount window feed the front end.</desc>
+<metadata>Mermaid SHA-256: d4260a30e200a1272c93a8fa623152eb4742c2dc14ef523b1f206c1d5a9ab547</metadata>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#52647a"/></marker></defs>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#172b45} .label{font-size:16px;paint-order:stroke;stroke:#f8fafc;stroke-width:5px;stroke-linejoin:round} .node{fill:white;stroke:#9cb4cb;stroke-width:1.5} .vault{fill:#dff4f0;stroke:#158474;stroke-width:2} .external{fill:#eef2f8;stroke:#a9b6c8;stroke-width:1.5}</style>
+<rect width="1730" height="1200" fill="#f8fafc"/>
+<text x="410" y="90" font-size="34" font-weight="700">Cascade · dated dollars on Arc</text>
+<rect x="35" y="150" width="1230" height="865" rx="22" fill="#eff6fc" stroke="#a3c5e2" stroke-width="2"/>
+<text x="60" y="190" font-size="22" font-weight="700">Arc · EVM · USDC gas</text>
+<path d="M205 120 V215" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="215" y="177">issue: deposit USDC</text>
+<path d="M350 260 H375 V420 H410" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M580 305 V385" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="590" y="351">checkpoint: publish I(d)</text>
+<path d="M750 420 H830" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="770" y="409">mint</text>
+<path d="M1000 385 V305" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="1010" y="351">pay / transfer</text>
+<path d="M950 490 V565" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="960" y="534">burn</text>
+<path d="M1170 607 H1210 V445 H1170" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="1175" y="535">mint</text>
+<path d="M500 490 V725" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="510" y="690">issue interval</text>
+<path d="M830 608 H690 V725" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="705" y="594">added interval</text>
+<path d="M750 770 H795 V460 H830" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M830 475 H775 V525 H580 V490" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M410 460 H380 V607 H350" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<path d="M1100 490 V550 H1240 V900 H1170" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<text class="label" x="1110" y="833">principal only</text>
+<path d="M620 490 V990 H1290 V490 H1330" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text class="label" x="695" y="980">events · balances · explorer receipts</text>
+<path d="M1170 900 H1310 V550 H1330" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<text class="label" x="1330" y="878">prices / yield curve · shot 7</text>
+<path d="M690 1055 V1020 H1530 V565" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<path d="M1270 1055 V1035 H1620 V565" fill="none" stroke="#52647a" stroke-width="2" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<rect class="node external" x="60" y="55" width="290" height="65" rx="12"/>
+<text text-anchor="middle" x="205" y="94.5" font-size="20" font-weight="700">Debtor / Apple</text>
+<rect class="node " x="60" y="215" width="290" height="90" rx="12"/>
+<text text-anchor="middle" x="205" y="255" font-size="20" font-weight="700">USDC</text>
+<text text-anchor="middle" x="205" y="279" font-size="16" font-weight="400">6-decimal ERC-20 interface</text>
+<rect class="node " x="410" y="215" width="340" height="90" rx="12"/>
+<text text-anchor="middle" x="580" y="255" font-size="20" font-weight="700">Checkpoint owner</text>
+<text text-anchor="middle" x="580" y="279" font-size="16" font-weight="400">Funds demo yield via allowance</text>
+<rect class="node vault" x="410" y="385" width="340" height="105" rx="12"/>
+<text text-anchor="middle" x="580" y="420.5" font-size="20" font-weight="700">CascadeVault</text>
+<text text-anchor="middle" x="580" y="444.5" font-size="16" font-weight="400">USDC custody · invoices</text>
+<text text-anchor="middle" x="580" y="468.5" font-size="16" font-weight="400">Backing check: B ≥ P + ceil(Y)</text>
+<rect class="node " x="830" y="385" width="340" height="105" rx="12"/>
+<text text-anchor="middle" x="1000" y="432.5" font-size="20" font-weight="700">Date mints · ERC-1155</text>
+<text text-anchor="middle" x="1000" y="456.5" font-size="16" font-weight="400">ID = UTC epoch day</text>
+<rect class="node " x="830" y="215" width="340" height="90" rx="12"/>
+<text text-anchor="middle" x="1000" y="255" font-size="20" font-weight="700">Creditor / next supplier</text>
+<text text-anchor="middle" x="1000" y="279" font-size="16" font-weight="400">Original date retained</text>
+<rect class="node " x="830" y="565" width="340" height="85" rx="12"/>
+<text text-anchor="middle" x="1000" y="602.5" font-size="20" font-weight="700">Extend</text>
+<text text-anchor="middle" x="1000" y="626.5" font-size="16" font-weight="400">Burn T1 · mint T2 &gt; T1</text>
+<rect class="node " x="410" y="725" width="340" height="90" rx="12"/>
+<text text-anchor="middle" x="580" y="765" font-size="20" font-weight="700">Entitlement ledger</text>
+<text text-anchor="middle" x="580" y="789" font-size="16" font-weight="400">account · amount · S · E · claimed</text>
+<rect class="node " x="60" y="565" width="290" height="85" rx="12"/>
+<text text-anchor="middle" x="205" y="602.5" font-size="20" font-weight="700">Holder</text>
+<text text-anchor="middle" x="205" y="626.5" font-size="16" font-weight="400">Withdraw USDC</text>
+<rect class="node external" x="830" y="855" width="340" height="85" rx="12"/>
+<text text-anchor="middle" x="1000" y="892.5" font-size="20" font-weight="700">Separate discount window</text>
+<text text-anchor="middle" x="1000" y="916.5" font-size="16" font-weight="400">Participant-funded · outside vault</text>
+<rect class="node external" x="1330" y="455" width="340" height="110" rx="12"/>
+<text text-anchor="middle" x="1500" y="493" font-size="20" font-weight="700">Cascade front end</text>
+<text text-anchor="middle" x="1500" y="517" font-size="16" font-weight="400">Events · balances · receipts</text>
+<text text-anchor="middle" x="1500" y="541" font-size="16" font-weight="400">Reference scenarios / pricing</text>
+<rect class="node external" x="410" y="1055" width="560" height="90" rx="12"/>
+<text text-anchor="middle" x="690" y="1095" font-size="20" font-weight="700">Independent Python reference implementation</text>
+<text text-anchor="middle" x="690" y="1119" font-size="16" font-weight="400">Loss waterfall · stress scenarios · event stream</text>
+<rect class="node external" x="1060" y="1055" width="420" height="90" rx="12"/>
+<text text-anchor="middle" x="1270" y="1095" font-size="20" font-weight="700">Foundry tests</text>
+<text text-anchor="middle" x="1270" y="1119" font-size="16" font-weight="400">UTC time warp · invariant sequences</text>
+<text class="label" x="645" y="515">ID ≤ today: spot → withdraw burns liability</text>
+<text class="label" x="805" y="710">claim → today-dated spot</text>
+<text x="60" y="1175" font-size="16">Solid: vault path · Dashed: separate components · Entitlements stay with their owner when principal moves</text>
+</svg>
