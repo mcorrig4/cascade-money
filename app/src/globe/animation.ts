@@ -33,3 +33,14 @@ export class SunClock {
     return { lng: -150 - this.phase * 360 / 30, lat: 23.44 * Math.sin(2 * Math.PI * (this.phase + 172) / 365) };
   }
 }
+/** Wall-clock motion remains independent of playback speed and pause state. */
+export class IdleMotion {
+  seconds=0;
+  update(elapsedMs:number, altitude:number, blocked:boolean, featured=false) {
+    if(blocked)return {lng:0,lat:0,altitude:0,orbit:0};
+    const before=this.seconds, dt=Math.min(Math.max(elapsedMs,0),100)/1000; this.seconds+=dt;
+    const wave=(period:number)=>Math.sin(this.seconds/period)-Math.sin(before/period);
+    return {lng:dt*(featured?.7:.22),lat:wave(12)*.6,
+      altitude:wave(9)*Math.min(featured?.08:.025,Math.max(0,altitude)*.02),orbit:Math.sin(this.seconds/12)*.3};
+  }
+}

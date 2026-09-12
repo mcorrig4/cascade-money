@@ -32,7 +32,7 @@ ETHOnline 2026. Video three minutes thirty-five. Human narration. Apple leads. T
 
 ## Close (3:15 to 3:35)
 
-"Cascade. Dated dollars on Arc. Money that pays bills before it becomes cash." Logo, the public app link, the repository, the Arc explorer link, team. Small credit line: Earth imagery, NASA.
+"Cascade. Dated dollars on Arc. Money with a date." Logo, the public app link, the repository, the Arc explorer link, team. Small credit line: Earth imagery, NASA.
 
 ## Shot list, the build spec (globe version)
 

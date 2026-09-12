@@ -4,7 +4,7 @@
 // src/director/shots.ts, src/components/DayLedger.tsx, src/globe/arc-pool.ts)
 // reads. Everything else (the exact-rational cumulative `index` field on
 // non-checkpoint events, unused invoice/entitlement/checkpoint/metrics
-// fields, `actor`, `request_id`, `dates`) is dropped. This is a lossless
+// fields, `actor`, `request_id`) is dropped. Payment date IDs are retained for the ledger. This is a lossless
 // projection with respect to app behavior: every field the app can reach for
 // any event type is preserved with its original value and type.
 //
@@ -123,6 +123,7 @@ export function projectEvent(raw) {
     },
     data,
   };
+  if (['issue','pay','transfer','extend','sell','withdraw'].includes(type) && Array.isArray(raw.dates)) out.dates = raw.dates;
   if (type === 'checkpoint' && raw.index) out.index = pick(raw.index, ['day', 'value']);
   return out;
 }

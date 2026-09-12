@@ -1,6 +1,6 @@
 # Cascade
 
-Dated dollars: money that pays bills before it becomes cash.
+Dated dollars: Money with a date.
 
 [Architecture page](https://cascade.vellum.network/architecture) · [Submission SVGs and export instructions](docs/architecture/README.md)
 

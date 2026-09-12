@@ -46,3 +46,20 @@ test('arc pool never exceeds 200 including retiring arcs and fades before expiry
   pool.tick(1600); assert.ok(pool.arcs[0].alpha < 0.5);
   pool.tick(1800); assert.equal(pool.arcs.length, 0);
 });
+
+test('seek to day zero cancels playback and director work and stays paused', async()=>{
+  const {ledgerMode}=await import('../src/components/ledger-mode.ts');
+  for(const shot of [null,2,6,10]) {
+    const engine=new PlaybackEngine(index);
+    if(shot===null){engine.replayDay();engine.tick(1.1);}else{playShot(engine,shot);engine.tick(.1);}
+    engine.seek(0);
+    assert.equal(engine.state.playing,false);assert.equal(engine.state.shotRunning,false);
+    assert.equal(engine.state.shot,null);assert.equal(engine.state.position,.999);
+    assert.equal(engine.state.cursor,index.days[0].events.length);
+    assert.equal(ledgerMode(engine.state.playing||engine.state.shotRunning,false),'expanded');
+    const camera=engine.state.camera.id;
+    engine.tick(60);
+    assert.equal(engine.state.position,.999);assert.equal(engine.state.camera.id,camera);
+    assert.equal(ledgerMode(engine.state.playing||engine.state.shotRunning,false),'expanded');
+  }
+});

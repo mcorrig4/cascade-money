@@ -14,7 +14,7 @@ export interface Event {
   schema: 1 | 2; seq: number; type: string; day: number; date: string;
   amount: Money; accounts: string[]; data: JsonRecord;
   balanceSheet: JsonRecord; checks: { hard: Record<string, boolean>; breaches: Record<string, boolean> };
-  invoiceId?: string; from?: string; to?: string;
+  invoiceId?: string; from?: string; to?: string; dates?: number[];
   cutoff: { day: number; value: string };
 }
 export interface Totals { settled: Money; committed: Money }

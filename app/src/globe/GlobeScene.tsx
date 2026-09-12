@@ -11,7 +11,7 @@ import { ArcPool } from './arc-pool.ts';
 import type { LiveArc } from './arc-pool.ts';
 import { AmountLayer } from './amount-layer.ts';
 import { updateArcMaterials } from './arc-material.ts';
-import { arcLifetime } from './animation.ts';
+import { arcLifetime, IdleMotion } from './animation.ts';
 import { CompanyLayer } from './company-layer.ts';
 import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
@@ -55,9 +55,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
 ;
     globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     const effects = createEarthEffects(globe), fifth = createFifthAvenueCube(globe);
-    let lastInteraction = performance.now();
+    let interacting = false;
+    const idle = new IdleMotion();
     const interact = () => {
-      lastInteraction = performance.now();
+      interacting = true;
       if (engine.state.shot !== null) engine.stopShot();
       flight = undefined; cameraId = engine.state.camera.id;
       globe.controls().target.set(0, 0, 0); globe.camera().up.set(0, 1, 0);
@@ -68,7 +69,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const controls = globe.controls();
     controls.enableZoom = true; controls.enableRotate = true; controls.enablePan = false;
     controls.touches.ONE = TOUCH.ROTATE; controls.touches.TWO = TOUCH.DOLLY_ROTATE;
+    const interactionEnd = () => { interacting = false; };
     globe.controls().addEventListener('start', interact);
+    globe.controls().addEventListener('end', interactionEnd);
     const camera = globe.camera() as PerspectiveCamera;
     camera.near = 0.000005; camera.updateProjectionMatrix();
     globe.controls().minDistance = globe.getGlobeRadius() * (1 + 0.00001);
@@ -121,14 +124,21 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           lng: flight.from.lng + deltaLng * eased, altitude: flight.from.altitude + (flight.to.altitude - flight.from.altitude) * eased }, 0);
         if (t === 1) flight = undefined;
       }
+      const idleDelta = idle.update(elapsed,globe.pointOfView().altitude,!!flight || interacting,state.shot === 6);
       if (!flight && state.camera.site && state.shot !== null) {
-        const pose = siteCamera(state.camera.site, globe.getGlobeRadius(), state.shot === 1 ? Math.min(3, state.shotElapsed) * 2 : 0);
+        const pose = siteCamera(state.camera.site, globe.getGlobeRadius(), (state.shot === 1 ? Math.min(3, state.shotElapsed) * 2 : 0) + idleDelta.orbit);
         camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.lookAt(pose.target);
       }
       controls.minDistance = controls.target.lengthSq() > 0 ? 0.000005 : globe.getGlobeRadius() * (1 + 0.0000002);
       globe.controls().enabled = true;
-      globe.controls().autoRotate = !flight && ((!moving && state.shot === null && !state.recording && now - lastInteraction > 6000) || (state.shot === 10 && state.stage === 'wide' && state.shotRunning));
-      globe.controls().autoRotateSpeed = 0.12;
+      globe.controls().autoRotate = false;
+      if (!flight && !interacting && !(state.camera.site && state.shot !== null)) {
+        const view=globe.pointOfView();
+        // Scale motion down near the surface so a close site never drifts out of view.
+        const scale=Math.min(1,view.altitude/.1);
+        globe.pointOfView({lat:Math.max(-85,Math.min(85,view.lat+idleDelta.lat*scale)),lng:view.lng+idleDelta.lng*scale,
+          altitude:Math.max(.0000002,Math.min(4,view.altitude+idleDelta.altitude))},0);
+      }
       const isClose = globe.pointOfView().altitude < 0.02;
       if (close !== isClose) { close = isClose; globe.pointsData(close ? [] : firms); }
       const pov = globe.pointOfView();
@@ -206,7 +216,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       cancelAnimationFrame(raf); observer.disconnect(); layer.dispose(); companyLayer.dispose();
       models.dispose();
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
-      globe.controls().removeEventListener('start', interact); effects.dispose(); fifth.dispose();
+      globe.controls().removeEventListener('start', interact); globe.controls().removeEventListener('end', interactionEnd); effects.dispose(); fifth.dispose();
       globe._destructor(); root.replaceChildren(); delete window.__cascade;
     };
   }, [engine]);

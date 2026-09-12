@@ -1,7 +1,7 @@
 import { eventPosition, PlaybackEngine } from '../playback/engine.ts';
 import type { Event, EventIndex } from '../data/types.ts';
 export const SHOTS = [
-  { id: 1, title: 'Apple Park', detail: 'Cupertino · September 9, 2025', seconds: 3 },
+  { id: 1, title: 'Apple Park', detail: 'Cupertino · flashback', seconds: 3 },
   { id: 2, title: 'The network', detail: 'Pull back · $56 billion', seconds: 8 },
   { id: 3, title: 'The proof', detail: 'Cupertino → Asan', seconds: 12 },
   { id: 4, title: 'The cascade', detail: 'Follow the dollars', seconds: 12 },
@@ -11,9 +11,43 @@ export const SHOTS = [
   { id: 8, title: 'Conservation laws', detail: 'Principal · yield · loss', seconds: 20 },
   { id: 9, title: 'The vault', detail: 'Balance sheet through maturity', seconds: 15 },
   { id: 10, title: 'The reframe', detail: 'Fifth Avenue → the world', seconds: 15 },
-  { id: 11, title: 'Architecture', detail: 'Dated dollars on Arc', seconds: 5 },
+  { id: 11, title: 'Composable', detail: 'Architecture · dated dollars on Arc', seconds: 5 },
   { id: 12, title: 'Cascade', detail: 'App · repository · contract', seconds: 20 },
 ].map(s => ({ ...s, duration: `${s.seconds}s` }));
+// Seconds from each shot's start; editable narration cue sheet.
+export const SCENE_LOCATIONS = [
+  { shot: 1, name: 'Apple Park', place: 'Cupertino, California' },
+  { shot: 10, name: 'Apple Store NYC', place: 'Fifth Avenue, New York City' },
+];
+// Narration text lives at scene center, separately from the location captions.
+// Timings use the shot clock so pause, seek and offline captures agree.
+export const SCENE_TEXT_BEATS = [
+  { shot: 1, id: 'flashback', at: 0.2, until: 2.9, text: 'September 9, 2025' },
+  { shot: 10, id: 'money-time', at: 3.8, until: 5.8, text: 'Money. And time.' },
+  { shot: 10, id: 'derivatives', at: 6.2, until: 10.2, text: '$846 trillion' },
+  { shot: 10, id: 'reframe', at: 10.5, until: 14.9, text: 'Time becomes a property of money.' },
+];
+export function sceneTextAt(shot: number | null, elapsed: number) {
+  const cue = SCENE_TEXT_BEATS.find(c => c.shot === shot && elapsed >= c.at && elapsed < c.until);
+  if (!cue) return null;
+  const opacity = Math.min(1, (elapsed - cue.at) / 0.35, (cue.until - elapsed) / 0.35);
+  return { ...cue, opacity, offset: (1 - opacity) * 12 };
+}
+export const COMPOSABLE_BEATS = [
+  {at:0, title:'USDC → vault', detail:'Commit principal on Arc.'},
+  {at:1, title:'Issue → pay', detail:'Settle invoices with dated dollars.'},
+  {at:2, title:'Extend → earn', detail:'Move the date forward; own the added yield.'},
+  {at:3, title:'Claim → withdraw', detail:'Redeem yield and matured principal.'},
+  {at:4, title:'Compose', detail:'Trade dates for spot in a separate market.'},
+];
+export const COIN_BEATS = [
+  {at:0, key:'coin', title:'Money with a date.', text:'One dollar, held in a vault on Arc.'},
+  {at:6, key:'date', title:'A calendar date.', text:'Redeemable for one dollar on its date.'},
+  {at:13, key:'claim', title:'Earlier pays later.', text:'Pay a later bill at face value.'},
+  {at:25, key:'extend', title:'Extend. Earn the interval.', text:'Move the date forward. Earn yield for the added days.'},
+  {at:44, key:'fungibility', title:'Same date. Same dollar.', text:'Every dollar with the same date is identical.'},
+];
+export const beatIndex = (times:readonly {at:number}[], elapsed:number) => Math.max(0,times.findLastIndex(b=>elapsed>=b.at));
 const APPLE = { lat: 37.3349, lng: -122.009, altitude: 608 / 6_371_000 };
 export function position(engine: PlaybackEngine, event: Event, after = false) {
   const events = engine.index.days[event.day].events;
@@ -101,11 +135,10 @@ export function playShot(engine: PlaybackEngine, id: number) {
     engine.fly(28, -145, 2.35, 0); engine.update({ speed: 'year', caption: true }); engine.playRange(0, 365, 15);
   } else if (id === 6) {
     engine.fly(37, -122, 1.65, 1200);
-    const chain = proofPayments(engine.index, 'tesla');
-    if (chain.length) {
-      engine.playRange(position(engine, chain[0]), position(engine, chain.at(-1)!, true), shot.seconds);
-      chain.forEach((e, i) => { const f = engine.index.firms.get(e.to!); if (f?.lat != null && f.lng != null) engine.after(8 + i * 12, () => engine.fly(f.lat!, f.lng!, 1.6, 2800)); });
-    } else hold();
+    // Real operations provide continuous background activity; never manufacture payments.
+    const payments=engine.index.payments;
+    if (payments.length) engine.playRange(position(engine,payments[0]), position(engine,payments.at(-1)!,true), shot.seconds);
+    else hold();
   } else if (id === 7) {
     engine.fly(30, -145, 2.3); const trade = engine.index.trades[0];
     if (trade) engine.playRange(trade.day, trade.day + 0.999999, shot.seconds); else hold();

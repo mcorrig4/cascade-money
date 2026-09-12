@@ -58,6 +58,7 @@ export function adaptEvent(v: JsonRecord): Event {
   return { schema: v.schema_version, seq: Number(v.seq), type, day: Number(v.day), date, amount: money(v.amount_cents ?? 0),
     accounts: Array.isArray(v.accounts) ? v.accounts.map(String) : [], data, balanceSheet: record(v.balance_sheet),
     checks: { hard: record(checks.hard) as Record<string, boolean>, breaches: record(checks.breaches) as Record<string, boolean> },
+    dates: Array.isArray(v.dates) ? v.dates.map(Number).filter(Number.isFinite) : [],
     invoiceId: text(data.invoice_id), from: text(data.debtor ?? data.sender ?? data.seller), to: text(data.creditor ?? data.recipient ?? data.buyer),
     cutoff: { day: Number(record(v.index).day ?? 0), value: String(record(v.index).value ?? '1/1') } };
 }

@@ -71,3 +71,8 @@ test('projectLine round-trips a raw NDJSON line to its projected JSON line', () 
   const projected = JSON.parse(projectLine(line));
   assert.deepEqual(projected.data, { seller: 'A', buyer: 'B', date: 11, spot_cents: 998_800 });
 });
+
+test('payment date IDs survive projection for compact ledger units', () => {
+  const out=projectEvent({...envelope,type:'pay',data:{debtor:'A',creditor:'B',invoice_id:'i:1'}});
+  assert.deepEqual(out.dates,[1,2]);
+});
