@@ -1,47 +1,85 @@
 # Local validation
 
-Completed with standard Foundry 1.5.1, Solidity 0.8.30, Prague EVM, optimizer 200 runs.
+Standard Foundry 1.5.1, Solidity 0.8.30, Prague EVM, optimizer 200 runs.
 
 | Check | Result |
 | --- | --- |
 | `forge build --sizes` | Pass |
-| `forge test -vv` | **46 passed, 0 failed, 0 skipped**, across five suites |
-| Stateful invariant tests | Four properties, each 128 runs × 64 calls; zero reverts |
-| Solidity fuzz tests | 256 runs each for entitlement arithmetic and arbitrary heap add/remove |
-| `node scripts/demo.test.mjs` | 3 passed, 0 failed |
-| Shell and JavaScript syntax checks | Pass |
-| Offline `demo.mjs --amount 10` plan | Pass; no RPC calls |
-| Chrome architecture render | Blocked by sandbox socket permissions; PNG not generated |
+| `forge test -vv` | **60 passed, 0 failed, 0 skipped**, seven suites |
+| Stateful invariant tests | Four properties, each 128 runs × 64 handler calls |
+| Solidity fuzz tests | 256 runs each: entitlement arithmetic, heap operations, persistent mixed invoice settlement |
+| JavaScript tests | **10 passed**: three demo tests and seven journal/preflight tests |
+| Lockfile validation | Clean-directory `npm ci --dry-run --offline --ignore-scripts` passes |
+| Architecture SVG | Generated without a browser; XML parsing passes |
 
-Vault runtime: **14,301 bytes**; initcode before constructor arguments: **15,090 bytes**.
-Runtime margin below EIP-170: **10,275 bytes**. Imported helper libraries are internal/inlined;
-no separately deployed or linked library is needed.
+Runtime: **15,459 bytes**, up **1,158 bytes** from the previous version.
+Initcode before constructor arguments: **16,255 bytes**. EIP-170 runtime margin: **9,117 bytes**.
+No storage packing change or separately linked library.
+
+The test fixture now asserts its ERC-20 transfer result. Build output has no
+`erc20-unchecked-transfer` warning; existing style/typecast lint diagnostics remain.
 
 ## Gas report
 
-Command: `forge test --match-contract CascadeVaultGasTest --gas-report --isolate`.
-Fixed 10-USDC principal, EOA recipients, mock six-decimal USDC, one payment bucket, positive funded
-yield for claim. The issue row includes successful fixture issuance as well as the benchmark issuance.
-These are local EVM measurements, not a quote of Arc transaction fees.
+Single-bucket command:
+`forge test --match-contract CascadeVaultGasTest --gas-report --isolate`.
+
+Fixed 10-USDC principal, EOA recipients, six-decimal mock USDC, positive funded yield for claim.
+These are the vault call measurements from the gas report, not aggregate test-function gas.
 
 | Function | Minimum | Average | Median | Maximum | Calls |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| issue | 276,598 | 319,629 | 287,919 | 362,098 | 9 |
-| pay (expectedOutstanding overload) | 149,986 | 149,986 | 149,986 | 149,986 | 1 |
-| extend | 248,104 | 248,104 | 248,104 | 248,104 | 1 |
-| claim | 158,125 | 158,125 | 158,125 | 158,125 | 1 |
+| issue | 276,620 | 319,651 | 287,941 | 362,120 | 9 |
+| pay (expectedOutstanding overload) | 149,867 | 149,867 | 149,867 | 149,867 | 1 |
+| extend | 248,126 | 248,126 | 248,126 | 248,126 | 1 |
+| claim | 158,214 | 158,214 | 158,214 | 158,214 | 1 |
 
-The suite covers every vault operation, the 32-bucket boundaries, original/extended yield intervals,
-empty intervals, daily checkpoint ordering, rounding, failed token transfers, callback reentrancy,
-invoice conservation, retry protection, backing shortfalls, and maturity without maintenance.
-The extend → transfer → pay against early M regression reverts while the token remains unmatured.
-The complete Apple story settles 40 USDC of invoices using 10 USDC of principal in a local test.
+The issue row includes fixture issuance. Do not mix its average with the 4,096 fixture issues
+in the fragmented suite.
 
-No deployment, live demo, live RPC preflight, or Blockscout submission was run. Arc deployment-guard
-tests are offline mocks, not a live integration claim. Positive checkpoint funding, native USDC behavior,
-and explorer verification still need the explicitly separate funded deployment run.
+## Fragmented accounts
 
-The render command uses existing Chrome through Playwright's pipe transport. Desktop Chrome failed
-at a crash-handler socket operation, and existing headless Chrome failed at a sandbox-host socket
-operation. Both were denied by the outer execution sandbox; neither browser nor a system package
-was downloaded. The Mermaid source and render script are present, but browser output is unverified.
+Command: `forge test --match-contract FragmentedGasTest --gas-report --isolate -vvvv`.
+
+Each test starts with **1,024 distinct mature IDs**, one USDC each, in one holder's heap.
+Each operation consumes 32 complete buckets. Selected-date paths use the newest 32 IDs in
+descending order, skipping the older 992; payment goes to an initially empty EOA.
+Convenience withdrawal removes the oldest 32 IDs instead.
+
+| Operation | Vault call gas |
+| --- | ---: |
+| Heap-first convenience withdrawal, 32 buckets | **3,150,899** |
+| Selected-date withdrawal, 32 buckets | **831,045** |
+| Selected-date spot extension, 32 buckets | **959,771** |
+| Caller-ordered payment, 32 buckets | **2,655,516** |
+
+These are specific heap layouts, not worst-case bounds or Arc fee quotes. Heap updates still
+cost O(log N) per affected date. Selected dates let a holder skip unwanted dust; they do not
+make arbitrary fragmentation free. Duplicate checks cost at most 496 comparisons per 32-ID list.
+
+## Regression coverage and limits
+
+New tests cover persistent invoices with mixed partial issuance/payment and rejected retries;
+stateful reuse of existing invoices; arbitrary payment order across UTC midnight; explicit spot
+extension; selected mature-date validation, atomic failure and 32/33 boundaries; 1,024-bucket
+accounts; false-return and no-return ERC-20 movements; and hostile ERC-1155 callbacks that
+reenter or return an invalid acceptance selector. The extend → transfer → early-M payment
+regression remains green.
+
+Invariant handler calls include unavailable-action no-ops and explicitly expected rejected retries.
+They are not a claim that every generated call was a successful vault operation.
+
+Offline journal tests cover repeated resumed prefixes, pending transactions, lost RPC acknowledgements,
+failure before RPC acceptance, mined failures, immutable run identity/maturity, and explicit zero-income
+consent. Signed transactions are saved before submission; retries use identical bytes and never
+automatically replace mined failures. Preserve the run directory and use the original arguments.
+
+The lockfile pins the complete ethers dependency tree, including registry URLs and integrity hashes
+recovered from existing host lockfiles. A fresh package download/install was not performed.
+Browser-only render dependencies were removed because the fallback SVG renderer uses Node built-ins.
+No suitable browser-free Mermaid renderer was found in the local pnpm package index; the SVG is a
+hand-laid counterpart of the Mermaid source, ready for external rasterization.
+
+No live RPC calls, broadcasts, or Blockscout submissions were made in this hardening pass.
+The parallel deployment's `deployments/` files were not modified. Live Arc validation belongs to
+the separate redeployment run; this report describes the revised source and local tests.

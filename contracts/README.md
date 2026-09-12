@@ -11,16 +11,15 @@ cd contracts
 forge build --sizes
 forge test -vv
 forge test --gas-report
-npm install
+npm ci
 npm run test:scripts
 npm run render
 ```
 
 Solidity is pinned to 0.8.30 / Prague / optimizer 200. OpenZeppelin 5.0.2 and forge-std 1.16.2 are
 vendored; no Solidity dependency download is required. Foundry needs the pinned compiler installed
-or downloadable. JavaScript tools use exact direct dependency versions in `package.json`.
-Rendering uses installed Chrome (`CHROME_BIN` overrides `/usr/bin/google-chrome`), through a pipe,
-without a web server, browser download, or network fetch. `docs/architecture.md` is the source.
+or downloadable. JavaScript dependencies are pinned transitively in `package-lock.json`.
+The render script writes a hand-laid SVG from the Mermaid architecture without a browser or packages.
 
 ## Deployment (explicit separate step)
 

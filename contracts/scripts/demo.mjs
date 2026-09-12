@@ -66,6 +66,7 @@ async function main() {
     if (await provider.getCode(config.usdc) === '0x' || await provider.getCode(address) === '0x') throw Error('Contract code missing');
     const deployer = new Wallet(key, provider);
     const deployerAddress = await deployer.getAddress();
+    if (actors.some(a => a.wallet.address === deployerAddress)) throw Error("Deployer must be distinct from demo actors");
     const artifact = JSON.parse(readFileSync(resolve(ROOT, 'out/CascadeVault.sol/CascadeVault.json')));
     const vault = new Contract(address, artifact.abi, deployer);
     const token = new Contract(config.usdc, [
@@ -111,7 +112,6 @@ async function main() {
       for (let day = last + 1n; day <= current; day++)
         await send(`Zero-income checkpoint ${day}`, deployer, f => vault.checkpoint.populateTransaction(0, f));
     }
-    await catchUp();
     for (const actor of actors) {
       await send(`Gas funding ${actor.name}`, deployer, f => ({ to: actor.wallet.address, value: gasBudget, ...f }));
     }
