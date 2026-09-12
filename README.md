@@ -2,45 +2,60 @@
 
 Dated dollars: money that pays bills before it becomes cash.
 
-The Python 3.11+ reference simulator implements the dated-dollar protocol in
-[the Tier One specification](docs/spec-tier1-v3.1.md): atomic settlement,
-exact yield accrual, reserve and deficit accounting, and funded discount-window
-trades. It models treasury backing; it does not integrate a chain.
+A dated dollar is one dollar of principal, redeemable on a calendar date, fully
+backed by value held in a vault on Arc. Every dated dollar sharing a date is
+interchangeable with every other, and a dollar dated earlier than a bill settles
+that bill at face value — no pricing, no negotiation, no credit check. Four
+operations carry the whole system: issue a dated dollar against an invoice, pay
+a bill with dated dollars, extend a dollar's date to earn the vault's yield for
+the days you commit it, and withdraw once it matures.
+
+The vault is a Solidity contract on Arc, backed by USDC, deployed and verified
+on Arc testnet at `0x57838A35f05a43aD519204D7A6Ce63F52d7C1987`, with an Apple
+supply-chain payment chain already executed and linked on chain. A Python
+reference simulator implements the same protocol, asserting every invariant
+after every operation, and generates the illustrative global supply-chain year
+that the public app plays on a live 3D globe at
+[cascade.vellum.network](https://cascade.vellum.network).
+
+**Built during ETHOnline 2026.** The Tier One protocol specification, the
+Solidity vault and its Arc testnet deployment, the Python reference simulator
+and its invariant test suite, and the globe app were all built for this event:
+
+- [`docs/`](docs/) — the Tier One protocol specification and architecture docs
+- [`sim/`](sim/) — the Python reference implementation of the protocol
+- [`contracts/`](contracts/) — the Solidity vault on Arc, built and tested with Foundry
+- [`app/`](app/) — the globe app, live at [cascade.vellum.network](https://cascade.vellum.network)
+
+## Verify it
+
+- **Vault contract (verified on Arc testnet):** `0x57838A35f05a43aD519204D7A6Ce63F52d7C1987`
+  — [view on Arcscan](https://testnet.arcscan.app/address/0x57838a35f05a43ad519204d7a6ce63f52d7c1987#code)
+- **On-chain run report:** [`contracts/deployments/testnet-demo-run.md`](contracts/deployments/testnet-demo-run.md)
+
+**Run the reference implementation:**
 
 ```sh
-python3 -m sim run --world apple --days 365 --seed 1 --out events.ndjson
-python3 -m sim scenarios --out-dir artifacts/scenarios
-python3 -m sim stress --ops 10000 --out artifacts/stress.ndjson
-python3 -m sim compare --days 365 --seed 1 --out-dir artifacts/paired
+python -m sim scenarios
+python -m sim run --world apple --days 365 --seed 1 --out events.ndjson
 ```
 
-Create output directories before `run` or `stress` when needed. The full world
-contains 2,000 suppliers, 12,000 generated invoices and additional scripted
-purchases. Both Apple and Tesla stories play in parallel. `--world tesla` is an
-alias for this shared world. Day zero is 2025-09-09. All purchases are illustrative.
-Use `--cash-need-fraction 0.2`, `--suppliers`, `--invoices`, `--days` and `--seed`
-to vary the run. `--date-policy bucketed` uses seven-day accepted-bound buckets;
-`compare` produces both streams, independent metrics and their differences.
-
-NDJSON schema v2 includes geographic nodes, line items, calendar dates, camera
-story markers and daily summaries. A full run writes a `.metrics.json` sidecar.
-Timing measurements appear only on stdout, preserving deterministic artifacts.
-Exact fractions and comprehensive invariant checks make long runs and output
-large; the 60-second performance target is not yet met.
-
-For development, install `requirements-dev.txt` in an isolated environment and
-run `python3 -m pytest -q`. Runtime uses only the standard library. Tests require
-pytest and Hypothesis; the property tests are mandatory, never silently skipped.
-
-The retained Phase A fixture is available with:
+For the test suite, install `requirements-dev.txt` in a virtual environment and run `pytest`:
 
 ```sh
-python3 -m sim run --world apple-fixture --days 5 --seed 1 --out events.ndjson
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest -q
 ```
 
-It emits ten events and settles $400M with $100M dated day 90, all on bootstrap
-day zero. Its `--days` records a viewing horizon, not elapsed checkpoints.
+**Run the contracts tests:**
 
-- [Event schema and example lines](docs/EVENTS.md)
-- [Implementation decisions](docs/DECISIONS.md)
-- [Geographic provenance](docs/GEOGRAPHY.md)
+```sh
+cd contracts && forge test
+```
+
+**Run the app:**
+
+```sh
+pnpm --dir app install && pnpm --dir app dev
+```
