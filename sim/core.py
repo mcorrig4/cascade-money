@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
+from functools import cached_property, lru_cache
+from time import perf_counter
 from types import MappingProxyType
 from typing import Callable, Mapping
 
@@ -136,13 +138,14 @@ class State:
     withdrawn_cents: int = 0
     previous_locked_cents: int = 0
     linked_extensions: frozenset[str] = frozenset()
+    extension_requests: frozenset[str] = frozenset()
 
     def __post_init__(self):
         for name in ("accounts", "invoices", "entitlements", "indices", "date_totals"):
             if not isinstance(getattr(self, name), MappingProxyType):
                 object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
 
-    @property
+    @cached_property
     def backing_value_cents(self) -> Fraction:
         return self.backing_asset_units * self.asset_price_cents
 
@@ -207,6 +210,7 @@ class Vault:
         self._state = replace(self.state, accounts={key: replace(a, spot_cents=opening_spot.get(key, 0)) for key, a in self.state.accounts.items()}, principal_cents=principal, explicit_spot_cents=principal, opening_principal_cents=principal, backing_asset_units=Fraction(backing)/self.state.asset_price_cents, reserve_cents=Fraction(opening_reserve_cents), previous_backing_value_cents=backing)
         self.events = event_stream or EventStream()
         self._last_checks = self.audit()
+        self.timings = {name: 0.0 for name in ("prepare", "scope_diff", "invariants", "event_encoding")}
 
     @property
     def state(self) -> State:
@@ -242,6 +246,7 @@ class Vault:
 
     def _execute(self, kind: str, request_id: str, actor: str, prepare: Callable[[State], tuple[State, Transition]]) -> dict:
         before = self.state
+        started = perf_counter()
         try:
             _identifier(request_id, "request_id")
             system = kind in {"day_opened", "checkpoint"}
@@ -254,11 +259,12 @@ class Vault:
             if before.closed and kind not in {"day_opened"}:
                 raise ProtocolError("day_closed", "open the next day before operating")
             candidate, transition = prepare(before)
+            prepared = perf_counter()
             changes = {}
             for field_name in ("accounts", "invoices", "entitlements"):
                 old, new = getattr(before, field_name), getattr(candidate, field_name)
                 keys = () if old is new else tuple(k for k in new if new[k] is not old.get(k))
-                if len(new) < len(old) or (len(new) != len(old) and any(k not in new for k in old)):
+                if old is not new and old.keys() - new.keys():
                     raise invariants.InvariantViolation({"state_integrity": "ledger records removed"})
                 changes["changed_" + field_name] = keys
             transition = replace(transition, **changes)
@@ -273,12 +279,20 @@ class Vault:
                         del dates[date]
             candidate = replace(candidate, date_totals=dates, explicit_spot_cents=explicit)
             candidate = replace(candidate, applied_requests=before.applied_requests | {request_id})
+            if candidate.backing_asset_units is before.backing_asset_units and candidate.asset_price_cents is before.asset_price_cents:
+                object.__setattr__(candidate, "backing_value_cents", before.backing_value_cents)
+            scoped = perf_counter()
             checks = invariants.check_all(before, candidate, transition, self.policy)
+            checked = perf_counter()
             # All validation and JSON encoding happen before publishing the state.
             event = self.events.append(self._envelope(candidate, checks, kind=kind, request_id=request_id, actor=actor, accounts=transition.accounts, amount_cents=transition.amount_cents, dates=transition.dates, data=transition.data))
         except (ProtocolError, invariants.InvariantViolation) as error:
             self.events.append(self._envelope(before, self.audit(), kind="operation_rejected", request_id=request_id if isinstance(request_id, str) else None, actor=actor if isinstance(actor, str) else None, accounts=(actor,) if isinstance(actor, str) else (), amount_cents=0, dates=(), data={"operation": kind, "error_code": error.code, "message": str(error)}))
             raise
+        self.timings["prepare"] += prepared - started
+        self.timings["scope_diff"] += scoped - prepared
+        self.timings["invariants"] += checked - scoped
+        self.timings["event_encoding"] += perf_counter() - checked
         self._state = candidate
         self._last_checks = checks
         return event
@@ -426,7 +440,7 @@ class Vault:
             linked_amounts = {}
             for identifier in extension_request_ids:
                 entitlement = state.entitlements.get(f"entitlement:{identifier}")
-                if identifier not in state.applied_requests or identifier in state.linked_extensions or entitlement is None or entitlement.account_id != actor:
+                if identifier not in state.extension_requests or identifier in state.linked_extensions or entitlement is None or entitlement.account_id != actor:
                     raise ProtocolError("invalid_extension_link", "extension link is unknown, used or belongs to another account")
                 linked_amounts[entitlement.end_day] = linked_amounts.get(entitlement.end_day, 0) + entitlement.amount_cents
             for date, amount in linked_amounts.items():
@@ -480,7 +494,7 @@ class Vault:
             units[to_date] = units.get(to_date, 0) + amount_cents
             entitlement = Entitlement(f"entitlement:{request_id}", actor, amount_cents, max(state.day + 1, old_date + 1), to_date)
             account = replace(account, units=units, entitlement_ids=account.entitlement_ids + (entitlement.entitlement_id,))
-            candidate = replace(state, accounts={**state.accounts, actor: account}, entitlements={**state.entitlements, entitlement.entitlement_id: entitlement})
+            candidate = replace(state, accounts={**state.accounts, actor: account}, entitlements={**state.entitlements, entitlement.entitlement_id: entitlement}, extension_requests=state.extension_requests | {request_id})
             data = {"from_date": from_date, "effective_from_date": old_date, "to_date": to_date, "entitlement": entitlement.as_dict()}
             return candidate, Transition("extend", request_id, actor, (actor,), amount_cents, (old_date, to_date), data)
         return self._execute("extend", request_id, actor, prepare)

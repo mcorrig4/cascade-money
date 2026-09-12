@@ -47,6 +47,9 @@ def state_integrity(before, after, tx):
         if tx.kind not in {"checkpoint", "day_opened"}:
             require(after.day == before.day and after.cutoff == before.cutoff, "operation moved clock")
             require(not before.closed, "operation after cutoff")
+        require(after.opening_principal_cents == before.opening_principal_cents, "opening capital changed")
+        require(after.extension_requests == (before.extension_requests | {tx.request_id} if tx.kind == "extend" else before.extension_requests), "extension registry changed unexpectedly")
+        require(after.linked_extensions == (before.linked_extensions | set(tx.data["extension_request_ids"]) if tx.kind == "pay" else before.linked_extensions), "extension linkage registry changed unexpectedly")
         if tx.kind != "checkpoint":
             require(after.previous_checkpoint_principal_cents == before.previous_checkpoint_principal_cents, "operation changed frozen denominator")
             require(after.deficit_cents == before.deficit_cents, "operation manufactured deficit")
@@ -63,7 +66,7 @@ def principal_identity(before, after, tx):
     liabilities = principal + after.accrued_cents
     require(after.backing_value_cents + after.deficit_cents >= liabilities, "backing plus deficit below liabilities")
     require(after.deficit_cents == max(Fraction(0), liabilities - after.backing_value_cents), "deficit is not actual shortfall")
-    require(after.backing_value_cents + after.deficit_cents == liabilities + after.reserve_cents, "reserve balance sheet does not reconcile")
+    require(after.backing_value_cents + after.deficit_cents == principal + (after.accrued_cents + after.reserve_cents), "reserve balance sheet does not reconcile")
     if full(tx):
         require(principal == sum(a.spot_cents + sum(a.units.values()) for a in after.accounts.values()), "ledger principal differs from aggregates")
         require(principal == after.opening_principal_cents + sum(i.issued_cents for i in after.invoices.values()) + after.claimed_paid_cents - after.withdrawn_cents, "principal sources do not reconcile")
@@ -177,13 +180,19 @@ def yield_conservation(before, after, tx):
     if full(tx):
         owned = {k: set() for k in after.accounts}
         accrued = claimable = Fraction(0)
+        intervals = {}
+        matured_intervals = {}
         for key, e in after.entitlements.items():
             owned[e.account_id].add(key)
-            if not e.claimed:
-                value = e.accrued(after.indices, after.cutoff)
-                accrued += value
+            if not e.claimed and e.start_day <= min(e.end_day, after.cutoff):
+                interval = (e.start_day, min(e.end_day, after.cutoff))
+                intervals[interval] = intervals.get(interval, 0) + e.amount_cents
                 if e.end_day <= after.cutoff:
-                    claimable += value
+                    matured_intervals[interval] = matured_intervals.get(interval, 0) + e.amount_cents
+        for (start,end), amount in intervals.items():
+            delta = after.indices[end] - after.indices[start-1]
+            accrued += amount * delta
+            claimable += matured_intervals.get((start,end),0) * delta
         for key, a in after.accounts.items():
             require(len(a.entitlement_ids) == len(set(a.entitlement_ids)) and set(a.entitlement_ids) == owned[key], "entitlement owner index differs")
         require(accrued == after.accrued_total and claimable == after.claimable_total, "accrual aggregate differs from interval formula")

@@ -105,7 +105,7 @@ def main(argv=None):
     with args.out.open("w",encoding="utf-8") as output:
         result=run_world(destination=output,date_policy=args.date_policy,**kwargs)
     write_json(args.out.with_suffix(".metrics.json"),result.metrics)
-    print(json.dumps({**headline(result.metrics),"events":result.vault.events.count,"wall_seconds":round(perf_counter()-start,6)},sort_keys=True))
+    print(json.dumps({**headline(result.metrics),"events":result.vault.events.count,"timing_seconds":result.vault.timings,"wall_seconds":round(perf_counter()-start,6)},sort_keys=True))
     return 0
 
 

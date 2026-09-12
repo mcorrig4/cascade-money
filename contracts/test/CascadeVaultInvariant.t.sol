@@ -54,11 +54,15 @@ contract VaultHandler is Test {
     }
 
     function settleExisting(uint256 seed, uint256 amountSeed, bool deposit) external {
-        if (invoiceIds.length == 0) return;
+        if (invoiceIds.length == 0) {
+            return;
+        }
         bytes32 id = invoiceIds[seed % invoiceIds.length];
         uint256 left = remaining[id];
-        if (left == 0) return;
-        (, address debtor,,, , uint32 maturity) = vault.invoices(id);
+        if (left == 0) {
+            return;
+        }
+        (, address debtor,,,, uint32 maturity) = vault.invoices(id);
         uint256 amount = bound(amountSeed, 1, left);
         if (deposit) {
             vm.prank(debtor);
@@ -75,10 +79,16 @@ contract VaultHandler is Test {
                     available += vault.balanceOf(debtor, all[i]);
                 }
             }
-            if (available == 0) return;
-            if (amount > available) amount = available;
+            if (available == 0) {
+                return;
+            }
+            if (amount > available) {
+                amount = available;
+            }
             uint256[] memory selected = new uint256[](count);
-            for (uint256 i; i < count; ++i) selected[i] = all[i];
+            for (uint256 i; i < count; ++i) {
+                selected[i] = all[i];
+            }
             vm.prank(debtor);
             vault.pay(id, amount, selected, left);
             vm.prank(debtor);

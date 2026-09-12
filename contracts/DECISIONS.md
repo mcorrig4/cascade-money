@@ -111,24 +111,28 @@ Exact spec: “Every operation is atomic.”
 
 Exact spec: “Wallet default order: earliest eligible date first, then later dates, then spot. The wallet default is a preference, not a protocol rule.”
 
-Decision: pay accepts at most 32 unique buckets, all validated before transfers. Canonical argument order is
-ascending future dates, followed by ascending matured IDs. The caller chooses which buckets to supply,
-so the wallet selection preference remains optional. Each chosen bucket contributes up to the remaining
-payment; unused trailing IDs are still validated. Empty, duplicate, out-of-order, or oversized inputs revert.
+Decision: pay accepts at most 32 unique buckets in caller-selected order. A bounded pairwise duplicate
+check is independent of today's day number. Each bucket contributes up to the remaining payment;
+all IDs, including unused trailing IDs, are validated. Empty, duplicate, or oversized inputs revert.
 Splitting one invoice across bounded partial payments is supported.
 
 Exact spec: “Spot leaves Cascade as backing asset units at the current checkpoint value, on demand, subject to the liquidity standard.”
 
 Decision: an indexed min-heap contains each account's distinct nonzero IDs. Transfers update it immediately;
 maturity does not. `withdraw(amount)` consumes the smallest matured IDs, at most 32 per call. Requests
-spanning more buckets revert atomically and can be split. Pagination exposes heap order, not sorted order.
+spanning more buckets revert atomically and can be split. `withdraw(amount, dates)` instead consumes
+up to 32 caller-selected unique matured IDs, allowing holders to skip dust. Heap updates still cost
+O(log N) per affected date; the bucket cap does not bound total account fragmentation. Pagination exposes heap order, not sorted order.
 There is no cap on the total number of dates an account can own. Standard ERC-1155 batch transfers retain
 their standard interface and are bounded by transaction gas, not the payment-specific 32-bucket rule.
 
 Exact spec: “A holder burns X units dated T1, or debits X spot with T1 equal to today, and mints X units dated T2 later than T1 and no earlier than tomorrow.”
 
 Decision: `extend(amount, today, T2)` consumes interpreted spot through the same 32-bucket heap path.
-Other source dates select that specific ID, including an older matured ID. In all cases T2 must be later
+The comparison uses the execution day, so this selector can change meaning across UTC midnight.
+Other source dates select that specific ID, including an older matured ID.
+`extendSpot(amount, T2)` explicitly selects aggregate spot; `extendSpot(amount, T2, dates)` selects
+up to 32 unique matured IDs in caller order. Both assign [tomorrow, T2] without an ambiguous source selector. In all cases T2 must be later
 than both the source date and today. No cursor reset or earlier mint is allowed through extension.
 
 ## Invoice signatures, conservation, and retries

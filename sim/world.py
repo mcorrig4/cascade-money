@@ -15,11 +15,13 @@ def apple_fixture(*, days: int = 5, seed: int = 1) -> Vault:
     vault = Vault(APPLE_CHAIN)
     vault.emit_run_event("run_started", {
         "world": "apple-fixture", "seed": seed, "requested_days": days,
-        "nodes": [{"id": name, "name": name, "role": "anchor" if index == 0 else "supplier"} for index, name in enumerate(APPLE_CHAIN)],
+        "nodes": [node_record(name, NAMED_SITES[name]) for name in APPLE_CHAIN],
         "policy": vault.policy.as_dict(), "phase": "A",
     })
+    annotations = [b for b in json.loads(Path(__file__).with_name("story_annotations.json").read_text()) if b["story_id"] == "apple-fixture"]
     for hop, (debtor, creditor) in enumerate(zip(APPLE_CHAIN, APPLE_CHAIN[1:]), 1):
-        vault.register_invoice(request_id=f"register:{hop}", actor=creditor, invoice_id=f"apple:{hop}", debtor=debtor, amount_cents=APPLE_AMOUNT_CENTS, due_day=90, maturity_bound=90)
+        note = annotations[hop-1]
+        vault.register_invoice(request_id=f"register:{hop}", actor=creditor, invoice_id=f"apple:{hop}", debtor=debtor, amount_cents=APPLE_AMOUNT_CENTS, due_day=90, maturity_bound=90, item=note["item"],quantity=note["quantity"],unit=note["unit"],deliver_to=note["deliver_to"])
     vault.issue(request_id="settle:1", actor="Apple", invoice_id="apple:1", amount_cents=APPLE_AMOUNT_CENTS)
     for hop, debtor in enumerate(APPLE_CHAIN[1:-1], 2):
         vault.pay(request_id=f"settle:{hop}", actor=debtor, invoice_id=f"apple:{hop}", amount_cents=APPLE_AMOUNT_CENTS)
@@ -134,7 +136,7 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
     schedule = {}
     for obligation in obligations:
         schedule.setdefault(obligation["day"],[]).append(obligation)
-    stories = json.loads(Path(__file__).with_name("story_annotations.json").read_text())
+    stories = [b for b in json.loads(Path(__file__).with_name("story_annotations.json").read_text()) if b["story_id"] != "apple-fixture"]
     story_totals = {}
     pending = {n["id"]:set() for n in nodes}
     due = {}

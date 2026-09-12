@@ -8,9 +8,9 @@ ETHOnline 2026. Video three minutes thirty-five. Human narration. Apple leads. T
 
 **The number nobody knows, 0:10 to 0:18.** The phone dissolves into the supply chain graph, dark, two thousand nodes. A counter: fifty-six billion. "Right now Apple owes its suppliers fifty-six billion dollars in unpaid invoices. Every supplier down the chain is waiting on the one above it. This is how every phone, car and laptop gets made."
 
-**Proof before explanation, 0:18 to 0:30.** Apple lights. "Here is the same year on Cascade." Apple commits one hundred million. Foxconn's node fills with dated dollars the same instant. Foxconn pays TSMC with them, same day. Two counters at the bottom, already moving: invoices settled, two hundred million. Principal committed, one hundred million. "Apple committed a hundred million once. Foxconn was paid on day one and paid TSMC the same afternoon, with the same dollars."
+**Proof before explanation, 0:18 to 0:30.** Apple lights. "Here is the same year on Cascade." Apple commits one hundred million for the folding OLED panels. Samsung Display's node fills with dated dollars the same instant. Samsung Display pays Corning for the ultra-thin cover glass with them, same day. Two counters at the bottom, already moving: invoices settled, two hundred million. Principal committed, one hundred million. "Apple committed a hundred million once. Samsung Display was paid on day one and paid Corning the same afternoon, with the same dollars."
 
-**The cascade, 0:30 to 0:48.** TSMC pays Corning. Corning pays its glass supplier. The counter reads four hundred million settled on one hundred million committed. "The same hundred million paid four hundred million dollars of invoices before it ever became cash. Nobody borrowed. Nobody waited."
+**The cascade, 0:30 to 0:48.** Corning pays its silica and soda-ash supplier. That supplier pays the freight carrier. The counter reads four hundred million settled on one hundred million committed. "The same hundred million paid four hundred million dollars of invoices before it ever became cash. Nobody borrowed. Nobody waited."
 
 **The year in fifteen seconds, 0:48 to 1:05.** A timeline scrubber runs January to December. The whole graph pulses as ten thousand invoices settle; named nodes flicker by: Samsung, Corning, Sony, Panasonic, Exxon, Shell. Aggregate counters climb: gross invoices settled, principal committed, the ratio between them. "One year. Ten thousand invoices. One illustrative global supply chain. And this is the number that matters: how many dollars of invoices one committed dollar settles before it matures."
 
@@ -40,9 +40,9 @@ The app is a 3D globe (globe.gl on three.js). Every payment is an animated dashe
 
 1. Apple Park from above, September ninth, 2025. Narration: the iPhone 17 keynote just ended; the Duo program is already in motion. Three seconds.
 2. Camera pulls back from Cupertino to the full globe. A few days tick by on the scrubber; the network is alive with arcs. The fifty-six billion counter appears.
-3. The proof: the first arc fires Cupertino to Hsinchu, Apple commits one hundred million, TSMC's node fills with dated dollars, TSMC pays its wafer-materials supplier the same day. Two counters live: invoices settled, principal committed. Lands by 0:30.
-4. The cascade: three more hops across the globe, counters to four hundred on one hundred, floating amounts rising off each arc.
-5. The year: the scrubber runs January to December at speed, thousands of arcs, annotations flickering for Samsung Display panels, Panasonic cells, Corning glass, Exxon and Shell feedstock, Quebec and Congo mining, Chennai and Zhengzhou assembly, retail deliveries. Aggregate counters climb; the ratio of gross commerce to committed principal holds on screen.
+3. The proof: the first arc fires Cupertino to Asan, Apple commits one hundred million for folding OLED panels, Samsung Display's node fills with dated dollars, Samsung Display pays Corning in Kentucky the same day. Two counters live: invoices settled, principal committed. Lands by 0:30.
+4. The cascade: Corning to its silica supplier to the freight carrier, counters to four hundred on one hundred, floating amounts rising off each arc.
+5. The year: the scrubber runs January to December at speed, thousands of arcs, annotations flickering for the processor chain (Apple to TSMC to Sumco wafers to Wacker polysilicon), the battery chain (Apple to Panasonic to a Korean cathode supplier to Glencore cobalt), Foxconn's assembly fee and its connector suppliers, Exxon and Shell feedstock, Quebec and Congo mining, Chennai and Zhengzhou assembly, retail deliveries. Aggregate counters climb; the ratio of gross commerce to committed principal holds on screen.
 6. The dated coin with the sliding date and the yield meter, over a dimmed globe.
 7. The yield curve, five points, drawn live from discount-window trades.
 8. The conservation laws card.
@@ -51,7 +51,7 @@ The app is a 3D globe (globe.gl on three.js). Every payment is an animated dashe
 11. The architecture diagram. Five seconds on screen and shipped as a file.
 12. Close card with the live links and the NASA imagery credit.
 
-The Tesla story is in the app for judges who click through: Fremont and Austin to Osaka, to a cell-materials supplier, to Glencore, with extensions at each hop.
+Supply-chain rule for every story: Apple buys major components directly and consigns them to Foxconn, so money fans out from Apple; each supplier pays the tier beneath it for its own inputs. Chains in the app: display (Apple, Samsung Display, Corning, silica supplier, freight); processor (Apple, TSMC, Sumco, Wacker, Quebec silicon metal); battery (Apple, Panasonic, Korean cathode supplier, Glencore Kolwezi); assembly (Apple pays Foxconn the assembly fee, Foxconn pays Luxshare and other connector suppliers). The Tesla story is in the app for judges who click through: Fremont and Austin to Panasonic Osaka, to a cathode supplier, to Glencore, with extensions at each hop.
 
 ## Named nodes in the graph
 
@@ -61,5 +61,5 @@ Apple, Tesla. Foxconn, TSMC, Samsung, Corning, Sony, LG, Pegatron, Luxshare, Mur
 
 - Simulation core on spec three point one, three hundred sixty-five days from September ninth, 2025, ten thousand plus invoices, two thousand suppliers with coordinates and regions, every invoice carrying a line item (what, how many, delivered where), the named nodes above with scripted annotations, the Apple and Tesla stories scripted, every invariant asserted after every operation, emitting the event stream the app plays.
 - The public web app: the 3D globe with animated arcs and floating amounts, the ledger, the year scrubber, the daily volume chart, the speed control, the counters, the coin, the curve, the balance sheet, a control panel that plays each shot on demand, and a link to the Arc contract.
-- The vault contract on Arc testnet holding USDC with one mint per date, issue, pay with the creditor's accepted maturity, extend, claim and withdraw, verified on the explorer, with the Apple story executed on chain and every transaction linked. Mainnet after the sixteenth for the bonus.
+- The vault contract on Arc testnet holding USDC with one mint per date, issue, pay with the creditor's accepted maturity, extend, claim and withdraw, verified on the explorer, with the Apple display chain executed on chain and every transaction linked. Mainnet after the sixteenth for the bonus.
 - The architecture diagram as an image.

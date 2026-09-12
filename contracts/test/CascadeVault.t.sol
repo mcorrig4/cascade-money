@@ -10,6 +10,13 @@ contract Receiver is IERC1155Receiver {
     bool public reject;
     bool public attempted;
     bool public reentered;
+    bytes public attack;
+    bool public wrongSelector;
+
+    function configure(bytes calldata data, bool wrong) external {
+        attack = data;
+        wrongSelector = wrong;
+    }
 
     constructor(CascadeVault v) {
         vault = v;
@@ -26,12 +33,13 @@ contract Receiver is IERC1155Receiver {
     function _receive() private {
         require(!reject, "reject");
         attempted = true;
-        (reentered,) = address(vault).call(abi.encodeWithSignature("withdraw(uint256)", 1));
+        (reentered,) = address(vault)
+            .call(attack.length == 0 ? abi.encodeWithSignature("withdraw(uint256)", 1) : attack);
     }
 
     function onERC1155Received(address, address, uint256, uint256, bytes calldata) external returns (bytes4) {
         _receive();
-        return this.onERC1155Received.selector;
+        return wrongSelector ? bytes4(0) : this.onERC1155Received.selector;
     }
 
     function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
@@ -39,7 +47,7 @@ contract Receiver is IERC1155Receiver {
         returns (bytes4)
     {
         _receive();
-        return this.onERC1155BatchReceived.selector;
+        return wrongSelector ? bytes4(0) : this.onERC1155BatchReceived.selector;
     }
 
     function supportsInterface(bytes4 id) external pure returns (bool) {
@@ -641,7 +649,9 @@ contract CascadeVaultTest is Test {
     }
 
     function testSelectedSpotSkipsDustAndExtends() public {
-        for (uint32 i = 1; i <= 40; ++i) issueTo(bob, 1, DAY - i);
+        for (uint32 i = 1; i <= 40; ++i) {
+            issueTo(bob, 1, DAY - i);
+        }
         issueTo(bob, 10 * U, DAY);
         vm.startPrank(bob);
         vm.expectRevert(CascadeVault.TooManyBuckets.selector);
@@ -662,7 +672,8 @@ contract CascadeVaultTest is Test {
     function testSelectedSpotValidationAndAtomicity() public {
         issueTo(bob, 3 * U, DAY);
         uint256[] memory ds = new uint256[](2);
-        ds[0] = DAY; ds[1] = DAY;
+        ds[0] = DAY;
+        ds[1] = DAY;
         vm.startPrank(bob);
         vm.expectRevert(CascadeVault.InvalidDates.selector);
         vault.withdraw(U, ds);
@@ -724,8 +735,9 @@ contract CascadeVaultTest is Test {
         for (uint256 i; i < 12 && left != 0; ++i) {
             uint256 amount = 1 + uint256(keccak256(abi.encode(seed, i))) % left;
             vm.startPrank(bob);
-            if (i % 2 == 0) vault.issue(id, amount);
-            else {
+            if (i % 2 == 0) {
+                vault.issue(id, amount);
+            } else {
                 vault.pay(id, amount, dates(DAY), left);
                 vm.expectRevert(CascadeVault.InvoiceBalanceChanged.selector);
                 vault.pay(id, amount, dates(DAY), left);
@@ -740,5 +752,42 @@ contract CascadeVaultTest is Test {
         }
         assertEq(outstanding(id), 0);
         assertEq(vault.balanceOf(carol, DAY) + vault.balanceOf(carol, DAY + 5), 30 * U);
+    }
+
+    function testHostileBatchReceiverRollsBackInvoiceAndHeaps() public {
+        Receiver receiver = new Receiver(vault);
+        issueTo(bob, U, DAY);
+        issueTo(bob, U, DAY - 1);
+        bytes32 id = receiver.register(bob, 2 * U, DAY);
+        receiver.configure("", true);
+        uint256[] memory ds = new uint256[](2);
+        ds[0] = DAY;
+        ds[1] = DAY - 1;
+        vm.prank(bob);
+        vm.expectRevert();
+        vault.pay(id, 2 * U, ds, 2 * U);
+        assertEq(outstanding(id), 2 * U);
+        assertEq(vault.balanceOf(bob, DAY), U);
+        assertEq(vault.datesOf(address(receiver), 0, 32).length, 0);
+        assertEq(vault.earliestDate(bob), DAY - 1);
+    }
+
+    function testHostileSpotExtensionReceiverRejectsAndCannotReenterSelectedWithdrawal() public {
+        Receiver receiver = new Receiver(vault);
+        issueTo(address(receiver), 2 * U, DAY);
+        uint256 count = vault.entitlementCount();
+        bytes memory extension =
+            abi.encodeWithSignature("extendSpot(uint256,uint32,uint256[])", U, DAY + 1, dates(DAY));
+        receiver.configure("", true);
+        vm.expectRevert();
+        receiver.execute(address(vault), extension);
+        assertEq(vault.entitlementCount(), count);
+        assertEq(vault.balanceOf(address(receiver), DAY), 2 * U);
+        receiver.configure(abi.encodeWithSignature("withdraw(uint256,uint256[])", U, dates(DAY)), false);
+        receiver.execute(address(vault), extension);
+        assertTrue(receiver.attempted());
+        assertFalse(receiver.reentered());
+        assertEq(vault.balanceOf(address(receiver), DAY), U);
+        assertEq(token.balanceOf(address(receiver)), 0);
     }
 }

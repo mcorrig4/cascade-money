@@ -248,7 +248,9 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
     }
 
     function extendSpot(uint256 amount, uint32 toDate, uint256[] calldata dates)
-        external nonReentrant returns (uint256)
+        external
+        nonReentrant
+        returns (uint256)
     {
         _checkSpotExtension(amount, toDate);
         _burnSelectedSpot(msg.sender, amount, dates);
@@ -257,8 +259,12 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
 
     function _checkSpotExtension(uint256 amount, uint32 toDate) private view {
         _requireCurrent();
-        if (amount == 0) revert InvalidAmount();
-        if (toDate <= today()) revert InvalidDate();
+        if (amount == 0) {
+            revert InvalidAmount();
+        }
+        if (toDate <= today()) {
+            revert InvalidDate();
+        }
     }
 
     function _mintSpotExtension(uint256 amount, uint32 toDate) private returns (uint256 id) {
@@ -270,7 +276,9 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
     }
 
     function withdraw(uint256 amount, uint256[] calldata dates) external nonReentrant {
-        if (amount == 0) revert InvalidAmount();
+        if (amount == 0) {
+            revert InvalidAmount();
+        }
         _assertBacked();
         _burnSelectedSpot(msg.sender, amount, dates);
         usdc.safeTransfer(msg.sender, amount);
@@ -446,24 +454,36 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
 
     function _checkDuplicate(uint256[] calldata dates, uint256 i) private pure {
         for (uint256 j; j < i; ++j) {
-            if (dates[j] == dates[i]) revert InvalidDates();
+            if (dates[j] == dates[i]) {
+                revert InvalidDates();
+            }
         }
     }
 
     function _burnSelectedSpot(address account, uint256 amount, uint256[] calldata dates) private {
-        if (dates.length == 0) revert InvalidDates();
-        if (dates.length > MAX_BUCKETS) revert TooManyBuckets();
+        if (dates.length == 0) {
+            revert InvalidDates();
+        }
+        if (dates.length > MAX_BUCKETS) {
+            revert TooManyBuckets();
+        }
         for (uint256 i; i < dates.length; ++i) {
-            if (dates[i] > today()) revert InvalidDate();
+            if (dates[i] > today()) {
+                revert InvalidDate();
+            }
             _checkDuplicate(dates, i);
         }
         for (uint256 i; i < dates.length && amount != 0; ++i) {
             uint256 available = balanceOf(account, dates[i]);
             uint256 take = available < amount ? available : amount;
-            if (take != 0) _burn(account, dates[i], take);
+            if (take != 0) {
+                _burn(account, dates[i], take);
+            }
             amount -= take;
         }
-        if (amount != 0) revert InsufficientSpot();
+        if (amount != 0) {
+            revert InsufficientSpot();
+        }
     }
 
     function _debitInvoice(bytes32 invoiceId, uint256 amount) private returns (Invoice storage invoice) {

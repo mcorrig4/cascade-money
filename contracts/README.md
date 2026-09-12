@@ -49,14 +49,21 @@ values deliberately fail validation. Confirm mainnet addresses independently bef
 node scripts/demo.mjs --amount 10
 
 # Actual story, explicitly separate from build/test:
-node scripts/demo.mjs --amount 10 --broadcast
+node scripts/demo.mjs --amount 10 --seed <testnet-seed> --broadcast
 # Optional: --amount 100, --seed <testnet-seed>, --vault <deployed-address>
 ```
 
-`CASCADE_DEMO_SEED` also supplies the actor seed. With no seed, the script generates and prints one;
-reuse it to reproduce the actor accounts. Generated actor keys are printed for testnet only. The
-deployer key remains private. Public run manifests exclude all seeds and keys. A run interrupted after
-funding is not automatically resumed: inspect its saved transaction receipts before running again.
+`CASCADE_DEMO_SEED` also supplies the actor seed; broadcast requires a stable seed. Actor keys are
+printed for testnet only; the deployer key is never printed. All preflight checks precede actor funding.
+A stale vault is refused unless `--zero-income-catch-up` explicitly authorizes permanent zero-income
+checkpoints for the missed days.
+
+Resume with the same seed, vault, amount and gas budget. Immutable journals under ignored
+`.demo-runs/` (or `--state-dir`) save signed transactions before submission. Retries recover receipts
+or rebroadcast the exact same transaction, never fresh funding or issuance. Keep this directory:
+deleting it removes the retry protection. Failed mined transactions stop for operator review;
+the script never silently replaces them. The original maturity dates remain fixed across resumptions.
+No private keys or seeds are written, and demo state never writes to `deployments/`.
 
 The deployer sends 0.1 native USDC to each of five accounts by default (`--gas-per-account` override),
 then sends the principal through the ERC-20 interface to Apple. At 10 USDC principal the preflight
@@ -66,7 +73,7 @@ guaranteed fee quote. Native and ERC-20 USDC are **one balance** at different pr
 Foxconn, TSMC, Corning, and the glass supplier register their invoices. Apple issues day+90 units;
 Foxconn and TSMC pay onward. Corning extends to day+120 and pays the glass supplier, whose signed
 M is day+120. Four invoices settle with one principal deposit. Every transaction prints an explorer
-link and its receipt is saved. The script validates final invoice balances, holder balance, and backing.
+link; its hash and signed transaction are journaled and receipts are recovered from RPC. The script validates final invoice balances, holder balance, and backing.
 It will not run generated actors on mainnet or accelerate the chain clock.
 
 ## Index and API notes
@@ -77,13 +84,17 @@ the next elapsed day, not an arbitrary chosen date. Catch up with zero checkpoin
 assigned. Issuance and extension require the index caught up to today. Existing matured balances can
 still withdraw without a checkpoint; entitlement claims require I(E) to have been published.
 
-`pay(bytes32,uint256,uint256[],uint256)` takes expected outstanding last. Supply unique ascending
-future IDs first, then unique ascending matured IDs. Only future IDs must be at most M. The contract
+`pay(bytes32,uint256,uint256[],uint256)` takes expected outstanding last. Supply up to 32 unique IDs in your preferred spending order. Only future IDs must be at most M. The contract
 consumes balances in that order; all supplied dates are checked, even unused trailing buckets.
 
 `datesOf(account, offset, limit)` returns heap-order pages, up to 32 IDs. Sort client-side when displaying.
 `earliestDate` returns the maximum uint256 for an empty account. `withdraw(amount)` and spot recommit
 consume up to 32 matured IDs atomically. Split larger bucket counts across transactions.
+`withdraw(amount, dates)` and `extendSpot(amount, toDate, dates)` select up to 32 unique mature
+IDs directly, bypassing unwanted dust. `extendSpot(amount, toDate)` uses the convenience heap path.
+The legacy `extend(amount, fromDate, toDate)` consumes aggregate spot only when fromDate equals
+the execution day's ID; all other source dates select that exact ID. Prefer explicit spot extension
+when preparing a transaction near midnight.
 
 `balanceSheet()` exposes nominal backing, combined principal/spot, rounded-up accrued yield, reserve,
 and observed deficit. `accruedValue(id)` returns rounded-down entitlement value and claimability.
@@ -92,3 +103,6 @@ Date-level supply and events support a front-end balance sheet without contract-
 The Solidity test named `ArcIntegrationTest` tests deployment guards **offline** with mock USDC.
 It is not evidence of live native-USDC execution. Live token behavior, deployment, and Blockscout
 verification must be checked after funding in the explicitly separate deployment turn.
+
+Render the browser-free SVG with `npm run render`; rasterize `docs/architecture.svg` externally.
+The SVG is a hand-laid counterpart of the Mermaid source. Install demo dependencies with `npm ci`.
