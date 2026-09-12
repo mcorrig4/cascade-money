@@ -30,8 +30,8 @@ test('one-year preset completes at precisely fifteen seconds, at differing frame
 test('shots restore their own starting state and cancellation discards queued camera moves', () => {
   const engine = new PlaybackEngine(index);
   playShot(engine, 3); engine.tick(12);
-  assert.equal(engine.totals().settled, 20_000_000_000n);
-  playShot(engine, 4); engine.tick(12);
+  assert.equal(engine.totals().settled, 0n);
+  playShot(engine, 4); engine.tick(20);
   assert.equal(engine.totals().settled, 40_000_000_000n);
   playShot(engine, 2); engine.stopShot(); const camera = engine.state.camera.id;
   engine.tick(20); assert.equal(engine.state.camera.id, camera);

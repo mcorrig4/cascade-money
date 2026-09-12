@@ -7,16 +7,16 @@ import {createIndex,appendEvent,finishIndex} from '../src/data/index.ts';
 import {parseLine} from '../src/data/adapters.ts';
 import {easeAt,longitudeDelta,orbitAt,splineAt,sampleCamera,EARTH_METERS,SUBSURFACE_INTERIOR_CAMERA_HOOK} from '../src/camera/primitives.ts';
 const index=createIndex();(await readFile(new URL('./fixtures/events-v1.ndjson',import.meta.url),'utf8')).trim().split('\n').forEach(l=>appendEvent(index,parseLine(l)));finishIndex(index);
-test('20 scenes cover 3:56, preserve API IDs and connect every declared boundary',()=>{
- assert.equal(FILM_SECONDS,236);assert.equal(new Set(SHOTS.map(s=>s.id)).size,20);
- assert.deepEqual(SHOTS.map(s=>s.seconds),[4,9,4,3,12,3,8,10,15,53,6,5,15,20,15,8,6,14,8,18]);
+test('17 scenes cover narration v6, preserve API IDs and connect every declared boundary',()=>{
+ assert.ok(Math.abs(FILM_SECONDS-258.2)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,17);
+ assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,19.8,20.2,16.6,8.2,23,13,18.2,27.8,20.6,11.8,12.2,17.8,11.4,10.2,4.6]);
  for(let i=0;i<SHOTS.length;i++){
   const shot=SHOTS[i];assert.ok(shot.motion && !shot.motion.includes('hold'));
   if(i){assert.deepEqual(shot.start,SHOTS[i-1].end);assert.equal(shot.startTime,SHOTS[i-1].endTime);}
  }
- assert.equal(SHOTS.find(s=>s.id===6)?.scene,10);assert.equal(SHOTS.find(s=>s.id===7)?.scene,12);
- assert.equal(SHOTS.find(s=>s.id===10)?.scene,15);assert.equal(SHOTS.find(s=>s.id===11)?.seconds,8);
- assert.equal(COMPOSABLE_BEATS.at(-1)?.title,'Discount window');assert.ok(COIN_BEATS.every((b,i)=>!i||b.at-COIN_BEATS[i-1].at<=8));
+ assert.equal(SHOTS.find(s=>s.id===6)?.scene,10);assert.equal(SHOTS.find(s=>s.id===9)?.scene,12);
+ assert.equal(SHOTS.find(s=>s.id===10)?.scene,15);assert.equal(SHOTS.find(s=>s.id===11)?.seconds,17.8);
+ assert.equal(COMPOSABLE_BEATS.at(-1)?.title,'Derivatives');assert.ok(COIN_BEATS.every((b,i)=>!i||b.at-COIN_BEATS[i-1].at<=8));
 });
 test('cubic and bezier moves are monotone, bounded and respect forced hemisphere travel',()=>{
  for(const ease of [{kind:'cubic'} as const,{kind:'bezier',points:[.12,.65,.18,1]} as const]){
@@ -47,10 +47,10 @@ test('film advances exact boundaries without zero-duration camera cuts and expos
 });
 test('large ticks match frame-by-frame film timing; flash and pause preserve the camera clock',()=>{
  const a=new PlaybackEngine(index),b=new PlaybackEngine(index);playFilm(a);playFilm(b);
- a.tick(236);for(let i=0;i<236*30;i++)b.tick(1/30);
+ a.tick(FILM_SECONDS);for(let i=0;i<Math.round(FILM_SECONDS*30);i++)b.tick(1/30);
  assert.equal(a.state.shot,b.state.shot);assert.ok(Math.abs(a.state.shotElapsed-b.state.shotElapsed)<1e-7);
- const e=new PlaybackEngine(index);playFilm(e);e.tick(17);assert.equal(e.state.shot,14);assert.equal(e.state.exposure,1);
- e.tick(.6);assert.ok(e.state.exposure<1e-8);playShot(e,3);e.tick(1);e.toggle();const before=sampleCamera(e.state.camera,e.state.cameraElapsed);e.tick(2);assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),before);
+ const e=new PlaybackEngine(index);playFilm(e);e.tick(SHOTS[2].startTime+1.3);assert.equal(e.state.shot,13);assert.equal(e.state.exposure,1);
+ e.tick(.7);assert.ok(e.state.exposure<1e-8);playShot(e,3);e.tick(1);e.toggle();const before=sampleCamera(e.state.camera,e.state.cameraElapsed);e.tick(2);assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),before);
 });
 
 test('every camera command inherits the preceding sampled pose at its exact cue boundary',()=>{
@@ -66,7 +66,7 @@ test('every camera command inherits the preceding sampled pose at its exact cue 
    }
    previous=sampleCamera(e.state.camera,e.state.cameraElapsed);
  });
- e.tick(236);
+ e.tick(FILM_SECONDS);
 });
 
 test('capture offsets stay inside every scene and ignore intervening real-time frames',()=>{
@@ -96,5 +96,5 @@ test('capture offsets stay inside every scene and ignore intervening real-time f
  }
  // Clock ownership, rather than paused flags, protects the startup window.
  playFilm(e);e.tick(10);assert.equal(e.state.shotElapsed,0);
- e.setClockMode('realtime');e.tick(4);assert.equal(e.state.shot,2);
+ e.setClockMode('realtime');e.tick(SHOTS[0].seconds);assert.equal(e.state.shot,2);
 });

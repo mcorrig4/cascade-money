@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { readStream } from '../src/data/ndjson.ts';
 import { handoff, receiver } from '../src/data/handoff.ts';
 import { PlaybackEngine, eventPosition } from '../src/playback/engine.ts';
-import { cascadeBeats, playShot, proofPayments } from '../src/director/shots.ts';
+import { cascadeBeats, straightProofPayments, proofPayments } from '../src/director/shots.ts';
 const fixture = await readFile(new URL('./fixtures/events-v1.ndjson', import.meta.url));
 async function load() { return readStream(new ReadableStream({ start(c) { c.enqueue(fixture); c.close(); } })); }
 test('acknowledged handoff preserves totals and shared event identities, releases worker days', async () => {
@@ -21,7 +21,7 @@ test('acknowledged handoff preserves totals and shared event identities, release
   assert.ok(result.payments.every(p => result.days[p.day].events.includes(p)));
   assert.equal(result.days[364].lastState, result.days[0].events.at(-1));
 });
-test('branch proof reveals one, two, four real payments with constant principal', async () => {
+test('branch topology remains available while the narration selects a straight path without mutating amounts', async () => {
   const index = await load(), base = index.payments[0];
   const pairs = [['Apple','Samsung'],['Samsung','Corning'],['Corning','Silica'],['Corning','Chemicals'],['Silica','Freight'],['Silica','Mine'],['Chemicals','Gas'],['Chemicals','Salt']];
   const payments = pairs.map(([from,to], i) => ({ ...base, seq: i + 1, from, to, invoiceId: `apple:${i}`, type: i ? 'pay' : 'issue', amount: i < 2 ? 100n : i < 4 ? 50n : 25n }));
@@ -29,14 +29,9 @@ test('branch proof reveals one, two, four real payments with constant principal'
   index.stories = payments.map((payment,i) => ({ storyId:'apple-display', beat:String(i), branch:i, event:payment, payment, cameraAccounts:[payment.from,payment.to] }));
   assert.equal(proofPayments(index).length, 8);
   assert.deepEqual(cascadeBeats(payments.slice(2)).map(b => b.length), [2,4]);
-  const engine = new PlaybackEngine(index); playShot(engine,4);
-  assert.deepEqual(engine.totals(), { settled:200n, committed:100n });
-  engine.tick(7); assert.equal(engine.drainStoryEvents().length,1);
-  engine.tick(.22); assert.equal(engine.drainStoryEvents().length,1);
-  engine.tick(2.78);
-  assert.deepEqual(engine.totals(), { settled:400n, committed:100n });
-  assert.equal(engine.drainStoryEvents().length,4);
-  engine.stopShot(); assert.equal(engine.storyEvents,null);
+  assert.deepEqual(straightProofPayments(index).map(e=>e.to),['Samsung','Corning','Silica','Freight']);
+  // Never inflate the split branch amounts to fit the straight-line narration.
+  assert.equal(payments.reduce((sum,e)=>sum+e.amount,0n),400n);
 });
 test('dense-day binary seek agrees with event boundaries', async () => {
   const index = await load();

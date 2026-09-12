@@ -78,3 +78,20 @@
 .scene-cue-context{display:block;font-size:25px;letter-spacing:.12em;margin-bottom:16px;color:#cbe5d8}
 @media(max-height:480px) and (min-aspect-ratio:4/3){.overlay-active:not(.scene-clean) .scene-location{bottom:35px}.overlay-active:not(.scene-clean) .scene-narration{inset:38px 4% 85px}.scene-cue-context{font-size:14px;margin-bottom:6px}}
 @media(max-height:280px) and (min-aspect-ratio:4/3){.overlay-active:not(.scene-clean) .scene-narration{inset:30px 4% 75px}.scene-cue-context{font-size:12px;margin-bottom:4px}}
+
+/* Narration v6: large, clause-sized compositions above the collapsed ledger. */
+.payment-timeline{margin:32px 0 55px;display:grid;gap:8px;font-size:clamp(16px,2vw,28px)}
+.payment-timeline>span{color:#b0c5cc}.promise-track{height:3px;background:#557079;position:relative;margin-top:10px}
+.promise-track i{position:absolute;width:14px;height:14px;border-radius:50%;background:#69e6c0;top:-6px}.promise-track b{position:absolute;top:12px;transform:translateX(-50%);font-size:.7em;white-space:nowrap}
+.question-card{text-align:center;display:grid;justify-items:center;gap:24px}.question-card .dated-coin{width:210px;height:210px}.date-stamp{animation:coin-enter .35s ease-out}
+.cascade-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:35px;text-align:center}.cascade-stat{display:grid;gap:10px;transition:opacity .4s}.cascade-stat strong{font-size:clamp(40px,5vw,88px);color:#69e6c0}.cascade-stat span{font-size:clamp(16px,1.8vw,26px)}.cascade-totals h2{grid-column:1/-1;transition:opacity .4s}
+.backing-card small{display:block;font-size:.65em;margin-top:8px}.backing-card .asset-composition{margin:35px 0}
+.scene-overlay-promises .globe-dimmer{background:#02080b33}.promises-card{position:relative;width:90vw!important;background:transparent!important;border:0!important;text-align:center}.promise-graph{width:100%;height:45vh;stroke:#69e6c0;fill:#a2f7dd;stroke-width:1;stroke-opacity:.23}.promises-card h2{text-shadow:0 2px 12px #000}.scene-overlay-composable .globe-dimmer{background:#02080b66}
+@media(max-height:480px) and (min-aspect-ratio:4/3){
+ .payment-timeline{margin:16px 0 28px;gap:3px;font-size:18px}.question-card{gap:8px}.question-card .dated-coin{width:125px;height:125px}.question-card .dated-coin strong{font-size:50px}.cascade-totals{gap:18px}.cascade-stat strong{font-size:44px}.cascade-stat span{font-size:16px}.backing-card .asset-composition{margin:18px 0}.promise-graph{height:48vh}
+}
+@media(max-height:280px) and (min-aspect-ratio:4/3){
+ .payment-timeline{margin:10px 0 21px;font-size:14px}.question-card .dated-coin{width:90px;height:90px}.question-card .dated-coin strong{font-size:35px}.question-card .dated-coin>span{font-size:8px}.question-card .coin-date{font-size:10px}.cascade-totals{gap:10px}.cascade-stat strong{font-size:30px}.cascade-stat span{font-size:12px}.backing-card .asset-composition{margin:12px 0}
+}
+@media(max-width:600px) and (max-aspect-ratio:1/1){.cascade-totals{grid-template-columns:1fr;gap:16px}.cascade-totals h2{grid-column:auto}.backing-card .asset-composition{flex-wrap:wrap}.payment-timeline{font-size:17px}.question-card .dated-coin{width:160px;height:160px}}
+@keyframes coin-enter{0%{opacity:0;transform:scale(1.8) rotate(-8deg)}65%{opacity:1;transform:scale(.94) rotate(1deg)}100%{opacity:1;transform:scale(1) rotate(0)}}

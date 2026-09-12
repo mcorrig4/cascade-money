@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ledgerMode, ledgerRowHeight, logDuration } from '../src/components/ledger-mode.ts';
 import { IdleMotion } from '../src/globe/animation.ts';
-import { COIN_BEATS, COMPOSABLE_BEATS, beatIndex, playShot } from '../src/director/shots.ts';
+import { COIN_BEATS, COMPOSABLE_BEATS, beatIndex, playShot, SHOTS } from '../src/director/shots.ts';
 import { PlaybackEngine } from '../src/playback/engine.ts';
 import { createIndex,appendEvent,finishIndex } from '../src/data/index.ts';
 import { parseLine } from '../src/data/adapters.ts';
@@ -14,8 +14,8 @@ test('ledger switches immediately for playback, inspection and pause; log pace s
  assert.ok(Math.floor(450/ledgerRowHeight('compact'))>=15);
 });
 test('composable and coin reveals honor narration boundaries and remain ordered',()=>{
- assert.deepEqual(COMPOSABLE_BEATS.map(b=>b.at),[0,1.5,3,4.5,6.5]);
- assert.deepEqual(COIN_BEATS.map(b=>b.at),[0,6,12,18,24,31,38,44,49]);
+ assert.deepEqual(COMPOSABLE_BEATS.map(b=>b.at),[4,4.4,4.8,5.2]);
+ assert.deepEqual(COIN_BEATS.map(b=>b.at),[0,4.8,6.4,8.8,15.2,21.2,25.2]);
  for(const beats of [COIN_BEATS,COMPOSABLE_BEATS]) for(let i=1;i<beats.length;i++){
   assert.equal(beatIndex(beats,beats[i].at-.001),i-1);assert.equal(beatIndex(beats,beats[i].at),i);
  }
@@ -30,19 +30,21 @@ test('idle motion continues independently of simulation and stays bounded, frame
  assert.ok(travel.every(n=>Math.abs(n-24)<1e-8));
  const clock=new IdleMotion();assert.ok(clock.update(1000,2,false).lng<=.040001);
 });
-test('shot 6 advances real event positions for all 53 seconds and pause freezes narration',async()=>{
+test('shot 6 advances real event positions through its narration duration and pause freezes narration',async()=>{
  const index=createIndex();(await readFile(new URL('./fixtures/events-v1.ndjson',import.meta.url),'utf8')).trim().split('\n').forEach(l=>appendEvent(index,parseLine(l)));finishIndex(index);
  const engine=new PlaybackEngine(index);playShot(engine,6);const first=engine.state.position;
  engine.tick(20);assert.ok(engine.state.position>first);assert.equal(engine.state.shotRunning,true);
  engine.toggle();const elapsed=engine.state.shotElapsed;engine.tick(8);assert.equal(engine.state.shotElapsed,elapsed);
- engine.toggle();engine.tick(32.9);assert.equal(engine.state.playing,true);engine.tick(.1);assert.equal(engine.state.playing,false);
- assert.equal(beatIndex(COIN_BEATS,engine.state.shotElapsed),8);
+ engine.toggle();engine.tick(SHOTS.find(s=>s.id===6)!.seconds-20-.1);assert.equal(engine.state.playing,true);engine.tick(.1);assert.equal(engine.state.playing,false);
+ assert.equal(beatIndex(COIN_BEATS,engine.state.shotElapsed),6);
 });
 
 test('scene captions contain only locations and narration fades on the shot clock', async () => {
   const { SCENE_LOCATIONS, SCENE_TEXT_BEATS, sceneTextAt } = await import('../src/director/shots.ts');
   assert.deepEqual(SCENE_LOCATIONS, [
-    {shot:14,name:'Apple Park',place:'Cupertino, California'},
+    {shot:1,name:'Apple Park',place:'Cupertino, California'},
+    {shot:2,name:'Apple Park',place:'Cupertino, California'},
+    {shot:13,name:'Apple Park',place:'Cupertino, California'},
     {shot:10,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
   ]);
   for (const cue of SCENE_TEXT_BEATS) {
@@ -53,9 +55,9 @@ test('scene captions contain only locations and narration fades on the shot cloc
     assert.ok(sceneTextAt(cue.shot,cue.until - .1)!.opacity < .3);
     assert.equal(sceneTextAt(cue.shot,cue.until),null);
   }
-  assert.equal(sceneTextAt(14,1.5)?.text,'September 9, 2025');
-  assert.equal(sceneTextAt(10,4.5)?.text,'Money. And time.');
-  assert.equal(sceneTextAt(10,12)?.text,'A second dimension to money.');
+  assert.equal(sceneTextAt(13,2)?.text,'September 2025');
+  assert.equal(sceneTextAt(11,13)?.text,'Money plus time');
+  assert.equal(sceneTextAt(11,16)?.text,'a second dimension to money');
   assert.equal(sceneTextAt(null,1.5),null);
 });
 

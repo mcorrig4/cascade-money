@@ -1,6 +1,7 @@
 import type { GlobeInstance } from 'globe.gl';
 import { Vector3 } from 'three';
 import { pickup } from './animation.ts';
+import { displayDate } from '../data/types.ts';
 import { dollars } from '../data/format.ts';
 import type { LiveArc } from './arc-pool.ts';
 
@@ -31,15 +32,16 @@ export class AmountLayer {
         element = this.spare.pop() ?? document.createElement('div');
         element.className = 'floating-amount';
         element.replaceChildren();
-        const amount = document.createElement('strong'); amount.textContent = dollars(arc.event.amount, true); element.append(amount);
+        const amount = document.createElement('strong'); amount.textContent = `+${dollars(arc.displayAmount??arc.event.amount, true)}`; element.append(amount);
+        if(arc.maturity!=null){const maturity=document.createElement('span');maturity.textContent=displayDate(arc.maturity);element.append(maturity);}
         if (arc.annotation) { const annotation = document.createElement('span'); annotation.textContent = arc.annotation; element.append(annotation); }
         if (!element.parentNode) this.host.append(element);
         this.active.set(arc.id, element);
       }
       const { x, y: projectedY } = globe.getScreenCoords(arc.midLat, arc.midLng, arc.altitude);
-      const motion = pickup(now - arc.born, arc.life);
+      const motion = pickup(arc.held?Math.min(now-arc.born,arc.life*.5):now-arc.born, arc.life);
       const y = projectedY - motion.rise;
-      const width = arc.annotation ? 280 : 115, height = arc.annotation ? 95 : 44;
+      const width = arc.annotation || arc.maturity!=null ? 280 : 115, height = arc.annotation ? 120 : arc.maturity!=null ? 78 : 44;
       const collision = boxes.some(b => Math.abs(b.x - x) < (b.width + width) / 2 && Math.abs(b.y - y) < (b.height + height) / 2);
       element.hidden = collision || x < width / 2 + 24 || x + width / 2 > ledgerLeft - 24 || y < 110 || y + height > footerTop || !visibleFromCamera(globe, arc.midLat, arc.midLng, arc.altitude);
       if (!element.hidden) {

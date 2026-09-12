@@ -1,0 +1,11 @@
+# Verified figures for narration v6 (checked 2026-09-12 14:35 EDT)
+- Suppliers: ~200 direct suppliers = ~98% of procurement spend (market-anchors.md; apple-facts.md)
+- Factories: thousands of supplier facilities; countries: 50+ (Apple 2025 Supply Chain Progress Report)
+- Product cost of sales FY2025: $194.1B ("almost two hundred billion")
+- Display cascade (apple-duo story, sim): $100,000,000 committed → $450,000,000 settled = 4.5×; 9 pay hops; 8 distinct payees (Samsung Display, Corning, Great Lakes Silica, Ohio Valley Chemicals, Superior Sands Refining, Pacific Freight, Dow, Great Plains Rail). The straight line before the branches reaches $400M / 4 payees.
+- Year run: 12,028 invoices registered; 6,923 settled; gross settled $1.399B on $458.2M committed (events.metrics.json)
+- Stress test: sim.scenarios.stress(ops=10000, seed=1) → 10,000 ops, 0 hard-invariant violations, 7,002 accepted, 2,998 expected rejections; hard invariants checked after every op.
+- Invariants named: yield_conservation (one owner per entitlement), principal_identity; interval accrual prevents overlapping yield claims.
+- Vault wording: "backed by USDC, designed to use USYC as its yield-bearing reserve" (USYC allowlist-gated on Arc testnet).
+- Spec rule: earlier-dated dollar settles any bill due on or after its date at face value (tier1-spec-v3 §1).
+- Video rule: 2–4 minutes; over 4:00 auto-rejected at upload. v6 spoken words: 603 → 4:01 @150 wpm, 3:39 @165 wpm.

@@ -39,7 +39,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const firms = [...engine.index.firms.values()].flatMap(f => [f, ...(f.named ? (f.sites ?? []).filter(site => site.lat !== f.lat || site.lng !== f.lng).map(site => ({ ...f, id: `${f.id}:${site.id}`, name: `${f.name} · ${site.city ?? site.id}`, lat: site.lat, lng: site.lng })) : [])]).filter(f => f.lat != null && f.lng != null);
     const named = firms.filter(f => f.named), pool = new ArcPool(), layer = new AmountLayer(amounts.current);
     const companyLayer = new CompanyLayer(companies.current, named);
-    let arcIds = '', cinematic=false;
+    let arcIds = '', cinematic=false, campusFraming=0;
     let time = 250, last = performance.now(), lastColor = 0, raf = 0;
     let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
@@ -49,8 +49,8 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     // The descent scene (shot 19) hands off to this hook rather than a bare
     // shot-id check: the fifth-avenue interior camera engages for whatever
     // window the director schedules, independent of scene numbering.
-    let interiorDescent: { elapsed: number; duration: number } | undefined;
-    engine.subsurfaceInteriorCameraHook = (durationMs) => { interiorDescent = { elapsed: 0, duration: durationMs }; return true; };
+    let interiorDescent: { start: number; shot: number | null; duration: number; eye: Vector3; target: Vector3; fov:number } | undefined;
+    engine.subsurfaceInteriorCameraHook = (durationMs) => { interiorDescent = { start: engine.state.shotElapsed, shot: engine.state.shot, duration: durationMs, eye: camera.position.clone(), target: controls.target.clone(), fov:camera.fov }; return true; };
     globe.backgroundColor('#00000000')
       .pointsData(firms).pointLat('lat').pointLng('lng').pointAltitude(0.001)
       .pointRadius((d: object) => (d as Firm).named ? 0.19 : 0.045)
@@ -165,15 +165,28 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         }
         if (t === 1) flight = undefined;
       }
+      // Ring center at 60% of the frame, easing back to center for the arch.
+      const framingTarget=state.camera.primitive?.kind==='orbit'?.1:0;
+      campusFraming+=(framingTarget-campusFraming)*Math.min(1,elapsed/350);
+      if(campusFraming>.00001)camera.setViewOffset(root.clientWidth,root.clientHeight,-root.clientWidth*campusFraming,0,root.clientWidth,root.clientHeight);
+      else if(camera.view?.enabled)camera.clearViewOffset();
       const idleDelta = idle.update(elapsed,globe.pointOfView().altitude,(!!flight && moving) || interacting,state.shot === 6);
-      if (interiorDescent) {
-        interiorDescent.elapsed += elapsed;
-        if (interiorDescent.elapsed >= interiorDescent.duration) interiorDescent = undefined;
-      }
+      if(interiorDescent && (state.shot===null || state.camera.site!=='fifth-avenue'))interiorDescent=undefined;
       if (!flight && state.camera.site && state.shot !== null && state.camera.primitive?.kind!=='orbit') {
+        const progress=interiorDescent?(state.shot===interiorDescent.shot
+          ?Math.min(1,Math.max(0,(state.shotElapsed-interiorDescent.start)*1000/interiorDescent.duration)):1):0;
         const pose = interiorDescent
-          ? fifthAvenueShotCamera(globe.getGlobeRadius(), interiorDescent.elapsed / 1000)
+          ? fifthAvenueShotCamera(globe.getGlobeRadius(), progress*7.8)
           : siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
+        if(interiorDescent){
+          // Blend the live fly-in endpoint into the calibrated street pose.
+          // Keep the final hall pose across scene boundaries; no reset to street.
+          const blend=easeAt(Math.min(1,progress/.12));
+          pose.position.lerpVectors(interiorDescent.eye,pose.position,blend);
+          pose.target.lerpVectors(interiorDescent.target,pose.target,blend);
+          pose.fov=interiorDescent.fov+(pose.fov-interiorDescent.fov)*blend;
+          pose.position.sub(pose.target).applyAxisAngle(pose.up,idleDelta.orbit*Math.PI/180).add(pose.target);
+        }
         camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
       }
       if((!flight || !moving) && state.camera.primitive?.kind==='orbit') {
@@ -229,7 +242,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       globe.renderer().toneMappingExposure=1+state.exposure*5;
       effects.update(state.position, elapsed, isClose, !moving || state.shot === 1 || (state.shot === 10 && state.stage === 'cube') || (state.shot !== null && isClose),
         isClose && (state.shot === 1 || state.shot === 2) ? siteSun('apple-park', globe.getGlobeRadius()) :
-          state.shot === 10 && state.stage === 'cube' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.shot === 10 && state.stage === 'cube',state.timelapse);
+          state.camera.site === 'fifth-avenue' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.camera.site === 'fifth-avenue',state.timelapse);
       const incoming = [] as typeof engine.index.days[number]['events'];
       if (revision !== state.revision || state.day < day) {
         pool.clear(); arcIds = '\0'; pulseRings = []; globe.ringsData([]); cursor = 0; day = state.day;
@@ -254,7 +267,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       // Admission is bounded even for a scrub directly into an extremely dense day.
       for (const event of incoming.filter(isPayment).slice(-200)) {
         const life = arcLifetime(moving ? speedRate(state.speed) : 1, state.shot === 3 || state.shot === 4);
-        pool.add(event, engine.index, time - (moving ? 0 : 750), life);
+        pool.add(event, engine.index, time - (moving ? 0 : 750), life, state.paymentMaturity??undefined,state.paymentAmount??undefined);
       }
       for (const event of incoming.slice(-40)) {
         if (!isPayment(event) && event.type !== 'extend') continue;
@@ -262,7 +275,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (firm?.lat != null && firm.lng != null) pulseRings.push({ lat: firm.lat, lng: firm.lng, born: time, color: event.type === 'extend' ? 'extension' : 'money' });
       }
       cursor = state.cursor;
-      pool.tick(time);
+      pool.tick(time,state.paymentPresentation==='waiting');
       const nextArcIds = pool.arcs.map(arc => arc.id).join(',');
       if (nextArcIds !== arcIds) { arcIds = nextArcIds; globe.arcsData(pool.arcs); }
       updateArcMaterials(pool.arcs, globe.getGlobeRadius());
@@ -304,7 +317,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
             const hit = earth && new Raycaster(origin, origin.clone().negate().normalize()).intersectObject(earth)[0];
             return { ...site, expected: atlasUv(site.lat, site.lng), uv: hit?.uv ? { u: hit.uv.x, v: hit.uv.y } : null };
           });
-        }, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time); updateArcMaterials(pool.arcs, globe.getGlobeRadius()); },
+        }, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time,engine.state.paymentPresentation==='waiting'); updateArcMaterials(pool.arcs, globe.getGlobeRadius()); },
         geometry: () => pool.arcs.map(a => {
           const group = (a as LiveArc & { __threeObjArc?: Group }).__threeObjArc;
           const mesh = group?.children[0] as Mesh | undefined;

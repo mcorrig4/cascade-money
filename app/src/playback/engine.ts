@@ -6,6 +6,8 @@ export type Speed = 1 | 10 | 50 | 'year';
 export interface PlaybackState {
   position: number; day: number; cursor: number; playing: boolean; speed: Speed;
   revision: number; shot: number | null; shotRunning: boolean; story: string;
+  presentationTotals: Totals | null;
+  paymentPresentation: 'settled' | 'waiting'; paymentMaturity: number | null; paymentAmount: bigint | null; onchainGlimpse: boolean;
   recording: boolean; camera: CameraCommand; cameraElapsed:number; film:boolean; exposure:number; flash: {from:number;to:number;elapsed:number;duration:number}|null; timelapse:{days:number;direction:number;duration:number;elapsed:number}|null;
   showDebt: boolean; caption: boolean; shotElapsed: number; shotDuration: number; stage: 'main' | 'cube' | 'wide'; focusInvoices: string[] | null;
 }
@@ -33,7 +35,7 @@ export class PlaybackEngine {
   constructor(index: EventIndex) {
     this.index = index;
     this.state = { position: 0.999, day: 0, cursor: index.days[0].events.length, playing: false, speed: 1,
-      cameraElapsed:0, film:false, exposure:0, flash:null, timelapse:null, revision: 0, shot: null, shotRunning: false, story: 'all', recording: false, showDebt: false, caption: false,
+      presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,cameraElapsed:0, film:false, exposure:0, flash:null, timelapse:null, revision: 0, shot: null, shotRunning: false, story: 'all', recording: false, showDebt: false, caption: false,
       shotElapsed: 0, shotDuration: 0, stage: 'main', focusInvoices: null,
       camera: { lat: 36, lng: -145, altitude: 2.15, duration: 0, id: 0 } };
   }
@@ -61,7 +63,7 @@ export class PlaybackEngine {
   }
   stopShot() {
     this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = [];
-    this.update({ exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
+    this.update({ presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
   beginShot(shot: number, duration = 0) {
     const {exposure,flash,timelapse}=this.state;
@@ -131,6 +133,13 @@ export class PlaybackEngine {
     }while(remaining>1e-9);
   }
   totals(): Totals {
+    if(this.state.presentationTotals)return this.state.presentationTotals;
+    if(this.state.paymentPresentation==='waiting')return {settled:0n,committed:0n};
+    // Director-only straight-line scenario. The indexed run remains untouched.
+    if(this.state.paymentAmount!==null&&this.storyEvents!==null){
+      const count=this.storyEvents.filter(e=>e.type==='issue'||e.type==='pay').length;
+      return {settled:BigInt(count)*this.state.paymentAmount,committed:count?this.state.paymentAmount:0n};
+    }
     const bucket = this.index.days[this.state.day];
     if (this.state.focusInvoices) {
       const seq = bucket.events[this.state.cursor - 1]?.seq ?? (bucket.events[0]?.seq ?? Infinity) - 1;

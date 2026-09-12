@@ -187,3 +187,18 @@ scene blur. The normal month-scale sun policy is unchanged outside that explicit
 rewind. White transitions use renderer exposure plus a full-frame white overlay;
 black bookends are separate overlays. All camera primitives are driven by exact
 cue-boundary advancement, and camera moves start at the preceding live/sample pose.
+
+## Stage 12 — narration v6
+
+The 17-scene, 603-word narration supersedes the 20-scene v2.1 shooting table.
+Provisional timings are word counts × 0.4 seconds + 1 second per scene (258.2
+seconds total). The optional narration duration map retimes all cues and captures,
+rather than changing only scene-end timers. Capture clock isolation is retained.
+
+The baked proof currently branches at Corning ($60M to silica, $20M from silica
+to freight). The product owner explicitly requested the straight-line narration:
+$100M per hop, $400M settled, four companies. This is implemented as director
+presentation metadata on the existing connected events, not mutations or
+additional events in the index. The free explorer and year keep the actual
+stream values. The requested $450M/eight-company alternative is an exported
+constant. See SCENES.md for the mapping and optional narration JSON contract.

@@ -60,6 +60,7 @@ async function captureScenes(context, legibility=false) {
   const target=new URL(url);target.searchParams.set('inspect','1');
   await page.goto(target.href);await page.waitForFunction(()=>!!window.__cascade&&window.__cascade.globe.globeMaterial().userData.textureStage!=='pending');
   const shots=await page.evaluate(()=>window.__cascade.shots);
+  assert.equal(shots.length,17,'Narration v6 has exactly 17 scenes');
   const directory=legibility?'legibility':'scenes';await mkdir(`artifacts/${directory}`,{recursive:true});
   const manifest=[];
   for(const [width,height] of legibility?[[640,360],[426,240]]:[[1920,1080],[640,360]]) {
@@ -88,7 +89,7 @@ async function captureScenes(context, legibility=false) {
           overflow:[...document.querySelectorAll('.overlay-card')].filter(e=>e.scrollHeight>e.clientHeight+2).map(e=>e.getAttribute('aria-label'))};
       });
       manifest.push({scene:shot.scene,id:shot.id,title:shot.title,seconds,width,height,path,audit});
-      assert.equal(audit.mode,shot.id,`Capture follows the 20-scene order (scene ${shot.scene}, film time ${targetTime}s)`);
+      assert.equal(audit.mode,shot.id,`Capture follows the 17-scene order (scene ${shot.scene}, film time ${targetTime}s)`);
       assert.ok(Math.abs(audit.elapsed-seconds)<1e-7, 'Capture uses the declared scene-relative time');
       assert.deepEqual(audit.clipped,[],`${shot.title} stays above the collapsed HUD at ${width}×${height}`);
     }
@@ -218,7 +219,7 @@ try {
   await expectLedgerMode(page,'expanded','Seek stays paused on subsequent ticks');
   assert.equal(modelRequests.length,0,'Models and Draco are never fetched on first paint or distant views');
   await captureScenes(context);
-  await page.evaluate(()=>{window.__cascade.playScene(12);const e=window.__cascade.engine;e.tick(9);e.update({playing:false,shotRunning:false});});
+  await page.evaluate(()=>{window.__cascade.playScene(12);const e=window.__cascade.engine;e.tick(e.state.shotDuration*.9);e.update({playing:false,shotRunning:false});});
   await page.getByText('Earth imagery: NASA', { exact: true }).waitFor();
   await page.getByRole('button',{name:'Verify on Arc',exact:true}).click();
   await page.getByRole('dialog').waitFor();

@@ -216,29 +216,31 @@ Opening the panel makes read-only JSON-RPC calls, with a 12-second timeout. It v
 
 Stage 10 recording controls: the ledger becomes a 30 px live log during playback, with cursor-synchronous admission and a shorter insertion animation at higher speeds. Hover a row, focus it, or tap to inspect expanded cards; leave the ledger or choose “Resume log” to return. Dates in the log are source calendar dates and maturity IDs, not invented intraday timestamps.
 
-Narration cues live in `src/director/shots.ts`: `COIN_BEATS` (0, 6, 13, 25, 44 seconds) and `COMPOSABLE_BEATS` (0, 1, 2, 3, 4 seconds). Shot 6 advances the actual payment stream for its 53 seconds. Camera idle motion uses wall-clock time, continues under overlays and while paused, and yields to camera flights and touch/mouse gestures.
+Narration cues live in `src/director/shots.ts`: `COIN_BEATS` and `COMPOSABLE_BEATS` scale with the duration of each recorded scene. The coin scene advances the actual payment stream throughout its narration. Camera idle motion uses wall-clock time, continues under overlays and while paused, and yields to camera flights and touch/mouse gestures.
 
 Run `pnpm --dir app check:browser --static --legibility` to capture the HUD and overlay beats at 640×360 and 426×240 in `app/artifacts/legibility/`, including a font/overflow audit JSON. This mode uses landscape layouts; portrait phone controls retain their bottom sheets. Review these captures before recording; software GL and the smallest output size still warrant a visual check. Public copy now reads “Money with a date.”; the close begins “global supply chains. settled.” above the Cascade Money wordmark.
 
-Scene captions are location-only: Apple Park / Cupertino, California and Apple Store NYC / Fifth Avenue, New York City. `SCENE_TEXT_BEATS` in `src/director/shots.ts` controls the centered flashback date and shot-10 narration, including 350 ms entrance/exit fades. The browser check captures `shot10-money-time.png` and `shot10-reframe.png` alongside the site frames; `--legibility` captures these beats at both small sizes and checks that centered text clears the corner caption.
+Scene captions are location-only: Apple Park / Cupertino, California and Apple Store NYC / Fifth Avenue, New York City. `SCENE_TEXT_BEATS` controls the centered “September 2025” flashback, supplier statistics and “Money plus time” reframe, with animated entrances and exits. See `SCENES.md` for current capture paths.
 
 Ledger inspection latches on the persistent scroll area’s pointer entry/movement or touch press. The displayed transactions and day remain fixed during inspection while the globe continues playback; the selected transaction stays visible. Leave the panel with the mouse or select “Resume log” to catch up to the current playback cursor. Keyboard focus also inspects a row. The real-data browser check moves the pointer into the running log, advances across a day boundary, and checks that inspection remains stable.
 
-Stage 11 supersedes the earlier 12-shot recording sequence. Open Shift+D (or
-long-press the logo) and choose **Play full film · 3:56**. The director shows film
-scene numbers 01–20; URL `?shot=` and inspector APIs continue to use stable shot
-IDs. Previous/Next follows scene order. Space pauses narration/playback; baseline
-camera drift remains active. Escape cancels the film and clears exposure effects.
-The 53-second coin and 8-second composable cues are editable in `shots.ts`; align
-these provisional clause times to the final recorded narration take.
+Stage 12 follows Liam's final narration in 17 scenes. Open Shift+D (or long-press
+the logo) and choose **Play full film**. The provisional cut is **4:18.2**:
+603 words at 150 wpm plus one second per scene. The director displays scene numbers
+01–17; URL `?shot=` and inspector APIs use stable IDs. Previous/Next follows scene
+order. Space pauses narration/playback; baseline camera drift remains active.
+Escape cancels the film and clears exposure effects.
 
-`pnpm --dir app check:browser --static --scenes` captures all 20 scenes at
-1920×1080 and 640×360 to `app/artifacts/scenes/scene-NN-WIDTHxHEIGHT.png` and writes
-a manifest. The standard browser check also includes this pass.
-`pnpm --dir app check:browser --static --legibility` captures the same scenes at
-640×360 and 426×240 under `app/artifacts/legibility/`, checking that the last law,
-invariant and composable box clear the collapsed one-line HUD. Capture manifests
-are produced only by a successful Chrome run; old Stage 10 captures are not proof
-of the new layouts. See `SCENES.md` for the scene-to-shot mapping and expected paths.
-The sub-surface interior is future scope; the current descent calls the existing
-store camera and exposes `engine.subsurfaceInteriorCameraHook` for that renderer.
+Optional recorded durations load from `public/narration/narration.json`, using
+`{"durations":{"1":6.42,"2":15.8}}` (scene numbers and seconds). Missing scene
+entries retain word-count timings. Every cue and capture retimes together.
+See [SCENES.md](SCENES.md) for all durations, the straight-line presentation's
+relationship to the branched baked run, and capture commands.
+
+`pnpm --dir app check:browser --static --scenes` captures all 17 scenes at
+1920×1080 and 640×360 under `app/artifacts/scenes/`; the full browser check
+includes this pass. `--legibility` captures 640×360 and 426×240 under
+`app/artifacts/legibility/`. Manifests are produced only by a successful Chrome
+run; old captures are not verification of the new cut. The existing site-camera
+descent carries New York into the hall, which remains beneath the payment graph
+and the closing exposure ramp.

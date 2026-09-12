@@ -1,13 +1,14 @@
 import type {PlaybackState} from '../playback/engine.ts';
 import {clamp} from '../camera/primitives.ts';
-/** Exposure and typography share the shot clock, including manual pause. */
+import {narrationTime} from './shots.ts';
+/** Exposure and typography share the narration clock, including manual capture. */
 export function FilmEffects({state}:{state:PlaybackState}) {
- const t=state.shotElapsed;
- const black=state.shot===1?1-clamp(t/.8):state.shot===12?clamp((t-15)/3):0;
- const lineOpacity=state.shot===20?Math.min(clamp((t-2)/1),clamp((8-t)/2)):0;
+ const t=narrationTime(state),closing=state.shot===12;
+ const black=state.shot===1?1-clamp(t/.8):0;
+ const lineOpacity=closing?Math.min(clamp((t-.5)/.3),clamp((2.5-t)/.3)):0;
  return <>
-   <div className="film-exposure" style={{opacity:state.exposure}} aria-hidden="true"/>
-   {state.shot===20&&<div className="ending-line" style={{opacity:lineOpacity}}><p>global supply chains.<br/>settled.</p></div>}
-   {black>0&&<div className="film-black" style={{opacity:black}} aria-hidden="true"/>}
+  <div className="film-exposure" style={{opacity:state.exposure}} aria-hidden="true"/>
+  {closing&&t<2.5&&<div className="ending-line" style={{opacity:lineOpacity}}><p>global supply chains.<br/>settled.</p></div>}
+  {black>0&&<div className="film-black" style={{opacity:black}} aria-hidden="true"/>}
  </>;
 }
