@@ -17,15 +17,19 @@ import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
 import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import { createSiteModels } from './site-models.ts';
-import { siteCamera, siteSun } from './site-math.ts';
+import { appleParkShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
+import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
+import { shouldHoldForTiles } from './tiles-policy.ts';
 import parkUrl from '../assets/apple-park.svg';
 
 const MONEY = '#69e6c0';
+const LOCAL_TILES = import.meta.env.VITE_ENABLE_TILES === '1';
 export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
-  const host = useRef<HTMLDivElement>(null), amounts = useRef<HTMLDivElement>(null), companies = useRef<HTMLDivElement>(null);
+  const host = useRef<HTMLDivElement>(null), siteHost = useRef<HTMLDivElement>(null), siteAttribution = useRef<HTMLDivElement>(null);
+  const amounts = useRef<HTMLDivElement>(null), companies = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
   useEffect(() => {
-    if (!host.current || !amounts.current || !companies.current) return;
+    if (!host.current || !siteHost.current || !siteAttribution.current || !amounts.current || !companies.current) return;
     const root = host.current;
     let globe: GlobeInstance;
     try { globe = new Globe(root, { animateIn: false, rendererConfig: { antialias: true, alpha: true, logarithmicDepthBuffer: true } }); }
@@ -35,8 +39,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const companyLayer = new CompanyLayer(companies.current, named);
     let arcIds = '';
     let time = 250, last = performance.now(), lastColor = 0, raf = 0;
-    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false;
-    let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; local: boolean } | undefined;
+    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false;
+    let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
+    let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false, tileGatePaused = false;
+    let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
     globe.backgroundColor('#00000000')
       .pointsData(firms).pointLat('lat').pointLng('lng').pointAltitude(0.001)
@@ -73,6 +79,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     globe.controls().addEventListener('start', interact);
     globe.controls().addEventListener('end', interactionEnd);
     const camera = globe.camera() as PerspectiveCamera;
+    const globeFov = camera.fov;
     camera.near = 0.000005; camera.updateProjectionMatrix();
     globe.controls().minDistance = globe.getGlobeRadius() * (1 + 0.00001);
     globe.controls().maxDistance = globe.getGlobeRadius() * 5;
@@ -101,11 +108,14 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const elapsed = now - last; last = now;
       if (document.hidden) { raf = requestAnimationFrame(frame); return; }
       const state = engine.state, moving = state.playing || state.shotRunning;
+      const desiredPixelRatio = state.recording ? 1 : Math.min(window.devicePixelRatio, 1.5);
+      if (globe.renderer().getPixelRatio() !== desiredPixelRatio) globe.renderer().setPixelRatio(desiredPixelRatio);
       if (moving) time += elapsed;
       if (state.camera.id !== cameraId) {
         cameraId = state.camera.id;
         flight = { from: globe.pointOfView(), to: state.camera, elapsed: 0,
           eye: camera.position.clone(), target: controls.target.clone(), up: camera.up.clone(),
+          fromFov: camera.fov, targetFov: state.camera.site ? siteCamera(state.camera.site, globe.getGlobeRadius()).fov : globeFov,
           local: !!state.camera.site || controls.target.lengthSq() > 0 };
       }
       if (flight && (moving || state.shot === null || flight.to.duration === 0)) {
@@ -119,15 +129,21 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           camera.position.lerpVectors(flight.eye, pose.position, eased);
           controls.target.lerpVectors(flight.target, pose.target, eased);
           camera.up.lerpVectors(flight.up, pose.up, eased).normalize();
+          camera.fov = flight.fromFov + (flight.targetFov - flight.fromFov) * eased; camera.updateProjectionMatrix();
           camera.lookAt(controls.target);
-        } else globe.pointOfView({ lat: flight.from.lat + (flight.to.lat - flight.from.lat) * eased,
-          lng: flight.from.lng + deltaLng * eased, altitude: flight.from.altitude + (flight.to.altitude - flight.from.altitude) * eased }, 0);
+        } else {
+          globe.pointOfView({ lat: flight.from.lat + (flight.to.lat - flight.from.lat) * eased,
+            lng: flight.from.lng + deltaLng * eased, altitude: flight.from.altitude + (flight.to.altitude - flight.from.altitude) * eased }, 0);
+          camera.fov = flight.fromFov + (flight.targetFov - flight.fromFov) * eased; camera.updateProjectionMatrix();
+        }
         if (t === 1) flight = undefined;
       }
       const idleDelta = idle.update(elapsed,globe.pointOfView().altitude,!!flight || interacting,state.shot === 6);
       if (!flight && state.camera.site && state.shot !== null) {
-        const pose = siteCamera(state.camera.site, globe.getGlobeRadius(), (state.shot === 1 ? Math.min(3, state.shotElapsed) * 2 : 0) + idleDelta.orbit);
-        camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.lookAt(pose.target);
+        const pose = state.shot === 1
+          ? appleParkShotCamera(globe.getGlobeRadius(), state.shotElapsed)
+          : siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
+        camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
       }
       controls.minDistance = controls.target.lengthSq() > 0 ? 0.000005 : globe.getGlobeRadius() * (1 + 0.0000002);
       globe.controls().enabled = true;
@@ -143,6 +159,34 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if (close !== isClose) { close = isClose; globe.pointsData(close ? [] : firms); }
       const pov = globe.pointOfView();
       models.update(pov.lat, pov.lng, pov.altitude, elapsed);
+      const nearHero = (['apple-park', 'fifth-avenue'] as const).some(id => nearSite(id, pov.lat, pov.lng, Math.min(pov.altitude, 0.001)));
+      const wantsSite = (state.shot === 1 && state.shotElapsed <= 15.5) || (state.shot === 10 && state.shotElapsed <= 9.4) || (state.shot === null && pov.altitude < 0.008 && nearHero);
+      if (LOCAL_TILES && import.meta.env.VITE_GOOGLE_TILES_KEY && wantsSite && !siteScene && !siteScenePromise) {
+        siteScenePromise = import('./site-scene.ts').then(module => {
+          if (disposed || !siteHost.current || !siteAttribution.current) return;
+          siteScene = module.createSiteScene(siteHost.current, siteAttribution.current, import.meta.env.VITE_GOOGLE_TILES_KEY!);
+        }).catch(() => { siteStatus = { ...siteStatus, failed: true }; }).finally(() => { siteScenePromise = undefined; });
+      }
+      if (siteScene) {
+        siteStatus = siteScene.update({ state, lat: pov.lat, lng: pov.lng, altitude: pov.altitude, globeRadius: globe.getGlobeRadius(),
+          cameraPosition: camera.position, cameraTarget: controls.target, cameraUp: camera.up, fov: camera.fov, recording: state.recording }, elapsed);
+        siteIdle = wantsSite || siteStatus.opacity > 0 ? 0 : siteIdle + elapsed;
+        if (siteIdle > 1800) { siteScene.dispose(); siteScene = undefined; siteStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null }; }
+      }
+      const tileFrameReady = siteStatus.ready && siteStatus.ground !== null;
+      const tilesConfigured = LOCAL_TILES && !!import.meta.env.VITE_GOOGLE_TILES_KEY;
+      if (!tileGatePaused && shouldHoldForTiles(state, tileFrameReady, siteStatus.failed, tilesConfigured)) {
+        tileGatePaused = true;
+        engine.update({ shotRunning: false });
+      } else if (tileGatePaused && (tileFrameReady || siteStatus.failed || state.shot !== 1 && state.shot !== 10)) {
+        tileGatePaused = false;
+        if (state.shot === 1 || state.shot === 10) engine.update({ shotRunning: true });
+      }
+      const fullSiteShot = state.shot !== null && siteStatus.opacity > 0.985 && !((state.shot === 1 && state.shotElapsed >= 14) || (state.shot === 10 && state.shotElapsed >= 8.3));
+      if (fullSiteShot !== globePaused) {
+        globePaused = fullSiteShot;
+        if (globePaused) globe.pauseAnimation(); else globe.resumeAnimation();
+      }
       effects.update(state.position, elapsed, isClose, !moving || state.shot === 1 || (state.shot === 10 && state.stage === 'cube') || (state.shot !== null && isClose),
         isClose && (state.shot === 1 || state.shot === 2) ? siteSun('apple-park', globe.getGlobeRadius()) :
           state.shot === 10 && state.stage === 'cube' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.shot === 10 && state.stage === 'cube');
@@ -194,6 +238,20 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     raf = requestAnimationFrame(frame);
     if (new URLSearchParams(location.search).has('inspect')) {
       window.__cascade = { engine, globe, pool, models: models.status, cameraFlightActive: () => !!flight,
+        tiles: () => siteStatus,
+        siteView: (site, orbit = 0) => {
+          engine.stopShot(); flight = undefined;
+          const pose = siteCamera(site, globe.getGlobeRadius(), orbit);
+          camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target);
+          camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
+        },
+        siteNadir: (site, altitude = 900) => {
+          engine.stopShot(); flight = undefined;
+          const radius = globe.getGlobeRadius(), frame = siteFrame(SITES[site].lat, SITES[site].lng, radius);
+          const position = sitePoint(site, radius, 0, altitude, 0), target = sitePoint(site, radius, 0, 0, 0);
+          camera.position.copy(position); camera.up.copy(frame.north); controls.target.copy(target);
+          camera.fov = 45; camera.updateProjectionMatrix(); camera.lookAt(target);
+        },
         geography: () => {
           let earth: Mesh | undefined;
           globe.scene().traverse(object => { if ((object as Mesh).material === globe.globeMaterial()) earth = object as Mesh; });
@@ -212,13 +270,16 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         }) };
     }
     return () => {
+      disposed = true;
       root.removeEventListener('touchstart', captureTouch); root.removeEventListener('touchmove', captureTouch);
       cancelAnimationFrame(raf); observer.disconnect(); layer.dispose(); companyLayer.dispose();
       models.dispose();
+      if (globePaused) globe.resumeAnimation(); siteScene?.dispose();
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
       globe.controls().removeEventListener('start', interact); globe.controls().removeEventListener('end', interactionEnd); effects.dispose(); fifth.dispose();
       globe._destructor(); root.replaceChildren(); delete window.__cascade;
     };
   }, [engine]);
-  return <><div className="globe-scene" ref={host} aria-label="Global payment network" /><div className="company-layer" ref={companies} aria-hidden="true" /><div className="amount-layer" ref={amounts} aria-hidden="true" />{error && <div className="globe-error" role="alert">{error}</div>}</>;
+  return <><div className="globe-scene" ref={host} aria-label="Global payment network" /><div className="site-scene" ref={siteHost} aria-hidden="true" /><div className="site-attribution" ref={siteAttribution} hidden />
+    <div className="company-layer" ref={companies} aria-hidden="true" /><div className="amount-layer" ref={amounts} aria-hidden="true" />{error && <div className="globe-error" role="alert">{error}</div>}</>;
 }

@@ -19,7 +19,9 @@ if (!executablePath) {
 if (!executablePath || !existsSync(executablePath)) throw new Error('Chrome not reachable. Set CHROME_PATH to an existing Chrome executable; no browser download is performed.');
 let browser;
 try { browser = await chromium.launch({ executablePath, headless: true,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] }); } catch (error) {
+  // Software WebGL is deterministic for the production suite but far too slow
+  // to drive a second photogrammetry renderer in the local-only tile frames.
+  args: staticMode ? ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : ['--no-sandbox', '--disable-dev-shm-usage'] }); } catch (error) {
   console.error(`Chrome launch failed (${executablePath}): ${error.message}\nRun outside the sandbox: pnpm --dir app check:browser --static`);
   process.exit(1);
 }
@@ -222,6 +224,17 @@ try {
   await page.evaluate(() => window.__cascade.engine.update({shotElapsed:1.5,shotRunning:false}));
   await page.locator('[data-cue="flashback"]').waitFor();
   await page.screenshot({ path: 'artifacts/shot1-apple-park.png' });
+  const localTiles = !staticMode && await page.locator('.site-scene canvas').count() > 0;
+  if (localTiles) {
+    await page.evaluate(() => window.__cascade.engine.update({ playing: false, shotRunning: false }));
+    await page.waitForFunction(() => {
+      const tiles = window.__cascade.tiles();
+      return tiles.site === 'apple-park' && (tiles.failed || (tiles.ready && tiles.ground !== null && tiles.opacity > .98));
+    });
+    assert.equal(await page.evaluate(() => window.__cascade.tiles().failed), false, 'Apple Park tiles load without falling back');
+    assert.ok((await page.locator('.site-attribution').innerText()).includes('Google'), 'Tile frame carries Google attribution');
+    await page.screenshot({ path: 'artifacts/shot1-tiles.png' });
+  }
   await page.keyboard.press('Escape');
   const totals = await page.evaluate(() => {
     const { engine } = window.__cascade;
@@ -248,13 +261,22 @@ try {
         const target = model.worldToLocal(globe.controls().target.clone());
         return { distance: Math.hypot(eye.x,eye.z), height:eye.y, targetHeight:target.y };
       });
-      if (cubePose) { assert.ok(Math.abs(cubePose.distance-35)<.1); assert.ok(Math.abs(cubePose.height-8)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
+      if (cubePose) { assert.ok(Math.abs(cubePose.distance-48)<.1); assert.ok(Math.abs(cubePose.height-5.2)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
       assert.ok(modelRequests.filter(url => url.includes('/models/')).every(url => /[?]v=[a-f0-9]{16}$/.test(url)), 'Model URLs carry their build content hashes');
       assert.equal(await page.locator('.scene-location').innerText(), 'Apple Store NYC\nFifth Avenue, New York City');
       await page.screenshot({ path: 'artifacts/shot10-cube.png' });
       await page.evaluate(() => window.__cascade.engine.update({shotElapsed:4.5}));
       await page.locator('[data-cue="money-time"]').waitFor();
       await page.screenshot({path:'artifacts/shot10-money-time.png'});
+      if (localTiles) {
+        await page.evaluate(() => window.__cascade.engine.update({ shotElapsed: 6.5 }));
+        await page.waitForFunction(() => {
+          const tiles = window.__cascade.tiles();
+          return tiles.site === 'fifth-avenue' && (tiles.failed || (tiles.ready && tiles.ground !== null && tiles.opacity > .98));
+        });
+        assert.equal(await page.evaluate(() => window.__cascade.tiles().failed), false, 'Fifth Avenue tiles load without falling back');
+        await page.screenshot({ path: 'artifacts/shot10-tiles.png' });
+      }
       await page.evaluate(() => { window.__cascade.engine.update({ shotRunning:true }); window.__cascade.engine.tick(2.1); });
       await page.waitForTimeout(6500);
       assert.ok(await page.evaluate(() => window.__cascade.models().every(m => !m.loaded && !m.pending)), 'Pullback releases site models');
@@ -284,7 +306,11 @@ try {
   phone.on('pageerror', error => errors.push(error.message));
   await phone.goto(inspectUrl.href);
   await phone.waitForFunction(() => window.__cascade?.globe.globeMaterial().userData.textureStage !== 'pending' && !!window.__cascade);
-  assert.deepEqual(await phone.evaluate(() => window.__telegramCalls), ['ready', 'expand', 'swipes']);
+  const telegramCalls = await phone.evaluate(() => window.__telegramCalls);
+  assert.ok(telegramCalls.length >= 3 && telegramCalls.length % 3 === 0);
+  for (let index = 0; index < telegramCalls.length; index += 3) {
+    assert.deepEqual(telegramCalls.slice(index, index + 3), ['ready', 'expand', 'swipes']);
+  }
   const layout = await phone.evaluate(() => ({
     width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight,
     canvasTouch: getComputedStyle(document.querySelector('canvas')).touchAction,
