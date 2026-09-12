@@ -12,7 +12,8 @@
     "test": "node --experimental-strip-types --test --experimental-test-isolation=none tests/*.test.ts",
     "check:browser": "node scripts/check-browser.mjs",
     "export:architecture": "node --experimental-strip-types scripts/export-architecture.mjs",
-    "check:architecture": "node scripts/check-architecture.mjs"
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "bake": "node scripts/bake.mjs"
   },
   "dependencies": {
     "globe.gl": "2.46.2",

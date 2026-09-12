@@ -27,7 +27,7 @@ export interface DayBucket {
   events: Event[]; start: Totals; end: Totals; prefix: Totals[];
   purchases: Money; settled: Money; summary?: DaySummary; lastState?: Event;
 }
-export interface StoryMarker { storyId: string; beat: string; caption?: string; event: Event; cameraAccounts: string[]; payment?: Event }
+export interface StoryMarker { storyId: string; beat: string; branch?: unknown; caption?: string; event: Event; cameraAccounts: string[]; payment?: Event }
 export interface EventIndex {
   schema: 1 | 2; firms: Map<string, Firm>; invoices: Map<string, Invoice>;
   days: DayBucket[]; stories: StoryMarker[]; eventCount: number; warnings: string[];

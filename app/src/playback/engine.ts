@@ -17,6 +17,10 @@ export class PlaybackEngine {
   listeners = new Set<() => void>();
   private scheduled: { time: number; run: () => void }[] = [];
   private shotClock = 0;
+  storyEvents: Event[] | null = null;
+  private storyQueue: Event[] = [];
+  reveal(event: Event) { this.storyEvents?.push(event); this.storyQueue.push(event); }
+  drainStoryEvents() { return this.storyQueue.splice(0); }
   private range?: { start: number; end: number; seconds: number; elapsed: number; complete?: () => void };
   constructor(index: EventIndex) {
     this.index = index;
@@ -31,8 +35,8 @@ export class PlaybackEngine {
   setPosition(position: number, revision = false) {
     position = Math.max(0, Math.min(DAYS - 0.000001, position));
     const day = Math.floor(position), fraction = position - day, events = this.index.days[day].events;
-    let cursor = 0;
-    while (cursor < events.length && eventPosition(cursor, events.length) <= fraction) cursor++;
+    let cursor = 0, high = events.length;
+    while (cursor < high) { const mid = (cursor + high) >>> 1; if (eventPosition(mid, events.length) <= fraction) cursor = mid + 1; else high = mid; }
     this.update({ position, day, cursor, revision: this.state.revision + Number(revision) });
   }
   seek(day: number) { this.stopShot(); this.update({ playing: false }); this.setPosition(Math.floor(day) + 0.999, true); }
@@ -48,7 +52,7 @@ export class PlaybackEngine {
     if (speed === 'year') { this.setPosition(0, true); this.update({ playing: true }); }
   }
   stopShot() {
-    this.scheduled = []; this.range = undefined;
+    this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = [];
     this.update({ shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
   beginShot(shot: number, duration = 0) {
@@ -89,7 +93,7 @@ export class PlaybackEngine {
     if (this.state.focusInvoices) {
       const seq = bucket.events[this.state.cursor - 1]?.seq ?? (bucket.events[0]?.seq ?? Infinity) - 1;
       const result = { settled: 0n, committed: 0n };
-      for (const e of this.index.payments) if (e.seq <= seq && this.state.focusInvoices.includes(e.invoiceId ?? '')) {
+      for (const e of this.storyEvents ?? this.index.payments) if ((this.storyEvents !== null || e.seq <= seq) && this.state.focusInvoices.includes(e.invoiceId ?? '')) {
         if (e.type === 'issue' || e.type === 'pay') result.settled += e.amount;
         if (e.type === 'issue') result.committed += e.amount;
       }

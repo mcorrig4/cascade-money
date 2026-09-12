@@ -197,3 +197,9 @@ saves `apple-park-1920x1080.png`. It also saves grow/collapse frames and checks
 clip uniforms, retained geometry and depth settings. Run outside the restricted
 sandbox with `pnpm --dir app check:browser --static`; Chrome's socket initialization
 continues to be blocked inside it. No new screenshot pass is claimed here.
+
+To regenerate and bake the full year, run `pnpm --dir app bake` from the repository root. This invokes the Apple world for 365 days with seed 1, using `.venv/bin/python3` when present, and replaces root `events.ndjson`; coordinate with any core run already writing that file. Then run `pnpm --dir app build`.
+
+The worker incrementally parses and indexes the stream, then hands off one day at a time, awaiting acknowledgement and releasing that day's references. The page reconstructs payment/story references without cloning the entire index. Scrubbing uses binary search over each day's event positions. Story markers select the proof payments; shot 4 groups generations and staggers sibling arcs by 220 ms, using actual payment amounts.
+
+After baking real data, run `pnpm --dir app check:browser --static --real-data` (set `CHROME_PATH` if necessary). This requires schema 2, payments on every day 1–30, and at least four Apple proof hops within days 0–29; it checks current-day arcs and reports seek timings. The small version-1 fixture cannot pass this strict check. Plain `pnpm --dir app check:browser --static` remains the fixture-compatible visual regression check.

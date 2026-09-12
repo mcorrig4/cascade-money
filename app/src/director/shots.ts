@@ -25,6 +25,12 @@ export function proofPayments(index: EventIndex, story = 'apple') {
     ? name(e.from).includes('tesla') && name(e.to).includes('panasonic')
     : (index.schema === 1 || ![...index.firms.values()].some(f => f.name.toLowerCase().includes('samsung'))) ? (e.invoiceId ?? '').startsWith('apple:') : name(e.from).includes('apple') && name(e.to).includes('samsung')));
   if (!first) return [];
+  const marker = index.stories.find(s => s.payment?.seq === first.seq);
+  if (marker) {
+    const marked = index.stories.filter(s => s.storyId === marker.storyId && s.payment).map(s => s.payment!);
+    const unique = [...new Map(marked.map(e => [e.seq, e])).values()].sort((a, b) => a.seq - b.seq);
+    if (unique.length > 1) return unique;
+  }
   const chain = [first];
   while (chain.length < 4) {
     const prev = chain.at(-1)!;
@@ -32,6 +38,16 @@ export function proofPayments(index: EventIndex, story = 'apple') {
     if (!next) break; chain.push(next);
   }
   return chain;
+}
+// A generation shares a beat; sibling payments from one payer remain consecutive.
+export function cascadeBeats(events: Event[]) {
+  const levels = new Map<string, number>(), beats: Event[][] = [];
+  for (const event of events) {
+    const level = levels.get(event.from!) ?? 0;
+    (beats[level] ??= []).push(event);
+    levels.set(event.to!, level + 1);
+  }
+  return beats.filter(Boolean);
 }
 export function shotAvailable(engine: PlaybackEngine, id: number) {
   return id !== 3 && id !== 4 || proofPayments(engine.index, engine.state.story).length >= (id === 3 ? 2 : 3);
@@ -52,14 +68,35 @@ export function playShot(engine: PlaybackEngine, id: number) {
     const all = proofPayments(engine.index, engine.state.story), events = id === 3 ? all.slice(0, 2) : all.slice(2);
     engine.update({ focusInvoices: all.map(e => e.invoiceId!) });
     engine.fly(APPLE.lat, APPLE.lng, 0.8, 0);
-    engine.playRange(position(engine, events[0]), position(engine, events.at(-1)!, true), 12);
     if (id === 3) {
+      engine.playRange(position(engine, events[0]), position(engine, events.at(-1)!, true), 12);
       const destination = engine.index.firms.get(all[0].to!);
       const target = destination?.name.toLowerCase().includes('samsung') || engine.state.story === 'tesla' ? destination : undefined;
       engine.after(0.4, () => engine.fly(target?.lat ?? 36.803, target?.lng ?? 127.057, 0.8, 2800));
-    } else events.forEach((e, i) => {
-      const f = engine.index.firms.get(e.to!); if (f?.lat != null && f.lng != null) engine.after(0.4 + i * 5, () => engine.fly(f.lat!, f.lng!, 1.25, 2400));
-    });
+    } else {
+      engine.setPosition(position(engine, events[0]), true);
+      engine.storyEvents = all.slice(0, 2);
+      const beats = cascadeBeats(events);
+      beats.forEach((beat, i) => {
+        const time = 0.4 + i * (9 / Math.max(1, beats.length));
+        engine.after(time, () => {
+          const firms = [...new Set(beat.flatMap(e => [e.from, e.to]))].map(id => engine.index.firms.get(id!)).filter(f => f?.lat != null && f.lng != null);
+          if (firms.length) {
+            const lat = firms.reduce((sum, f) => sum + f!.lat!, 0) / firms.length;
+            const x = firms.reduce((sum, f) => sum + Math.cos(f!.lng! * Math.PI / 180), 0);
+            const y = firms.reduce((sum, f) => sum + Math.sin(f!.lng! * Math.PI / 180), 0);
+            const lng = Math.atan2(y, x) * 180 / Math.PI;
+            const span = Math.max(...firms.map(f => Math.max(Math.abs(f!.lat! - lat), Math.abs(((f!.lng! - lng + 540) % 360) - 180))));
+            engine.fly(lat, lng, Math.min(2.6, Math.max(1.25 + i * 0.15, span / 45)), 1400);
+          }
+        });
+        beat.forEach((event, j) => engine.after(time + j * 0.22, () => {
+          engine.reveal(event);
+          engine.setPosition(position(engine, event, true));
+        }));
+      });
+      hold();
+    }
   } else if (id === 5) {
     engine.fly(28, -145, 2.35, 0); engine.update({ speed: 'year', caption: true }); engine.playRange(0, 365, 15);
   } else if (id === 6) {

@@ -32,7 +32,7 @@ export function appendEvent(index: EventIndex, raw: JsonRecord) {
   if (e.type === 'story') {
     const cameraAccounts = Array.isArray(e.data.camera_accounts) ? e.data.camera_accounts.map(String) : [];
     const payment = index.payments.findLast(p => cameraAccounts.length >= 2 && p.from === cameraAccounts[0] && p.to === cameraAccounts[1] && p.day === e.day);
-    index.stories.push({ storyId: String(e.data.story_id ?? raw.story_id ?? ''), beat: String(e.data.beat ?? raw.beat ?? ''), caption: String(e.data.caption ?? raw.caption ?? ''), event: e, cameraAccounts, payment });
+    index.stories.push({ branch: e.data.branch ?? raw.branch, storyId: String(e.data.story_id ?? raw.story_id ?? ''), beat: String(e.data.beat ?? raw.beat ?? ''), caption: String(e.data.caption ?? raw.caption ?? ''), event: e, cameraAccounts, payment });
   }
   if (e.type === 'day_summary') {
     if (index.days[e.day].events.filter(v => v.type === 'day_summary').length > 1) throw new Error(`Duplicate summary on day ${e.day}`);
@@ -52,7 +52,8 @@ export function finishIndex(index: EventIndex): EventIndex {
       if (isSettlement(e)) { totals.settled += e.amount; bucket.settled += e.amount; }
       if (e.type === 'issue') totals.committed += e.amount;
       if (e.type === 'invoice_registered') bucket.purchases += money(record(e.data.invoice).amount_cents);
-      bucket.prefix.push({ ...totals });
+      const previous = bucket.prefix.at(-1) ?? bucket.start;
+      bucket.prefix.push(previous.settled === totals.settled && previous.committed === totals.committed ? previous : { ...totals });
       lastState = e;
       if (e.type === 'run_completed') {
         const metrics = record(e.data.metrics);

@@ -122,8 +122,15 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       for (let d = Math.max(0, day); d <= state.day; d++) {
         const bucket = engine.index.days[d].events;
         const lo = d === day ? cursor : 0, hi = d === state.day ? state.cursor : bucket.length;
-        incoming.push(...bucket.slice(lo, hi));
+        for (let i = lo; i < hi; i++) {
+          const event = bucket[i];
+          if (isPayment(event) || event.type === 'extend') {
+            incoming.push(event);
+            if (incoming.length > 200) incoming.shift();
+          }
+        }
       }
+      if (engine.storyEvents !== null) incoming.splice(0, incoming.length, ...engine.drainStoryEvents());
       revision = state.revision; day = state.day;
       // Admission is bounded even for a scrub directly into an extremely dense day.
       for (const event of incoming.filter(isPayment).slice(-200)) {

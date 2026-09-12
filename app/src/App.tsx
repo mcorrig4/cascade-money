@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
+import { receiver } from './data/handoff.ts';
 import type { EventIndex } from './data/types.ts';
 import { PlaybackEngine } from './playback/engine.ts';
 import { Brand } from './components/Brand.tsx';
@@ -61,7 +62,13 @@ export default function App() {
   const [index, setIndex] = useState<EventIndex>(), [error, setError] = useState('');
   useEffect(() => {
     const worker = new Worker(new URL('./data/loader.worker.ts', import.meta.url), { type: 'module' });
-    worker.onmessage = ({ data }) => { if (data.type === 'ready') setIndex(data.index); if (data.type === 'error') setError(data.error); };
+    let loading: ReturnType<typeof receiver>;
+    worker.onmessage = ({ data }) => {
+      if (data.type === 'header') loading = receiver(data.header);
+      if (data.type === 'day') { loading.day(data.n, data.bucket); worker.postMessage({ type: 'ack' }); }
+      if (data.type === 'ready') { setIndex(loading.finish()); worker.terminate(); }
+      if (data.type === 'error') { setError(data.error); worker.terminate(); }
+    };
     worker.onerror = () => setError('The payment stream could not be opened.');
     worker.postMessage({ url: new URL(`${import.meta.env.BASE_URL}events.ndjson`, location.href).href });
     return () => worker.terminate();
