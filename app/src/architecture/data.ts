@@ -9,7 +9,7 @@ export const deployment = {
   verified: `${explorer}/address/0x57838a35f05a43ad519204d7a6ce63f52d7c1987#code`,
   launch: 'After September 16, 2026 launch',
   status: 'Planned · Arc mainnet',
-  allowlist: 'Circle allowlisting · ticket filed',
+  allowlist: 'Real USYC after Circle allowlists the vault',
 };
 export const receipts = [
   { label: 'Deploy vault', hash: '0xeec1fa5a6c47902e2a10b953f809262f52b2759eb88642e14622a7d2204b275e' },

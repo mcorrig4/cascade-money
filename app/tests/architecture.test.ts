@@ -59,7 +59,7 @@ test('deployment and receipt references match the recorded Arc deployment', asyn
   assert.ok(evidence.includes(deployment.address)); assert.ok(evidence.includes(deployment.owner));
   for (const receipt of receipts) assert.ok(evidence.includes(receipt.hash));
   assert.equal(deployment.status, 'Planned · Arc mainnet');
-  assert.match(deployment.allowlist, /ticket filed/);
+  assert.match(deployment.allowlist, /Circle allowlists the vault/);
 });
 test('waterfall reconciles at every step and repairs deficit and floor before index resumes', () => {
   for (const step of waterfall) {
