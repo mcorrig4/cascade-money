@@ -1,53 +1,63 @@
-# Cascade: Story Script and Shot List, draft one
+# Cascade: Story Script and Shot List, version two
 
-ETHOnline 2026. Video three minutes forty seconds, human narration. Apple leads, Tesla is the second story. Rule of thirds: act one for everyone, act two for the smart room, act three for the people who will re-watch it.
+ETHOnline 2026. Video three minutes thirty-five. Human narration. Apple leads. The web app is public and plays one year of an illustrative global supply chain for the iPhone Duo, ten thousand transactions, with Apple and Tesla highlighted and recognizable suppliers mixed into two thousand unnamed ones. The video tells the Apple story; the app carries both.
 
-## Act one: anyone gets it (0:00 to 1:15)
+## Act one: anyone gets it (0:00 to 1:05)
 
-**Hook, first fifteen seconds.** Black screen. A counter spins to five hundred nine billion dollars. Narration: "Five hundred nine billion dollars moves between businesses every single day. Almost none of it arrives when the work is done." The counter is replaced by a second number: five point eight trillion. "Right now, five point eight trillion dollars of American invoices are sitting unpaid, waiting out their payment terms." The Apple supply chain graph fades in behind the number, two thousand suppliers, dark.
+**Hook, 0:00 to 0:10.** The iPhone Duo, folded, on black. Narration: "The iPhone Duo goes on sale Monday. About two hundred suppliers on four continents spent a year building it, and Apple pays most of them a hundred and fifteen days after they ship."
 
-**The problem in one sentence, to thirty seconds.** Apple lights up. "Apple owes Foxconn one hundred million dollars, due in ninety days. Foxconn owes TSMC. TSMC owes Corning. Everyone waits for the company above them, and the money crawls down the chain one payment at a time." A single dot of money crawls from Apple to Foxconn and stops.
+**The number nobody knows, 0:10 to 0:18.** The phone dissolves into the supply chain graph, dark, two thousand nodes. A counter: fifty-six billion. "Right now Apple owes its suppliers fifty-six billion dollars in unpaid invoices. Every supplier down the chain is waiting on the one above it. This is how every phone, car and laptop gets made."
 
-**The idea, to one minute fifteen.** "Cascade gives money a date." Apple's hundred million becomes one hundred million dated dollars, redeemable in ninety days, in Foxconn's hands today. Foxconn pays TSMC with them. TSMC pays Corning. Corning pays its glass supplier. The graph lights up hop by hop. A counter at the bottom reads: invoices settled, one hundred million, two hundred million, three hundred million, four hundred million. Principal locked: one hundred million. "The same hundred million dollars paid four hundred million dollars of invoices before it ever became cash. Nobody borrowed. Nobody waited."
+**Proof before explanation, 0:18 to 0:30.** Apple lights. "Here is the same year on Cascade." Apple commits one hundred million. Foxconn's node fills with dated dollars the same instant. Foxconn pays TSMC with them, same day. Two counters at the bottom, already moving: invoices settled, two hundred million. Principal committed, one hundred million. "Apple committed a hundred million once. Foxconn was paid on day one and paid TSMC the same afternoon, with the same dollars."
 
-## Act two: the smart room feels smart (1:15 to 2:30)
+**The cascade, 0:30 to 0:48.** TSMC pays Corning. Corning pays its glass supplier. The counter reads four hundred million settled on one hundred million committed. "The same hundred million paid four hundred million dollars of invoices before it ever became cash. Nobody borrowed. Nobody waited."
 
-**A dollar with a date.** A single coin on screen with a date stamped on it. "Every Cascade dollar is one dollar, redeemable on a calendar date, backed one to one by USDC in a vault on Arc. All dollars with the same date are identical. An earlier dollar pays any bill due later, at face value. No pricing, no negotiation, no credit check, ever."
+**The year in fifteen seconds, 0:48 to 1:05.** A timeline scrubber runs January to December. The whole graph pulses as ten thousand invoices settle; named nodes flicker by: Samsung, Corning, Sony, Panasonic, Exxon, Shell. Aggregate counters climb: gross invoices settled, principal committed, the ratio between them. "One year. Ten thousand invoices. One illustrative global supply chain. And this is the number that matters: how many dollars of invoices one committed dollar settles before it matures."
 
-**Time only moves forward.** The coin's date slides from day thirty to day ninety. "Hold a thirty-day dollar and owe a ninety-day bill? Extend it. You gave the vault sixty more days of your capital, so you earn the vault's yield for those sixty days. Moving the date later costs nothing. Moving it earlier costs money, and that is where a market appears." A second Tesla story plays under the narration: Tesla's dollar reaching a battery-cell supplier, extended, paid onward.
+## Act two: the smart room feels smart (1:05 to 2:25)
 
-**A yield curve from a payment rail.** The discount window's prices for seven, thirty, sixty, ninety and one hundred eighty days draw a curve. "Once dated dollars trade, Cascade publishes the price of commercial time. A zero-coupon yield curve, generated by companies paying their bills."
+**A dollar with a date, 1:05 to 1:30.** One coin, a date stamped on it. "Every Cascade dollar is one dollar, redeemable on a calendar date, held in a vault on Arc. The vault holds USYC, Circle's tokenized money market fund, so the backing earns real yield, with USDC at the edges. Every dollar with the same date is identical. An earlier dollar pays any bill due later, at face value. No pricing, no negotiation, no credit check, ever."
 
-## Act three: the part they will re-watch (2:30 to 3:20)
+**Time only moves forward, 1:30 to 1:58.** The coin's date slides from day thirty to day ninety, a yield meter fills for the sixty days added. "Hold a thirty-day dollar and owe a ninety-day bill? Extend it. You gave the vault sixty more days of your capital, so you earn the vault's yield for exactly those sixty days. Moving the date later costs nothing and needs nobody's permission but the creditor's. Moving it earlier costs money, and that is where a market appears."
 
-**The conservation laws, on screen as math.** Three lines. Principal: backing is never less than units plus spot plus unclaimed yield. Yield: every dollar of vault income has exactly one owner, and no two yield intervals on the same principal overlap. Loss: reserve first, then the day's income, never principal. Narration reads them once, plainly.
+**A yield curve from a payment rail, 1:58 to 2:25.** Prices for seven, thirty, sixty, ninety and one hundred eighty days draw a curve. "Once dated dollars trade, Cascade publishes the price of commercial time. A zero-coupon yield curve generated by companies paying their bills. Factoring becomes one line: I have eight hundred thousand dollars dated day seventy-three, give me spot. No invoice underwriting. The instrument is already backed."
 
-**The vault under stress.** The balance sheet ticks through a maturity date while thousands of holders extend, withdraw and sell at once. Backing dips, recovers, the reserve absorbs it, every invariant stays green. "Ten thousand operations. Zero violations."
+## Act three: the part they will re-watch (2:25 to 3:15)
 
-**The reframe.** The derivatives number appears: eight hundred forty-six trillion. "Every contract in the eight hundred forty-six trillion dollar derivatives market is a contract about money and time. Cascade makes time a property of money itself. Every one of those instruments becomes a composition of dated dollars." The graph zooms out from Apple to the whole network.
+**The conservation laws, 2:25 to 2:45.** Three lines of math on a dark card. "Principal: backing never falls below units plus spot plus accrued yield. Yield: every dollar of vault income has exactly one owner, and no two yield intervals on the same principal ever overlap. Loss: reserve first, then the day's income, never principal."
 
-## Close (3:20 to 3:40)
+**The vault under stress, 2:45 to 3:00.** The balance sheet ticks through a maturity date while thousands of holders extend, withdraw and sell at once. Backing dips, recovers, the reserve absorbs it, every invariant light stays green. "Ten thousand operations. Zero violations."
 
-"Cascade. Dated dollars on Arc, backed by USDC. Money that pays bills before it becomes cash." Logo, demo link, repository, team.
+**The reframe, 3:00 to 3:15.** Eight hundred forty-six trillion. "Every contract in the eight hundred forty-six trillion dollar derivatives market is a contract about money and time. Cascade makes time a property of money itself. Every one of those instruments becomes a composition of dated dollars." The graph zooms out from Apple to the whole network.
 
-## Shot list, which is the build spec
+## Close (3:15 to 3:35)
 
-1. Counter animation, five hundred nine billion and five point eight trillion, over the dark network.
-2. The network: two thousand supplier nodes, force-directed, with Apple and Tesla as named anchors and about twelve named tier-one and tier-two suppliers: Foxconn, TSMC, Samsung, Corning, Sony, LG, Pegatron, Luxshare; Panasonic, CATL, LG Energy, Glencore.
-3. The crawl: one payment dot moving Apple to Foxconn and stopping, with a ninety-day timer.
-4. The cascade: hop-by-hop lighting with the settled counter and the principal-locked counter.
-5. The dated coin: one dollar with a date stamp; date slides forward on Extend; a small yield meter fills for the added interval.
-6. The Tesla story: the same mechanics on the second anchor, one continuous shot.
-7. The yield curve: five points drawn from discount-window prices, live.
-8. The conservation laws: three lines of math, typeset, on a dark card.
-9. The vault stress shot: live balance sheet, reserve, unclaimed yield, backing, invariant lights, through one maturity date.
+"Cascade. Dated dollars on Arc. Money that pays bills before it becomes cash." Logo, the public app link, the repository, the Arc explorer link, team.
+
+## Shot list, the build spec
+
+1. iPhone Duo hero, folded, on black. Three seconds.
+2. Dissolve to the network: two thousand nodes, force-directed, dark, with the fifty-six billion counter.
+3. The proof: Apple commits, Foxconn fills, Foxconn pays TSMC, with the two counters live. Must land by 0:30.
+4. The cascade: TSMC to Corning to glass supplier, counters to four hundred on one hundred.
+5. The year scrubber: January to December, the whole graph settling, named nodes flickering, aggregate counters climbing, the ratio displayed.
+6. The dated coin with the sliding date and the yield meter.
+7. The yield curve, five points, drawn live from discount-window trades.
+8. The conservation laws card.
+9. The vault stress shot: live balance sheet, reserve, accrued yield, backing, invariant lights, through one maturity date.
 10. The zoom-out with the derivatives number.
-11. The architecture diagram: Arc, USDC vault, date mints, extend, discount window, entitlement ledger. Required by the track. Appears for five seconds and ships as a file.
-12. Close card.
+11. The architecture diagram: Arc, USDC in and out, USYC backing, the vault, date mints, extend, the entitlement ledger, the discount window, the simulation core feeding the app. Five seconds on screen and shipped as a file.
+12. Close card with the live links.
+
+The Tesla story is shot in the app for judges who click through, not in the video: Tesla to Panasonic to a cell-materials supplier to Glencore, with extensions at each hop.
+
+## Named nodes in the graph
+
+Apple, Tesla. Foxconn, TSMC, Samsung, Corning, Sony, LG, Pegatron, Luxshare, Murata, Qualcomm, Broadcom, SK Hynix. Panasonic, CATL, LG Energy, Glencore. Exxon, Shell, Dow, BASF. Everything else unnamed.
 
 ## What the product must do to make the shots real
 
-- A simulation core implementing spec version three with every invariant asserted after every operation, driving shots four, five, seven and nine.
-- A front end rendering the network, the counters, the coin, the curve and the balance sheet from the core's event stream, driving every shot.
-- A vault contract on Arc testnet holding USDC with one mint per date, issue, pay, extend and withdraw, verified, so the demo link and the repository are real. Mainnet deployment by September thirtieth for the bonus.
-- The architecture diagram as a static image.
+- Simulation core on spec three point one, three hundred sixty-five days, ten thousand plus invoices, two thousand suppliers, the named nodes above, the Apple and Tesla stories scripted, every invariant asserted after every operation, emitting the event stream the app plays.
+- The public web app: the network, the year scrubber, the counters, the coin, the curve, the balance sheet, a control panel that plays each shot on demand, and a link to the Arc contract.
+- The vault contract on Arc testnet holding USDC with one mint per date, issue, pay with the creditor's accepted maturity, extend, claim and withdraw, verified on the explorer, with the Apple story executed on chain and every transaction linked. Mainnet after the sixteenth for the bonus.
+- The architecture diagram as an image.
