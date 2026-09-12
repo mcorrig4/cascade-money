@@ -6,14 +6,15 @@
   "packageManager": "pnpm@10.29.3",
   "scripts": {
     "prepare:data": "node scripts/prepare-data.mjs",
-    "dev": "pnpm prepare:data && node scripts/serve.mjs",
-    "build": "pnpm prepare:data && tsc -b && vite build",
+    "dev": "pnpm prepare:data && pnpm prepare:onchain && node scripts/serve.mjs",
+    "build": "pnpm prepare:data && pnpm prepare:onchain && tsc -b && vite build",
     "preview": "node scripts/serve.mjs --preview",
     "test": "node --experimental-strip-types --test --experimental-test-isolation=none tests/*.test.ts",
     "check:browser": "node scripts/check-browser.mjs",
     "export:architecture": "node --experimental-strip-types scripts/export-architecture.mjs",
     "check:architecture": "node scripts/check-architecture.mjs",
-    "bake": "node scripts/bake.mjs"
+    "bake": "node scripts/bake.mjs",
+    "prepare:onchain": "node --experimental-strip-types scripts/onchain-manifest.ts"
   },
   "dependencies": {
     "globe.gl": "2.46.2",

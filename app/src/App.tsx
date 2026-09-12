@@ -9,12 +9,15 @@ import { DayLedger } from './components/DayLedger.tsx';
 import { Timeline } from './components/Timeline.tsx';
 import { ShotPanel } from './director/ShotPanel.tsx';
 import { ShotOverlays } from './director/ShotOverlays.tsx';
+import { OnchainPanel } from './components/OnchainPanel.tsx';
 import { playShot } from './director/shots.ts';
 
 function LoadedApp({ index }: { index: EventIndex }) {
   const [engine] = useState(() => new PlaybackEngine(index));
   const state = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
   const [director, setDirector] = useState(false), [ledgerOpen, setLedgerOpen] = useState(false);
+  const [onchain, setOnchain] = useState(false);
+  const openOnchain = () => { engine.update({ playing: false, shotRunning: false }); setOnchain(true); };
   const openDirector = () => { engine.update({ recording: false }); setLedgerOpen(false); setDirector(v => !v); };
   useEffect(() => {
     let last = performance.now(), raf = 0;
@@ -43,6 +46,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
     <Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense>
     <header className="topbar"><Brand onDirector={openDirector} />
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>
+      <button className="onchain-trigger" onClick={openOnchain}>On-chain</button>
       <div className="network-status"><span className="status-dot" />PAYMENTS IN MOTION</div>
     </header>
     <section className="scene-heading" aria-label="Cascade introduction"><span className="eyebrow">MONEY THAT MOVES THROUGH TIME</span><h1>One dollar.<br />Many payments.</h1><p>Money that pays bills<br />before it becomes cash.</p></section>
@@ -53,7 +57,8 @@ function LoadedApp({ index }: { index: EventIndex }) {
     {state.shot === 1 && <div className="location-card"><span className="eyebrow">CUPERTINO, CALIFORNIA</span><h2>Apple Park</h2><p>September 9, 2025</p></div>}
     {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
     {state.caption && <p className="year-caption">illustrative global supply chain</p>}
-    <ShotOverlays engine={engine} state={state} />
+    <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
+    {onchain && <OnchainPanel onClose={() => setOnchain(false)} />}
     {director && !state.recording && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;
 }

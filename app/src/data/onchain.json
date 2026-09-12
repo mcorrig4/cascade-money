@@ -1,0 +1,258 @@
+{
+  "chainId": 5042002,
+  "vault": "0x57838a35f05a43ad519204d7a6ce63f52d7c1987",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "rpcUrl": "https://rpc.testnet.arc.io",
+  "sourceUrl": "https://testnet.arcscan.app/address/0x57838a35f05a43ad519204d7a6ce63f52d7c1987#code",
+  "actors": [
+    {
+      "name": "Apple",
+      "address": "0x4A06663381bBee7Fe7fD4aF86C3B13ac51dAEe91",
+      "role": "Principal depositor / buyer",
+      "url": "https://testnet.arcscan.app/address/0x4A06663381bBee7Fe7fD4aF86C3B13ac51dAEe91"
+    },
+    {
+      "name": "Foxconn",
+      "address": "0xA3CB8560a162Aae9eF7E8083BA42E0fdb984F56b",
+      "role": "Supplier 1",
+      "url": "https://testnet.arcscan.app/address/0xA3CB8560a162Aae9eF7E8083BA42E0fdb984F56b"
+    },
+    {
+      "name": "TSMC",
+      "address": "0x33Bd599E985dA5B1ea6C37B9d269Cb60Cc106A12",
+      "role": "Supplier 2",
+      "url": "https://testnet.arcscan.app/address/0x33Bd599E985dA5B1ea6C37B9d269Cb60Cc106A12"
+    },
+    {
+      "name": "Corning",
+      "address": "0xDfe6dAB7944ba2be53eC9eAA18bAff246829775F",
+      "role": "Supplier 3",
+      "url": "https://testnet.arcscan.app/address/0xDfe6dAB7944ba2be53eC9eAA18bAff246829775F"
+    },
+    {
+      "name": "Glass supplier",
+      "address": "0x9610Fe61dFa03A3A8e4b1e8256d15dA5c9648f16",
+      "role": "Supplier 4",
+      "url": "https://testnet.arcscan.app/address/0x9610Fe61dFa03A3A8e4b1e8256d15dA5c9648f16"
+    }
+  ],
+  "transactions": [
+    {
+      "label": "Gas funding Apple",
+      "hash": "0x340778307387a8a1166a450d7ef03f3a133af2c135dacdce2808b80d2a7f940b",
+      "explorer": "https://testnet.arcscan.app/tx/0x340778307387a8a1166a450d7ef03f3a133af2c135dacdce2808b80d2a7f940b",
+      "status": "success",
+      "step": 1,
+      "amount": "0.1",
+      "unit": "USDC",
+      "date": null,
+      "url": "https://testnet.arcscan.app/tx/0x340778307387a8a1166a450d7ef03f3a133af2c135dacdce2808b80d2a7f940b"
+    },
+    {
+      "label": "Gas funding Foxconn",
+      "hash": "0xbc679225f2c55ff62e2b575a4c8c601c43f157ded361fce930f2afa8a7ec4146",
+      "explorer": "https://testnet.arcscan.app/tx/0xbc679225f2c55ff62e2b575a4c8c601c43f157ded361fce930f2afa8a7ec4146",
+      "status": "success",
+      "step": 2,
+      "amount": "0.1",
+      "unit": "USDC",
+      "date": null,
+      "url": "https://testnet.arcscan.app/tx/0xbc679225f2c55ff62e2b575a4c8c601c43f157ded361fce930f2afa8a7ec4146"
+    },
+    {
+      "label": "Gas funding TSMC",
+      "hash": "0xdd11b8e065943a0aa75f3fd8293de946e00d6a4e951778be782705165e838289",
+      "explorer": "https://testnet.arcscan.app/tx/0xdd11b8e065943a0aa75f3fd8293de946e00d6a4e951778be782705165e838289",
+      "status": "success",
+      "step": 3,
+      "amount": "0.1",
+      "unit": "USDC",
+      "date": null,
+      "url": "https://testnet.arcscan.app/tx/0xdd11b8e065943a0aa75f3fd8293de946e00d6a4e951778be782705165e838289"
+    },
+    {
+      "label": "Gas funding Corning",
+      "hash": "0x179c2c6317a3eded42266ced87813d5cbf2d7d9689806980b664977792d5f497",
+      "explorer": "https://testnet.arcscan.app/tx/0x179c2c6317a3eded42266ced87813d5cbf2d7d9689806980b664977792d5f497",
+      "status": "success",
+      "step": 4,
+      "amount": "0.1",
+      "unit": "USDC",
+      "date": null,
+      "url": "https://testnet.arcscan.app/tx/0x179c2c6317a3eded42266ced87813d5cbf2d7d9689806980b664977792d5f497"
+    },
+    {
+      "label": "Gas funding Glass supplier",
+      "hash": "0x9e17ecde8c66ddfbee87cd4975eeea9e779fe3db840847e19494460b3fa8a891",
+      "explorer": "https://testnet.arcscan.app/tx/0x9e17ecde8c66ddfbee87cd4975eeea9e779fe3db840847e19494460b3fa8a891",
+      "status": "success",
+      "step": 5,
+      "amount": "0.1",
+      "unit": "USDC",
+      "date": null,
+      "url": "https://testnet.arcscan.app/tx/0x9e17ecde8c66ddfbee87cd4975eeea9e779fe3db840847e19494460b3fa8a891"
+    },
+    {
+      "label": "Principal funding Apple",
+      "hash": "0x1cee0ca01e7dd43145c0054c141c7e5850d283987cbeea23546e1b1464b5f550",
+      "explorer": "https://testnet.arcscan.app/tx/0x1cee0ca01e7dd43145c0054c141c7e5850d283987cbeea23546e1b1464b5f550",
+      "status": "success",
+      "step": 6,
+      "amount": "10",
+      "unit": "USDC",
+      "date": null,
+      "url": "https://testnet.arcscan.app/tx/0x1cee0ca01e7dd43145c0054c141c7e5850d283987cbeea23546e1b1464b5f550"
+    },
+    {
+      "label": "Apple approves vault",
+      "hash": "0x838828e20eb4e437e97a9b35e07ee937cb0c67c16ec3c8e75b52868d79d62880",
+      "explorer": "https://testnet.arcscan.app/tx/0x838828e20eb4e437e97a9b35e07ee937cb0c67c16ec3c8e75b52868d79d62880",
+      "status": "success",
+      "step": 7,
+      "amount": "10",
+      "unit": "USDC",
+      "date": null,
+      "url": "https://testnet.arcscan.app/tx/0x838828e20eb4e437e97a9b35e07ee937cb0c67c16ec3c8e75b52868d79d62880"
+    },
+    {
+      "label": "Foxconn registers invoice",
+      "hash": "0x6aa880f17608748d4f42823004507e520d110738c00d67f51935fa4ba4d6ad0d",
+      "explorer": "https://testnet.arcscan.app/tx/0x6aa880f17608748d4f42823004507e520d110738c00d67f51935fa4ba4d6ad0d",
+      "status": "success",
+      "blockNumber": 61711908,
+      "gasUsed": "177068",
+      "step": 8,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +90",
+      "url": "https://testnet.arcscan.app/tx/0x6aa880f17608748d4f42823004507e520d110738c00d67f51935fa4ba4d6ad0d"
+    },
+    {
+      "label": "TSMC registers invoice",
+      "hash": "0x169d9702675335a09adc307bf51ccb25b8f789f55bdd05f00a8fad5190ce20c6",
+      "explorer": "https://testnet.arcscan.app/tx/0x169d9702675335a09adc307bf51ccb25b8f789f55bdd05f00a8fad5190ce20c6",
+      "status": "success",
+      "blockNumber": 61711917,
+      "gasUsed": "177068",
+      "step": 9,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +90",
+      "url": "https://testnet.arcscan.app/tx/0x169d9702675335a09adc307bf51ccb25b8f789f55bdd05f00a8fad5190ce20c6"
+    },
+    {
+      "label": "Corning registers invoice",
+      "hash": "0xa301e3ce6412b2a276177e348570a5fec42b6d74d13e7ffee15638109ac95162",
+      "explorer": "https://testnet.arcscan.app/tx/0xa301e3ce6412b2a276177e348570a5fec42b6d74d13e7ffee15638109ac95162",
+      "status": "success",
+      "blockNumber": 61711926,
+      "gasUsed": "177068",
+      "step": 10,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +90",
+      "url": "https://testnet.arcscan.app/tx/0xa301e3ce6412b2a276177e348570a5fec42b6d74d13e7ffee15638109ac95162"
+    },
+    {
+      "label": "Glass supplier registers invoice",
+      "hash": "0x5c272ef37c1490a6e318b443626fa09ac6dc2d7de5859fccbdfcdc4e140b49a0",
+      "explorer": "https://testnet.arcscan.app/tx/0x5c272ef37c1490a6e318b443626fa09ac6dc2d7de5859fccbdfcdc4e140b49a0",
+      "status": "success",
+      "blockNumber": 61711935,
+      "gasUsed": "177068",
+      "step": 11,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +120",
+      "url": "https://testnet.arcscan.app/tx/0x5c272ef37c1490a6e318b443626fa09ac6dc2d7de5859fccbdfcdc4e140b49a0"
+    },
+    {
+      "label": "Apple issues to Foxconn",
+      "hash": "0x70fa7b0e7a2f77dd51c8e23f41919e4e909c5f54230b4b590db8bf2017f6ef2c",
+      "explorer": "https://testnet.arcscan.app/tx/0x70fa7b0e7a2f77dd51c8e23f41919e4e909c5f54230b4b590db8bf2017f6ef2c",
+      "status": "success",
+      "blockNumber": 61711944,
+      "gasUsed": "351613",
+      "step": 12,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +90",
+      "url": "https://testnet.arcscan.app/tx/0x70fa7b0e7a2f77dd51c8e23f41919e4e909c5f54230b4b590db8bf2017f6ef2c"
+    },
+    {
+      "label": "Foxconn pays TSMC",
+      "hash": "0x7d95fb4b18b0b0ae616c665408cab1304606219b3e675abe71426123df3d1619",
+      "explorer": "https://testnet.arcscan.app/tx/0x7d95fb4b18b0b0ae616c665408cab1304606219b3e675abe71426123df3d1619",
+      "status": "success",
+      "blockNumber": 61711954,
+      "gasUsed": "150479",
+      "step": 13,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +90",
+      "url": "https://testnet.arcscan.app/tx/0x7d95fb4b18b0b0ae616c665408cab1304606219b3e675abe71426123df3d1619"
+    },
+    {
+      "label": "TSMC pays Corning",
+      "hash": "0xb43e2d93ca18c142c1e252910c80f5eebbadd7d7598e282c078687461283542c",
+      "explorer": "https://testnet.arcscan.app/tx/0xb43e2d93ca18c142c1e252910c80f5eebbadd7d7598e282c078687461283542c",
+      "status": "success",
+      "blockNumber": 61711962,
+      "gasUsed": "150479",
+      "step": 14,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +90",
+      "url": "https://testnet.arcscan.app/tx/0xb43e2d93ca18c142c1e252910c80f5eebbadd7d7598e282c078687461283542c"
+    },
+    {
+      "label": "Corning extends +90 to +120",
+      "hash": "0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7",
+      "explorer": "https://testnet.arcscan.app/tx/0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7",
+      "status": "success",
+      "blockNumber": 61711972,
+      "gasUsed": "250935",
+      "step": 15,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +90 → +120",
+      "url": "https://testnet.arcscan.app/tx/0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7"
+    },
+    {
+      "label": "Corning pays glass supplier",
+      "hash": "0xc7ab543c8b736e254b37516c74e566502721af1f68de6ca36b51028b84660b46",
+      "explorer": "https://testnet.arcscan.app/tx/0xc7ab543c8b736e254b37516c74e566502721af1f68de6ca36b51028b84660b46",
+      "status": "success",
+      "blockNumber": 61711981,
+      "gasUsed": "150479",
+      "step": 16,
+      "amount": "10",
+      "unit": "USDC",
+      "date": "Run day +120",
+      "url": "https://testnet.arcscan.app/tx/0xc7ab543c8b736e254b37516c74e566502721af1f68de6ca36b51028b84660b46"
+    }
+  ],
+  "recorded": {
+    "usdc": "10000000",
+    "principal": "10000000",
+    "settled": "40000000",
+    "deficit": "0",
+    "principalMatched": true,
+    "supplies": [
+      {
+        "offset": 90,
+        "amount": "0"
+      },
+      {
+        "offset": 120,
+        "amount": "10000000"
+      }
+    ]
+  },
+  "supplyView": "eb274347",
+  "extensionTransaction": "0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7",
+  "command": "cd contracts\nnode scripts/demo.mjs --live --broadcast --seed <testnet-seed>",
+  "faucet": "https://faucet.circle.com/",
+  "reportUrl": "https://github.com/mcorrig4/cascade-money/blob/main/contracts/deployments/testnet-demo-run.md",
+  "readmeUrl": "https://github.com/mcorrig4/cascade-money/blob/main/contracts/README.md#live-deployment-explicit-opt-in"
+}

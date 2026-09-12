@@ -52,13 +52,24 @@ try {
   await page.goto(inspectUrl.href);
   await page.waitForFunction(() => window.__cascade?.geometry().every(a => a.geometry && a.alpha === 1) && window.__cascade.pool.arcs.length > 0);
   await page.waitForTimeout(500);
+  // Deterministic RPC failure exercises the recorded fallback without relying on a public service.
+  await page.route('https://rpc.testnet.arc.io', route => route.fulfill({status:503,body:'Unavailable'}));
+  await page.getByRole('button',{name:'On-chain',exact:true}).click();
+  const arcPanel=page.getByRole('dialog');
+  await arcPanel.getByText('Arc RPC unavailable. Showing the recorded demo balances.').waitFor();
+  assert.equal(await arcPanel.locator('tbody tr').count(),16);
+  await arcPanel.locator('summary').click();
+  assert.equal(await arcPanel.locator('.arc-actors li').count(),5);
+  await page.screenshot({path:'artifacts/verify-on-arc-1920x1080.png'});
+  await arcPanel.screenshot({path:'artifacts/verify-on-arc-panel.png'});
+  await arcPanel.getByRole('button',{name:'Close Verify on Arc'}).click();
   const expectedYear = await page.evaluate(() => String(window.__cascade.engine.index.days[364].end.settled));
   if (process.argv.includes('--real-data')) {
     const coverage = await page.evaluate(() => {
       const index = window.__cascade.engine.index;
       return { schema:index.schema, count:index.eventCount,
         active: index.days.slice(1,31).map(b => b.events.some(e => ['issue','pay','transfer'].includes(e.type))),
-        proof: index.stories.filter(s => /apple|display/i.test(s.storyId) && s.payment).map(s => s.payment.day) };
+        proof: index.stories.filter(s => s.storyId === 'apple-duo' && s.payment).map(s => s.payment.day) };
     });
     assert.equal(coverage.schema,2,'Real-data check requires schema 2');
     assert.ok(coverage.active.every(Boolean),'Every day 1–30 must have payments');
@@ -170,6 +181,9 @@ try {
     await page.screenshot({ path: `artifacts/shot-${shot}-1920x1080.png` });
   }
   await page.getByText('Earth imagery: NASA', { exact: true }).waitFor();
+  await page.getByRole('button',{name:'Verify on Arc',exact:true}).click();
+  await page.getByRole('dialog').waitFor();
+  await page.getByRole('button',{name:'Close Verify on Arc'}).click();
   assert.equal(await page.locator('.close-card a').count(), 4);
   assert.equal(await page.locator('.close-card a[href="/architecture"]').count(), 1);
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
