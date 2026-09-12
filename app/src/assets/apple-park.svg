@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs><pattern id="panels" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M0 0h16v16H0Z" fill="#9caeb0" stroke="#60777a" stroke-width="2"/></pattern><radialGradient id="lawn"><stop stop-color="#203d36"/><stop offset="1" stop-color="#142a29"/></radialGradient></defs>
+  <rect width="1024" height="1024" rx="120" fill="#13252a"/>
+  <path d="M30 210L190 50H840L994 210V840L830 990H200L30 820Z" fill="none" stroke="#40504e" stroke-width="15"/>
+  <path d="M78 225L225 85H803L946 225V803L807 939H228L78 795Z" fill="none" stroke="#83928b" stroke-width="2"/>
+  <circle cx="512" cy="500" r="355" fill="#0a171b"/>
+  <circle cx="512" cy="493" r="334" fill="url(#panels)" stroke="#d1ddd4" stroke-width="8"/>
+  <circle cx="512" cy="493" r="262" fill="url(#lawn)" stroke="#a5b3ab" stroke-width="5"/>
+  <circle cx="512" cy="493" r="296" fill="none" stroke="#d0d9cf" stroke-opacity=".5" stroke-width="2"/>
+  <path d="M359 620Q400 420 630 336M318 405Q500 547 686 566" fill="none" stroke="#657260" stroke-width="9"/>
+  <g fill="#426651"><circle cx="391" cy="365" r="29"/><circle cx="438" cy="329" r="21"/><circle cx="599" cy="610" r="34"/><circle cx="657" cy="483" r="23"/><circle cx="506" cy="612" r="20"/><circle cx="456" cy="450" r="16"/><circle cx="365" cy="530" r="28"/></g>
+  <ellipse cx="545" cy="411" rx="43" ry="27" fill="#254e58"/>
+  <rect x="733" y="860" width="100" height="40" rx="20" fill="#a2b0ab"/>
+</svg>

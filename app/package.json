@@ -1,0 +1,32 @@
+{
+  "name": "cascade-globe",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.29.3",
+  "scripts": {
+    "prepare:data": "node scripts/prepare-data.mjs",
+    "dev": "pnpm prepare:data && node scripts/serve.mjs",
+    "build": "pnpm prepare:data && tsc -b && vite build",
+    "preview": "node scripts/serve.mjs --preview",
+    "test": "node --experimental-strip-types --test --experimental-test-isolation=none tests/*.test.ts",
+    "check:browser": "node scripts/check-browser.mjs"
+  },
+  "dependencies": {
+    "globe.gl": "2.46.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "three": "0.183.2"
+  },
+  "pnpm": { "overrides": { "three": "0.183.2" } },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/three": "0.183.1",
+    "@vitejs/plugin-react": "5.2.0",
+    "playwright-core": "1.59.1",
+    "typescript": "5.9.3",
+    "vite": "7.3.6"
+  }
+}

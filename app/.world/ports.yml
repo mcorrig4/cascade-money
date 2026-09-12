@@ -1,0 +1,5 @@
+repo: cascade
+purposes:
+  - name: cascade-dev-web
+    type: frontend
+    env: dev
