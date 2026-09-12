@@ -17,7 +17,7 @@ import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
 import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import { createSiteModels } from './site-models.ts';
-import { appleParkShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
+import { appleParkShotCamera, fifthAvenueShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
 import { shouldHoldForTiles } from './tiles-policy.ts';
 import parkUrl from '../assets/apple-park.svg';
@@ -118,7 +118,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           fromFov: camera.fov, targetFov: state.camera.site ? siteCamera(state.camera.site, globe.getGlobeRadius()).fov : globeFov,
           local: !!state.camera.site || controls.target.lengthSq() > 0 };
       }
-      if (flight && (moving || state.shot === null || flight.to.duration === 0)) {
+      // Local hero flights must reach their site camera while the shot clock is
+      // held for tile refinement; otherwise only coarse planet parents preload.
+      if (flight && (moving || flight.local || state.shot === null || flight.to.duration === 0)) {
         flight.elapsed += elapsed;
         const t = flight.to.duration === 0 ? 1 : Math.min(1, flight.elapsed / flight.to.duration), eased = t * t * (3 - 2 * t);
         const deltaLng = ((flight.to.lng - flight.from.lng + 540) % 360) - 180;
@@ -142,7 +144,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if (!flight && state.camera.site && state.shot !== null) {
         const pose = state.shot === 1
           ? appleParkShotCamera(globe.getGlobeRadius(), state.shotElapsed)
-          : siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
+          : state.shot === 10
+            ? fifthAvenueShotCamera(globe.getGlobeRadius(), state.shotElapsed)
+            : siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
         camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
       }
       controls.minDistance = controls.target.lengthSq() > 0 ? 0.000005 : globe.getGlobeRadius() * (1 + 0.0000002);

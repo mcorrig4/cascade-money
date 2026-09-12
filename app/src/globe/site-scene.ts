@@ -17,9 +17,8 @@ import { canUseTiles, enoughTiles, tilePlan } from './tiles-policy.ts';
 const ROOT_TILESET = 'https://tile.googleapis.com/v1/3dtiles/root.json';
 const MODEL_LIFT: Record<SiteId, number> = { 'apple-park': 0.18, 'fifth-avenue': 0.08 };
 const SITE_GRADE: Record<SiteId, number> = { 'apple-park': 12.5, 'fifth-avenue': 2.56 };
-// Same 900 m nadir camera: Google ring 587 px / authored ring 571 px.
-// The authored outer diameter is 461 m, so this restores its surveyed ENU size.
-const SITE_MODEL_SCALE: Record<SiteId, number> = { 'apple-park': 587 / 571, 'fifth-avenue': 1 };
+// Both final exports are authored in metres and registered to their ENU origins.
+const SITE_MODEL_SCALE: Record<SiteId, number> = { 'apple-park': 1, 'fifth-avenue': 1 };
 const SKY: Record<SiteId, string> = { 'apple-park': '#a9bbc1', 'fifth-avenue': '#263640' };
 const FIFTH_CLIP_HALF_EXTENT = 6.15;
 
@@ -76,18 +75,25 @@ function tuneModel(root: Object3D, environment: Texture, site: SiteId) {
         physical.depthWrite = false;
         physical.transparent = true;
       }
+      if (site === 'fifth-avenue' && /GlassPanel_|Entrance_door/.test(object.name)) {
+        physical.color.set('#a9d7e2');
+        physical.opacity = 0.24;
+        physical.transmission = 0.78;
+        physical.roughness = 0.075;
+        physical.envMapIntensity = 4.2;
+      }
       if (site === 'fifth-avenue' && /glass_(joint|edge)|Cube_(vertical|roof)_edge/i.test(object.name)) {
-        if ('emissive' in physical) physical.emissive.set('#8fc7d8');
-        if ('emissiveIntensity' in physical) physical.emissiveIntensity = Math.max(physical.emissiveIntensity, 0.32);
+        if ('emissive' in physical) physical.emissive.set('#9bd6e8');
+        if ('emissiveIntensity' in physical) physical.emissiveIntensity = Math.max(physical.emissiveIntensity, 1.1);
       }
       if (site === 'fifth-avenue' && /Apple_Plaza|Paving_joint|Fifth_Avenue_step/.test(object.name)) {
         if ('color' in physical) physical.color.multiplyScalar(0.68);
         physical.roughness = Math.max(physical.roughness, 0.72);
       }
-      if (site === 'apple-park' && /RegisteredGroundReference|RegionalGround/.test(object.name)) {
-        // The authored survey ground carries useful campus detail, but its hard
-        // rectangular edge gives away the composite. Feather it into Google's
-        // surrounding terrain in object space without changing the source map.
+      if (site === 'apple-park' && /AppleParkLandscapedCampus|RegisteredGroundColorBlend20/.test(object.name)) {
+        // Seven surveyed campus vertices from the final Blender registration.
+        // Signed edge distance keeps the authored surface opaque under the site,
+        // then feathers inward over 24 metres into Google's surrounding tiles.
         material.transparent = true;
         material.depthWrite = false;
         material.onBeforeCompile = shader => {
@@ -97,17 +103,26 @@ function tuneModel(root: Object3D, environment: Texture, site: SiteId) {
           shader.fragmentShader = shader.fragmentShader
             .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeGroundPosition;')
             .replace('#include <dithering_fragment>', `
-              // Campus-sized superellipse: fully replaces the duplicate imagery
-              // below the ring, then dissolves into the surrounding Google tiles.
-              vec2 cascadeGroundUv = abs(vCascadeGroundPosition.xz) / vec2(405.0, 520.0);
-              float cascadeGroundEdge = pow(pow(cascadeGroundUv.x, 4.0) + pow(cascadeGroundUv.y, 4.0), 0.25);
-              float cascadeGroundFade = 1.0 - smoothstep(0.78, 1.0, cascadeGroundEdge);
+              vec2 p = vCascadeGroundPosition.xz;
+              vec2 v0=vec2(-335.,-300.), v1=vec2(315.,-300.), v2=vec2(335.,-235.);
+              vec2 v3=vec2(330.,455.), v4=vec2(245.,540.), v5=vec2(-190.,555.), v6=vec2(-335.,430.);
+              float d=dot(p-v0,p-v0); float s=1.0; vec2 a=v6; vec2 b=v0;
+              #define CASCADE_EDGE(A,B) { vec2 e=(B)-(A); vec2 w=p-(A); vec2 q=w-e*clamp(dot(w,e)/dot(e,e),0.0,1.0); d=min(d,dot(q,q)); bool c1=p.y>=(A).y; bool c2=p.y<(B).y; bool c3=e.x*w.y>e.y*w.x; if(all(bvec3(c1,c2,c3))||all(bvec3(!c1,!c2,!c3))) s=-s; }
+              CASCADE_EDGE(a,b) a=v0; b=v1; CASCADE_EDGE(a,b) a=v1; b=v2; CASCADE_EDGE(a,b)
+              a=v2; b=v3; CASCADE_EDGE(a,b) a=v3; b=v4; CASCADE_EDGE(a,b)
+              a=v4; b=v5; CASCADE_EDGE(a,b) a=v5; b=v6; CASCADE_EDGE(a,b)
+              #undef CASCADE_EDGE
+              float signedDistance=s*sqrt(d);
+              float cascadeGroundFade=1.0-smoothstep(-24.0,0.0,signedDistance);
               gl_FragColor.a *= cascadeGroundFade;
               if (gl_FragColor.a < 0.015) discard;
               #include <dithering_fragment>
             `);
         };
-        material.customProgramCacheKey = () => 'cascade-ground-feather-v2';
+        material.customProgramCacheKey = () => 'cascade-ground-survey-feather-v3';
+      }
+      if (site === 'apple-park' && object.name === 'RegionalGround') {
+        object.visible = false;
       }
       material.needsUpdate = true;
     }
@@ -207,11 +222,15 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     // Keep the renderer defaults. Ground-level Google views traverse a long
     // global hierarchy before reaching a city block; small cache caps silently
     // evict those ancestors and strand refinement at the planet-scale parents.
-    nextTiles.maxTilesProcessed = 180;
+    nextTiles.maxTilesProcessed = nextSite === 'fifth-avenue' ? 360 : 240;
     nextTiles.registerPlugin(new GoogleCloudAuthPlugin({ apiToken: apiKey, autoRefreshToken: true, useRecommendedSettings: true }));
     nextTiles.registerPlugin(new TileCompressionPlugin({ generateNormals: false, disableMipmaps: false }));
     nextTiles.registerPlugin(new ReorientationPlugin({ lat: coords.lat * Math.PI / 180, lon: coords.lng * Math.PI / 180, azimuth: Math.PI }));
-    nextTiles.errorTarget = nextSite === 'fifth-avenue' ? 6 : 12;
+    nextTiles.errorTarget = nextSite === 'fifth-avenue' ? 3 : 8;
+    if (nextSite === 'fifth-avenue') {
+      nextTiles.downloadQueue.maxJobsPerOrigin = 32;
+      nextTiles.parseQueue.maxJobs = 8;
+    }
     nextTiles.setCamera(camera);
     nextTiles.addEventListener('load-error', () => { failed = true; ready = false; });
     if (nextSite === 'fifth-avenue') {
@@ -268,7 +287,11 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
         tiles.update();
         tiles.group.visible = registrationMode !== 'model';
         const failedTiles = (tiles as TilesRenderer & { stats: { failed: number } }).stats.failed;
-        ready = !failed && !!model && enoughTiles(tiles.loadProgress, tiles.visibleTiles.size, failedTiles);
+        // Refinement progress naturally dips again as a moving close-up exposes
+        // new frustum edges. Once the local scene has reached detail quality,
+        // keep it live while the renderer refines instead of flashing to fallback.
+        ready = ready || (!failed && !!model && localPosition.length() < 2500 &&
+          enoughTiles(tiles.loadProgress, tiles.visibleTiles.size, failedTiles));
         if (ready && tileBounds === null) {
           const bounds = new Box3();
           tiles.forEachLoadedModel(loaded => bounds.expandByObject(loaded));
