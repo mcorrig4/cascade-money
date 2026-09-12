@@ -16,16 +16,16 @@ export function canUseTiles(enabled: boolean, key: string | undefined, failed = 
 
 export function shouldHoldForTiles(state: Pick<PlaybackState, 'shot' | 'shotElapsed' | 'shotRunning'>, ready: boolean, failed: boolean, configured: boolean) {
   if (!configured || failed || ready || !state.shotRunning) return false;
-  return state.shot === 1 && state.shotElapsed >= .25 && state.shotElapsed < 8 ||
-    state.shot === 10 && state.shotElapsed >= 3.5 && state.shotElapsed < 8.3;
+  return state.shot === 1 && state.shotElapsed >= .25 && state.shotElapsed < 14 ||
+    state.shot === 10 && state.shotElapsed >= .25 && state.shotElapsed < 8.3;
 }
 
 export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'>, lat: number, lng: number, altitude: number): TilePlan {
-  if (state.shot === 1 && state.shotElapsed <= 9.4) {
-    return { site: 'apple-park', prefetch: true, blend: 1 - smoothstep(8, 8.7, state.shotElapsed) };
+  if (state.shot === 1 && state.shotElapsed <= 15.5) {
+    return { site: 'apple-park', prefetch: true, blend: 1 - smoothstep(14, 14.8, state.shotElapsed) };
   }
   if (state.shot === 10 && state.shotElapsed <= 9.4) {
-    const enter = smoothstep(5.5, 6.2, state.shotElapsed);
+    const enter = smoothstep(.8, 1.6, state.shotElapsed);
     const leave = 1 - smoothstep(8.3, 9, state.shotElapsed);
     return { site: 'fifth-avenue', prefetch: true, blend: enter * leave };
   }
@@ -35,8 +35,9 @@ export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'>, lat
 }
 
 export function enoughTiles(progress: number, visible: number, failed: number) {
-  // Parent tiles provide a complete frame while finer LODs continue streaming.
-  return failed === 0 && visible >= 8 && progress >= 0.12;
+  // Do not release a close-up on planet-scale parents. Regional detail is
+  // present only once a substantial visible working set has refined.
+  return failed === 0 && visible >= 40 && progress >= 0.55;
 }
 
 export function medianGroundHeight(points: Vector3[]) {

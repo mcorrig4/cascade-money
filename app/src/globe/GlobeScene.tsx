@@ -17,7 +17,7 @@ import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
 import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import { createSiteModels } from './site-models.ts';
-import { nearSite, siteCamera, siteSun } from './site-math.ts';
+import { appleParkShotCamera, nearSite, siteCamera, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
 import { shouldHoldForTiles } from './tiles-policy.ts';
 import parkUrl from '../assets/apple-park.svg';
@@ -42,7 +42,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
     let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false, tileGatePaused = false;
-    let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null };
+    let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
     globe.backgroundColor('#00000000')
       .pointsData(firms).pointLat('lat').pointLng('lng').pointAltitude(0.001)
@@ -136,7 +136,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (t === 1) flight = undefined;
       }
       if (!flight && state.camera.site && state.shot !== null) {
-        const pose = siteCamera(state.camera.site, globe.getGlobeRadius(), state.shot === 1 ? Math.min(3, state.shotElapsed) * 2 : 0);
+        const pose = state.shot === 1
+          ? appleParkShotCamera(globe.getGlobeRadius(), state.shotElapsed)
+          : siteCamera(state.camera.site, globe.getGlobeRadius());
         camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
       }
       controls.minDistance = controls.target.lengthSq() > 0 ? 0.000005 : globe.getGlobeRadius() * (1 + 0.0000002);
@@ -148,7 +150,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const pov = globe.pointOfView();
       models.update(pov.lat, pov.lng, pov.altitude, elapsed);
       const nearHero = (['apple-park', 'fifth-avenue'] as const).some(id => nearSite(id, pov.lat, pov.lng, Math.min(pov.altitude, 0.001)));
-      const wantsSite = (state.shot === 1 && state.shotElapsed <= 9.4) || (state.shot === 10 && state.shotElapsed <= 9.4) || (state.shot === null && pov.altitude < 0.008 && nearHero);
+      const wantsSite = (state.shot === 1 && state.shotElapsed <= 15.5) || (state.shot === 10 && state.shotElapsed <= 9.4) || (state.shot === null && pov.altitude < 0.008 && nearHero);
       if (LOCAL_TILES && import.meta.env.VITE_GOOGLE_TILES_KEY && wantsSite && !siteScene && !siteScenePromise) {
         siteScenePromise = import('./site-scene.ts').then(module => {
           if (disposed || !siteHost.current || !siteAttribution.current) return;
@@ -159,7 +161,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         siteStatus = siteScene.update({ state, lat: pov.lat, lng: pov.lng, altitude: pov.altitude, globeRadius: globe.getGlobeRadius(),
           cameraPosition: camera.position, cameraTarget: controls.target, cameraUp: camera.up, fov: camera.fov, recording: state.recording }, elapsed);
         siteIdle = wantsSite || siteStatus.opacity > 0 ? 0 : siteIdle + elapsed;
-        if (siteIdle > 1800) { siteScene.dispose(); siteScene = undefined; siteStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null }; }
+        if (siteIdle > 1800) { siteScene.dispose(); siteScene = undefined; siteStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null }; }
       }
       const tileFrameReady = siteStatus.ready && siteStatus.ground !== null;
       const tilesConfigured = LOCAL_TILES && !!import.meta.env.VITE_GOOGLE_TILES_KEY;
@@ -170,7 +172,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         tileGatePaused = false;
         if (state.shot === 1 || state.shot === 10) engine.update({ shotRunning: true });
       }
-      const fullSiteShot = state.shot !== null && siteStatus.opacity > 0.985 && !((state.shot === 1 && state.shotElapsed >= 8) || (state.shot === 10 && state.shotElapsed >= 8.3));
+      const fullSiteShot = state.shot !== null && siteStatus.opacity > 0.985 && !((state.shot === 1 && state.shotElapsed >= 14) || (state.shot === 10 && state.shotElapsed >= 8.3));
       if (fullSiteShot !== globePaused) {
         globePaused = fullSiteShot;
         if (globePaused) globe.pauseAnimation(); else globe.resumeAnimation();
@@ -227,6 +229,12 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     if (new URLSearchParams(location.search).has('inspect')) {
       window.__cascade = { engine, globe, pool, models: models.status, cameraFlightActive: () => !!flight,
         tiles: () => siteStatus,
+        siteView: (site, orbit = 0) => {
+          engine.stopShot(); flight = undefined;
+          const pose = siteCamera(site, globe.getGlobeRadius(), orbit);
+          camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target);
+          camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
+        },
         geography: () => {
           let earth: Mesh | undefined;
           globe.scene().traverse(object => { if ((object as Mesh).material === globe.globeMaterial()) earth = object as Mesh; });

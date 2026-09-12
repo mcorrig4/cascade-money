@@ -1,5 +1,5 @@
 import {
-  ACESFilmicToneMapping, AmbientLight, Box3, Color, DirectionalLight, DoubleSide, Fog, Group,
+  ACESFilmicToneMapping, AmbientLight, Box3, Color, DirectionalLight, DoubleSide, Group,
   Mesh, PerspectiveCamera, PMREMGenerator, Scene,
   SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
 } from 'three';
@@ -16,8 +16,9 @@ import { canUseTiles, enoughTiles, tilePlan } from './tiles-policy.ts';
 
 const ROOT_TILESET = 'https://tile.googleapis.com/v1/3dtiles/root.json';
 const MODEL_LIFT: Record<SiteId, number> = { 'apple-park': 0.18, 'fifth-avenue': 0.08 };
-const SITE_GRADE: Record<SiteId, number> = { 'apple-park': 12.5, 'fifth-avenue': -16.34 };
+const SITE_GRADE: Record<SiteId, number> = { 'apple-park': 12.5, 'fifth-avenue': 2.56 };
 const SKY: Record<SiteId, string> = { 'apple-park': '#a9bbc1', 'fifth-avenue': '#263640' };
+const FIFTH_CLIP_HALF_EXTENT = 6.15;
 
 export interface SiteSceneFrame {
   state: PlaybackState;
@@ -41,6 +42,7 @@ export interface SiteSceneStatus {
   opacity: number;
   ground: number | null;
   modelSize: [number, number, number] | null;
+  tileBounds: [number, number, number, number, number, number] | null;
 }
 
 export interface SiteSceneController {
@@ -49,22 +51,35 @@ export interface SiteSceneController {
   dispose(): void;
 }
 
-function tuneModel(root: Object3D, environment: Texture) {
+function tuneModel(root: Object3D, environment: Texture, site: SiteId) {
+  const tuned = new Set<Material>();
   root.traverse(object => {
     const mesh = object as Mesh;
     if (!mesh.material) return;
     const materials = (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) as Material[];
     for (const material of materials) {
       const physical = material as MeshPhysicalMaterial;
+      if (tuned.has(material)) continue;
+      tuned.add(material);
       if ('envMapIntensity' in physical) physical.envMapIntensity = Math.max(physical.envMapIntensity ?? 0, 1.15);
       if ('transmission' in physical && physical.transmission > 0.5) {
         physical.envMap = environment;
-        physical.envMapIntensity = 1.8;
-        physical.opacity = Math.max(physical.opacity, 0.2);
-        physical.roughness = Math.min(physical.roughness, 0.08);
+        physical.envMapIntensity = site === 'fifth-avenue' ? 2.6 : 1.8;
+        physical.opacity = site === 'fifth-avenue' ? 0.14 : Math.max(physical.opacity, 0.2);
+        physical.transmission = site === 'fifth-avenue' ? 0.94 : physical.transmission;
+        physical.thickness = site === 'fifth-avenue' ? 0.06 : physical.thickness;
+        physical.roughness = Math.min(physical.roughness, site === 'fifth-avenue' ? 0.035 : 0.08);
         physical.side = DoubleSide;
         physical.depthWrite = false;
         physical.transparent = true;
+      }
+      if (site === 'fifth-avenue' && /glass_(joint|edge)|Cube_(vertical|roof)_edge/i.test(object.name)) {
+        if ('emissive' in physical) physical.emissive.set('#8fc7d8');
+        if ('emissiveIntensity' in physical) physical.emissiveIntensity = Math.max(physical.emissiveIntensity, 0.32);
+      }
+      if (site === 'fifth-avenue' && /Apple_Plaza|Paving_joint|Fifth_Avenue_step/.test(object.name)) {
+        if ('color' in physical) physical.color.multiplyScalar(0.68);
+        physical.roughness = Math.max(physical.roughness, 0.72);
       }
       if (object.name === 'RegisteredGroundReference') {
         // The authored survey ground carries useful campus detail, but its hard
@@ -88,6 +103,38 @@ function tuneModel(root: Object3D, environment: Texture) {
         };
         material.customProgramCacheKey = () => 'cascade-ground-feather-v1';
       }
+      material.needsUpdate = true;
+    }
+  });
+}
+
+/**
+ * Remove only Google's damaged Apple cube. This is a fragment-space box cut,
+ * rather than a tile or mesh deletion, so triangles shared with the GM Building,
+ * Fifth Avenue and the Plaza Hotel remain present outside the 12.3 m footprint.
+ */
+function clipGoogleStore(root: Object3D) {
+  root.traverse(object => {
+    const mesh = object as Mesh;
+    if (!mesh.material) return;
+    const materials = (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) as Material[];
+    for (const material of materials) {
+      const previous = material.onBeforeCompile;
+      material.onBeforeCompile = (shader, renderer) => {
+        previous.call(material, shader, renderer);
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeSitePosition;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvCascadeSitePosition = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeSitePosition;')
+          .replace('#include <clipping_planes_fragment>', `
+            #include <clipping_planes_fragment>
+            if (abs(vCascadeSitePosition.x) < ${FIFTH_CLIP_HALF_EXTENT.toFixed(2)} &&
+                abs(vCascadeSitePosition.z) < ${FIFTH_CLIP_HALF_EXTENT.toFixed(2)} &&
+                vCascadeSitePosition.y > ${(SITE_GRADE['fifth-avenue'] - 0.35).toFixed(2)}) discard;
+          `);
+      };
+      material.customProgramCacheKey = () => 'cascade-fifth-tight-clip-v1';
       material.needsUpdate = true;
     }
   });
@@ -126,39 +173,43 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
   let site: SiteId | null = null, tiles: TilesRenderer | null = null, model: Group | null = null;
   let failed = false, ready = false, opacity = 0, ground: number | null = null;
   let modelSize: [number, number, number] | null = null;
+  let tileBounds: [number, number, number, number, number, number] | null = null;
   let request = 0, attributionClock = 0;
   let modelAbort: AbortController | null = null;
   const resolution = new Vector2();
   const localPosition = new Vector3(), localTarget = new Vector3(), localUp = new Vector3();
 
   const status = (): SiteSceneStatus => ({ site, ready, failed, progress: tiles?.loadProgress ?? 0,
-    visibleTiles: tiles?.visibleTiles.size ?? 0, opacity, ground, modelSize });
+    visibleTiles: tiles?.visibleTiles.size ?? 0, opacity, ground, modelSize, tileBounds });
 
   function clearSite() {
     request++;
     modelAbort?.abort(); modelAbort = null;
     if (model) { disposeModel(model); model = null; }
     if (tiles) { scene.remove(tiles.group); tiles.dispose(); tiles = null; }
-    site = null; failed = false; ready = false; ground = null; modelSize = null;
+    site = null; failed = false; ready = false; ground = null; modelSize = null; tileBounds = null;
   }
 
   async function mount(nextSite: SiteId) {
     clearSite(); site = nextSite;
     scene.background = new Color(SKY[nextSite]);
-    scene.fog = nextSite === 'fifth-avenue' ? new Fog(SKY[nextSite], 100, 650) : null;
+    renderer.toneMappingExposure = nextSite === 'fifth-avenue' ? 0.82 : 1.02;
+    scene.fog = null;
     const currentRequest = request, coords = SITES[nextSite];
     const nextTiles = new TilesRenderer(ROOT_TILESET);
-    nextTiles.lruCache.minBytesSize = 160 * 1024 * 1024;
-    nextTiles.lruCache.maxBytesSize = 224 * 1024 * 1024;
-    nextTiles.lruCache.minSize = 280;
-    nextTiles.lruCache.maxSize = 420;
+    // Keep the renderer defaults. Ground-level Google views traverse a long
+    // global hierarchy before reaching a city block; small cache caps silently
+    // evict those ancestors and strand refinement at the planet-scale parents.
     nextTiles.maxTilesProcessed = 180;
     nextTiles.registerPlugin(new GoogleCloudAuthPlugin({ apiToken: apiKey, autoRefreshToken: true, useRecommendedSettings: true }));
     nextTiles.registerPlugin(new TileCompressionPlugin({ generateNormals: false, disableMipmaps: false }));
     nextTiles.registerPlugin(new ReorientationPlugin({ lat: coords.lat * Math.PI / 180, lon: coords.lng * Math.PI / 180, azimuth: Math.PI }));
-    nextTiles.errorTarget = 12;
+    nextTiles.errorTarget = nextSite === 'fifth-avenue' ? 6 : 12;
     nextTiles.setCamera(camera);
     nextTiles.addEventListener('load-error', () => { failed = true; ready = false; });
+    if (nextSite === 'fifth-avenue') {
+      nextTiles.addEventListener('load-model', event => clipGoogleStore(event.scene));
+    }
     tiles = nextTiles; scene.add(nextTiles.group);
 
     const file = nextSite === 'fifth-avenue' ? 'fifth-avenue-tiles' : nextSite;
@@ -171,7 +222,8 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     if (!loaded) { failed = true; return; }
     loaded.name = `Local site model: ${nextSite}`;
     loaded.visible = false;
-    tuneModel(loaded, environment);
+    if (nextSite === 'fifth-avenue') loaded.rotation.y = -Math.PI / 2;
+    tuneModel(loaded, environment, nextSite);
     const size = new Box3().setFromObject(loaded).getSize(new Vector3()); modelSize = [size.x, size.y, size.z];
     model = loaded;
     scene.add(loaded);
@@ -198,6 +250,11 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
         tiles.update();
         const failedTiles = (tiles as TilesRenderer & { stats: { failed: number } }).stats.failed;
         ready = !failed && !!model && enoughTiles(tiles.loadProgress, tiles.visibleTiles.size, failedTiles);
+        if (ready && tileBounds === null) {
+          const bounds = new Box3();
+          tiles.forEachLoadedModel(loaded => bounds.expandByObject(loaded));
+          if (!bounds.isEmpty()) tileBounds = [bounds.min.x, bounds.min.y, bounds.min.z, bounds.max.x, bounds.max.y, bounds.max.z];
+        }
         if (ready && ground === null) {
           // These ellipsoid-relative grades are established from the stable
           // surrounding tiles. The source is absent over Apple Park and has

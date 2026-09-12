@@ -184,7 +184,7 @@ try {
         const target = model.worldToLocal(globe.controls().target.clone());
         return { distance: Math.hypot(eye.x,eye.z), height:eye.y, targetHeight:target.y };
       });
-      if (cubePose) { assert.ok(Math.abs(cubePose.distance-42)<.1); assert.ok(Math.abs(cubePose.height-5.5)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
+      if (cubePose) { assert.ok(Math.abs(cubePose.distance-48)<.1); assert.ok(Math.abs(cubePose.height-5.2)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
       assert.ok(modelRequests.filter(url => url.includes('/models/')).every(url => /[?]v=[a-f0-9]{16}$/.test(url)), 'Model URLs carry their build content hashes');
       await page.screenshot({ path: 'artifacts/shot10-cube.png' });
       if (localTiles) {

@@ -24,12 +24,13 @@ export function sitePoint(site: SiteId, radius: number, east: number, height: nu
 export function siteLocalCamera(site: SiteId, orbit = 0) {
   const campus = site === 'apple-park';
   // The campus follows the validated northwest Blender view. Fifth Avenue follows
-  // the southwest street view, putting the GM tower directly behind the cube.
-  const distance = campus ? 1000 : 42;
-  const bearing = ((campus ? -43 : 211) + orbit) * Math.PI / 180;
+  // the centered Fifth Avenue elevation from the west side of the avenue,
+  // putting the GM tower directly behind the cube as in the reference.
+  const distance = campus ? 1000 : 48;
+  const bearing = ((campus ? -43 : 270) + orbit) * Math.PI / 180;
   return {
-    position: new Vector3(Math.sin(bearing) * distance, campus ? 600 : 5.5, -Math.cos(bearing) * distance),
-    target: new Vector3(0, campus ? 12 : 8.5, 0),
+    position: new Vector3(Math.sin(bearing) * distance, campus ? 600 : 5.2, -Math.cos(bearing) * distance),
+    target: new Vector3(0, campus ? 12 : 7.4, 0),
     up: new Vector3(0, 1, 0),
     fov: campus ? 45 : 38,
   };
@@ -39,6 +40,39 @@ export function siteCamera(site: SiteId, radius: number, orbit = 0) {
   return { position: sitePoint(site, radius, local.position.x, local.position.y, -local.position.z),
     target: sitePoint(site, radius, local.target.x, local.target.y, -local.target.z),
     up: siteFrame(SITES[site].lat, SITES[site].lng, radius).up, fov: local.fov };
+}
+
+const ease = (value: number) => {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+};
+
+/** Shot 1: a low architectural orbit, descent, then a true arch fly-through. */
+export function appleParkShotCamera(radius: number, elapsed: number) {
+  let position: Vector3, target: Vector3, fov: number;
+  if (elapsed < 6.5) {
+    const t = ease(elapsed / 6.5), bearing = (-48 + 118 * t) * Math.PI / 180;
+    const distance = 430 - 55 * t;
+    position = new Vector3(Math.sin(bearing) * distance, 115 - 32 * t, -Math.cos(bearing) * distance);
+    target = new Vector3(-2, 9, 2); fov = 47;
+  } else if (elapsed < 10) {
+    const t = ease((elapsed - 6.5) / 3.5), bearing = 70 * Math.PI / 180;
+    const orbitEnd = new Vector3(Math.sin(bearing) * 375, 83, -Math.cos(bearing) * 375);
+    position = orbitEnd.lerp(new Vector3(-4, 7.5, 78), t);
+    target = new Vector3(-2, 9, 2).lerp(new Vector3(-4, 9.2, 4), t);
+    fov = 47 + 3 * t;
+  } else {
+    const t = ease((elapsed - 10) / 3.7);
+    position = new Vector3(-4, 7.5, 78 - 112 * t);
+    target = new Vector3(-4, 8.3, position.z - 52);
+    fov = 50;
+  }
+  return {
+    position: sitePoint('apple-park', radius, position.x, position.y, -position.z),
+    target: sitePoint('apple-park', radius, target.x, target.y, -target.z),
+    up: siteFrame(SITES['apple-park'].lat, SITES['apple-park'].lng, radius).up,
+    fov,
+  };
 }
 export function siteSun(site: SiteId, radius: number) {
   const f = siteFrame(SITES[site].lat, SITES[site].lng, radius);

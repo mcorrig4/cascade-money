@@ -1,7 +1,7 @@
 import { eventPosition, PlaybackEngine } from '../playback/engine.ts';
 import type { Event, EventIndex } from '../data/types.ts';
 export const SHOTS = [
-  { id: 1, title: 'Apple Park', detail: 'Cupertino · September 9, 2025', seconds: 14 },
+  { id: 1, title: 'Apple Park', detail: 'Cupertino · September 9, 2025', seconds: 20 },
   { id: 2, title: 'The network', detail: 'Pull back · $56 billion', seconds: 8 },
   { id: 3, title: 'The proof', detail: 'Cupertino → Asan', seconds: 12 },
   { id: 4, title: 'The cascade', detail: 'Follow the dollars', seconds: 12 },
@@ -58,7 +58,7 @@ export function playShot(engine: PlaybackEngine, id: number) {
   const hold = () => engine.after(shot.seconds, () => engine.update({ shotRunning: false }));
   if (id === 1 || id === 2) {
     engine.setPosition(0, true); engine.fly(APPLE.lat, APPLE.lng, APPLE.altitude, 0, 'apple-park');
-    if (id === 1) { engine.after(8, () => engine.fly(31, -133, 2.15, 5000)); hold(); }
+    if (id === 1) { engine.after(14, () => engine.fly(31, -133, 2.15, 5000)); hold(); }
     else {
       engine.after(0.3, () => engine.fly(APPLE.lat, APPLE.lng, 2.15, 3000));
       engine.after(1.2, () => engine.update({ showDebt: true }));
