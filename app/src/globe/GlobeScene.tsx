@@ -45,7 +45,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       .arcAltitude('altitude').arcStroke(0.22).arcCurveResolution(64).arcCircularResolution(4)
       .arcDashLength(1).arcDashGap(0).arcDashAnimateTime(0).arcsTransitionDuration(0)
       // Keep new tubes invisible until their clip shader is attached on the next frame.
-      .arcColor('rgba(105,230,192,0)')
+      // A bare string here is a per-datum field-name LOOKUP under three-globe's accessor
+      // convention (Ke), not a literal color — it must be wrapped in a function.
+      .arcColor(() => 'rgba(105,230,192,0)')
       .ringsData([]).ringLat('lat').ringLng('lng').ringMaxRadius(1.1).ringPropagationSpeed(2.3).ringRepeatPeriod(0)
       .ringColor((d: object) => (t: number) => (d as { color: string }).color === 'extension' ? `rgba(232,183,104,${1 - t})` : `rgba(105,230,192,${1 - t})`)
 ;
