@@ -45,6 +45,16 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
     let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
     let tileGatePaused = false, tileGateWallMs = 0, tileGateShot: number | null = null, tileFallbackShot: number | null = null;
+    const sceneTransitions:{sceneIndex:number;sceneId:number;tMs:number}[]=[];
+    let filmStartMs:number|null=null,lastTransitionShot:number|null=null;
+    const unsubscribeTransitions=engine.subscribe(()=>{
+      const id=engine.state.shot;
+      if(id===null){lastTransitionShot=null;return;}
+      if(id===lastTransitionShot)return;
+      lastTransitionShot=id;
+      const shot=SHOTS.find(candidate=>candidate.id===id);
+      if(shot)sceneTransitions.push({sceneIndex:shot.scene,sceneId:id,tMs:performance.now()});
+    });
     let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
     // The descent scene (shot 19) hands off to this hook rather than a bare
@@ -245,6 +255,11 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       } else if(tileGatePaused){
         tileGateWallMs+=elapsed;
         const changed=state.shot!==tileGateShot,expired=tileGateWallMs>=12_000;
+        if(!changed){
+          // Hold narration/cues at a clean frame, but keep the authored camera
+          // moving so refinement sees the real path and the picture never dies.
+          engine.update({cameraElapsed:engine.state.cameraElapsed+elapsed});
+        }
         if(expired&&!changed&&tileFallbackShot!==state.shot){
           tileFallbackShot=state.shot;siteScene?.releaseFallback();
           console.warn(`[Cascade tiles] scene ${state.shot} exceeded the 12s readiness budget; continuing with the local GLB fallback.`);
@@ -313,7 +328,8 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     };
     raf = requestAnimationFrame(frame);
     if (new URLSearchParams(location.search).has('inspect')) {
-      window.__cascade = { engine, globe, pool, shots:SHOTS,playScene:(id)=>playShot(engine,id),playFilm:()=>playFilm(engine), models: models.status, cameraFlightActive: () => !!flight,
+      window.__cascade = { engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
+        playScene:(id)=>playShot(engine,id),playFilm:()=>{sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
         tiles: () => siteStatus,
         siteView: (site, orbit = 0) => {
           engine.stopShot(); flight = undefined;
@@ -353,7 +369,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if (globePaused) globe.resumeAnimation(); siteScene?.dispose();
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
       globe.controls().removeEventListener('start', interact); globe.controls().removeEventListener('end', interactionEnd); effects.dispose(); fifth.dispose();
-      globe._destructor(); root.replaceChildren(); delete window.__cascade;
+      unsubscribeTransitions();globe._destructor(); root.replaceChildren(); delete window.__cascade;
       delete engine.subsurfaceInteriorCameraHook;
     };
   }, [engine]);
