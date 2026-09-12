@@ -17,7 +17,7 @@ import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
 import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import { createSiteModels } from './site-models.ts';
-import { appleParkShotCamera, nearSite, siteCamera, siteSun } from './site-math.ts';
+import { appleParkShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
 import { shouldHoldForTiles } from './tiles-policy.ts';
 import parkUrl from '../assets/apple-park.svg';
@@ -234,6 +234,13 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           const pose = siteCamera(site, globe.getGlobeRadius(), orbit);
           camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target);
           camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
+        },
+        siteNadir: (site, altitude = 900) => {
+          engine.stopShot(); flight = undefined;
+          const radius = globe.getGlobeRadius(), frame = siteFrame(SITES[site].lat, SITES[site].lng, radius);
+          const position = sitePoint(site, radius, 0, altitude, 0), target = sitePoint(site, radius, 0, 0, 0);
+          camera.position.copy(position); camera.up.copy(frame.north); controls.target.copy(target);
+          camera.fov = 45; camera.updateProjectionMatrix(); camera.lookAt(target);
         },
         geography: () => {
           let earth: Mesh | undefined;
