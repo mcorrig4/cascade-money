@@ -27,3 +27,5 @@ suppliers with fixed pins. These firms count within the 2,000-supplier total.
 Apple consigns its directly purchased components to Foxconn; supplier payments
 then follow each supplier's own input chain. The display chain is the early
 four-times proof; no scripted TSMC-to-Corning payment remains.
+
+The branching proof additionally pins fictional Ohio Valley Chemicals in Marietta, Ohio; Superior Sands Refining in Superior, Wisconsin; and Great Plains Rail in Kansas City, Missouri. They count within the default 2,000 suppliers.

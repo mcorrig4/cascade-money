@@ -44,3 +44,30 @@ def test_stream_is_identical_across_python_hash_seeds():
     outputs = [subprocess.check_output([sys.executable, '-c', script],
                env={**os.environ, 'PYTHONHASHSEED': value}) for value in ('1', '987')]
     assert outputs[0] == outputs[1]
+
+
+def test_journal_survives_collected_intermediate_without_structural_scan():
+    import gc
+    before=FrozenMap({'a':1})
+    after=before.updated({'b':2}).updated({'c':3})
+    gc.collect()
+    assert after.difference(before)==(('b','c'),())
+    assert any(ancestor() is before for ancestor,_ in after._journal)
+    assert before.updated({}) is before
+    ids=FrozenSet(['a'])
+    assert (ids | set()) is ids
+
+
+@given(st.lists(st.integers(),max_size=500))
+def test_append_log_matches_tuple_without_copying_history(values):
+    from sim.storage import AppendLog
+    log=AppendLog()
+    snapshots=[]
+    for value in values:
+        snapshots.append(log)
+        log=log+(value,)
+        assert len(log._tail)<=64
+    assert tuple(log)==tuple(values) and log==tuple(values)
+    for i,snapshot in enumerate(snapshots):
+        assert tuple(snapshot)==tuple(values[:i])
+        assert log[i]==values[i]

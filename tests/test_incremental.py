@@ -13,7 +13,6 @@ from sim.scenarios import stress
 def test_corrected_story_routes_and_annotations():
     beats=json.loads(Path('sim/story_annotations.json').read_text())
     routes={
-        'apple-duo':['Apple','Samsung Display','Corning','Great Lakes Silica','Pacific Freight'],
         'apple-processor':['Apple','TSMC','Sumco','Wacker','Bécancour Silicon'],
         'apple-battery':['Apple','Panasonic','Pohang Cathode','Glencore'],
         'apple-assembly':['Apple','Foxconn','Luxshare','Shenzhen PCB'],
@@ -25,7 +24,7 @@ def test_corrected_story_routes_and_annotations():
     assert not any(b['debtor']=='TSMC' and b['creditor']=='Corning' for b in beats)
     assert all(b['operation']=='extend_pay' for b in beats if b['story_id']=='tesla' and b['debtor']!='Tesla')
     proof=[b for b in beats if b['story_id']=='apple-duo']
-    assert sum(b['amount_cents'] for b in proof)==40_000_000_000
+    assert sum(b['amount_cents'] for b in proof)==45_000_000_000
     assert sum(b['amount_cents'] for b in proof if b['operation']=='issue')==10_000_000_000
     assert max(b['day'] for b in proof)<30
 
@@ -50,7 +49,7 @@ def test_full_reconciliation_detects_aggregate_drift(field):
 
 
 def test_compact_snapshots_and_check_frequency_do_not_change_metrics():
-    a=run_world(days=15,suppliers=40,invoices=60,retain=True)
+    a=run_world(days=15,suppliers=40,invoices=60,retain=True,check_every=1)
     b=run_world(days=15,suppliers=40,invoices=60,retain=True,check_every=7)
     assert a.metrics==b.metrics
     for e in a.vault.events.events:
@@ -107,3 +106,57 @@ def test_final_audit_reconciles_future_schedules(field):
     v.issue(request_id='issue',actor='A',invoice_id='i',amount_cents=100)
     v._state=replace(v.state,**{field:{}})
     with pytest.raises(InvariantViolation):v.audit()
+
+
+def test_checkpoint_and_operation_verification_match_full_30_day_world():
+    a=run_world(days=30,seed=1,check_every="checkpoint")
+    b=run_world(days=30,seed=1,check_every=1)
+    assert a.metrics==b.metrics
+    assert a.metrics['story_totals']['apple-duo']=={'settled_cents':45_000_000_000,'committed_cents':10_000_000_000}
+
+
+def test_branching_proof_reuses_only_original_day_90_units():
+    result=run_world(days=5,suppliers=40,invoices=20,retain=True)
+    events=result.vault.events.events
+    proof=[e for e in events if e['type']=='story' and e['data']['story_id']=='apple-duo']
+    assert len(proof)==10
+    assert {e['data']['branch'] for e in proof} >= {'root','silica','chemicals','silica/refining','silica/freight','chemicals/feedstock','chemicals/rail'}
+    assert proof[-1]['data']['settled_cents']==45_000_000_000
+    assert all(e['data']['committed_cents']==10_000_000_000 for e in proof)
+    payments=[e for e in events if e['type']=='pay' and e['request_id'].startswith('story-pay') and e['data']['debtor'] not in ('Panasonic','Pohang Cathode')]
+    assert len(payments)==9
+    assert all(l['date']==90 for e in payments for l in e['data']['legs'])
+
+
+def test_operations_do_not_iterate_whole_ledger_maps(monkeypatch):
+    from sim.storage import FrozenMap
+    current=[]
+    execute=Vault._execute
+    def tracked(self,kind,*args,**kwargs):
+        current.append(kind)
+        try:return execute(self,kind,*args,**kwargs)
+        finally:current.pop()
+    monkeypatch.setattr(Vault,'_execute',tracked)
+    for name in ('__iter__','items','values'):
+        original=getattr(FrozenMap,name)
+        def checked(self,_original=original):
+            assert not current or current[-1]=='checkpoint', 'whole ledger iteration during operation'
+            return _original(self)
+        monkeypatch.setattr(FrozenMap,name,checked)
+    difference=FrozenMap.difference
+    def journal_only(self,previous):
+        if current and current[-1]!='checkpoint':
+            assert self is previous or any(a() is previous for a,_ in self._journal), 'structural scope scan during operation'
+        return difference(self,previous)
+    monkeypatch.setattr(FrozenMap,'difference',journal_only)
+    run_world(days=10,suppliers=40,invoices=60,check_every=1)
+
+
+def test_run_cli_defaults_to_checkpoint_verification(tmp_path,capsys):
+    from sim.__main__ import main
+    output=tmp_path/'events.ndjson'
+    assert main(['run','--days','5','--suppliers','40','--invoices','20','--out',str(output)])==0
+    events=[json.loads(line) for line in output.read_text().splitlines()]
+    assert events[0]['data']['policy']['check_every']=='checkpoint'
+    assert all(all(v is None for v in e['checks']['hard'].values()) for e in events if e['type']=='pay')
+    assert all(all(e['checks']['hard'].values()) for e in events if e['type']=='checkpoint')

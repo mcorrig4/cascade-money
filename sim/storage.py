@@ -24,6 +24,7 @@ class FrozenMap(Mapping):
     _size: int
     _parent: object
     _changes: tuple
+    _journal: tuple
 
     def __init__(self, values=()):
         buckets = [{} for _ in range(256)]
@@ -36,6 +37,7 @@ class FrozenMap(Mapping):
         object.__setattr__(self,'_size',size)
         object.__setattr__(self,'_parent',None)
         object.__setattr__(self,'_changes',())
+        object.__setattr__(self,'_journal',())
     def __getitem__(self,key):
         i,j=address(key)
         return self._shards[i][j][key]
@@ -50,6 +52,7 @@ class FrozenMap(Mapping):
         for b in self._shards:
             for leaf in b.values(): yield from leaf.values()
     def updated(self, values):
+        if not values:return self
         buckets=list(self._shards)
         touched, leaves={},{}
         size=self._size
@@ -67,8 +70,17 @@ class FrozenMap(Mapping):
         object.__setattr__(result,'_size',size)
         object.__setattr__(result,'_parent',ref(self))
         object.__setattr__(result,'_changes',tuple(values))
+        journal=[(ref(self),tuple(values))]
+        for ancestor, keys in self._journal[:3]:
+            if ancestor() is not None:
+                journal.append((ancestor,tuple(dict.fromkeys((*keys,*values)))))
+        object.__setattr__(result,'_journal',tuple(journal))
         return result
     def difference(self, previous):
+        if self is previous:return (), ()
+        for ancestor, changed in self._journal:
+            if ancestor() is previous:
+                return tuple(k for k in sorted(changed) if self[k] is not previous.get(k)), ()
         cursor=self
         changes=set()
         for _ in range(4):
@@ -103,6 +115,7 @@ class FrozenSet(Set):
     def __len__(self):return len(self._map)
     def __contains__(self,value):return value in self._map
     def __or__(self,values):
+        if not values:return self
         result=object.__new__(type(self))
         object.__setattr__(result,'_map',self._map.updated({v:True for v in values}))
         return result
@@ -110,4 +123,41 @@ class FrozenSet(Set):
     def __eq__(self,other):
         if isinstance(other,FrozenSet):return self._map==other._map
         if isinstance(other,Set):return len(self)==len(other) and all(v in other for v in self)
+        return NotImplemented
+
+@dataclass(frozen=True, eq=False)
+class AppendLog:
+    """Persistent ordered IDs; append copies at most one 64-ID block."""
+    _tail: tuple = ()
+    _parent: object = None
+    _size: int = 0
+
+    @classmethod
+    def of(cls, values):
+        if isinstance(values, cls): return values
+        return cls() + tuple(values)
+    def __len__(self): return self._size
+    def __iter__(self):
+        blocks=[]
+        cursor=self
+        while cursor is not None:
+            blocks.append(cursor._tail)
+            cursor=cursor._parent
+        for block in reversed(blocks): yield from block
+    def __add__(self, values):
+        result=self
+        for value in values:
+            result=AppendLog(result._tail+(value,),result._parent,result._size+1) if len(result._tail)<64 else AppendLog((value,),result,result._size+1)
+        return result
+    def __getitem__(self, index):
+        if isinstance(index,slice): return tuple(self)[index]
+        if index<0:index+=self._size
+        if not 0<=index<self._size:raise IndexError(index)
+        cursor=self
+        while index<cursor._size-len(cursor._tail):cursor=cursor._parent
+        return cursor._tail[index-(cursor._size-len(cursor._tail))]
+    def __eq__(self, other):
+        if self is other:return True
+        if isinstance(other,AppendLog) and self._parent is other._parent:return self._size==other._size and self._tail==other._tail
+        if isinstance(other,(tuple,AppendLog)):return len(self)==len(other) and tuple(self)==tuple(other)
         return NotImplemented

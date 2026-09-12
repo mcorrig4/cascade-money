@@ -9,7 +9,7 @@ from typing import Callable, Mapping
 
 from .events import EventStream, rational, iso_date
 from . import invariants
-from .storage import FrozenMap, FrozenSet
+from .storage import FrozenMap, FrozenSet, AppendLog
 from .index import IndexSeries
 from .money import ExactCents
 
@@ -35,9 +35,10 @@ class Account:
     account_id: str
     spot_cents: int = 0
     units: Mapping[int, int] = field(default_factory=dict)
-    entitlement_ids: tuple[str, ...] = ()
+    entitlement_ids: AppendLog = field(default_factory=AppendLog)
 
     def __post_init__(self):
+        object.__setattr__(self, "entitlement_ids", AppendLog.of(self.entitlement_ids))
         if not isinstance(self.units, MappingProxyType):
             object.__setattr__(self, "units", MappingProxyType(dict(self.units)))
 
@@ -240,14 +241,15 @@ class Transition:
 
 
 class Vault:
-    def __init__(self, accounts: list[str] | tuple[str, ...], *, asset_price_cents: Fraction | int = 100, policy: VaultPolicy | None = None, opening_spot: Mapping[str, int] | None = None, opening_reserve_cents: int = 0, window_participants: tuple[str, ...] = (), event_stream: EventStream | None = None, check_every: int = 1):
+    def __init__(self, accounts: list[str] | tuple[str, ...], *, asset_price_cents: Fraction | int = 100, policy: VaultPolicy | None = None, opening_spot: Mapping[str, int] | None = None, opening_reserve_cents: int = 0, window_participants: tuple[str, ...] = (), event_stream: EventStream | None = None, check_every: int | str = 1):
         for account in accounts:
             _identifier(account, "account")
         if len(set(accounts)) != len(accounts):
             raise ProtocolError("duplicate_account", "account identifiers must be unique")
         if type(asset_price_cents) not in (int, Fraction) or asset_price_cents <= 0:
             raise ProtocolError("invalid_argument", "asset price must be an exact positive value")
-        _integer(check_every, "check_every", 1)
+        if check_every != "checkpoint":
+            _integer(check_every, "check_every", 1)
         self.check_every = check_every
         self.operation_count = 0
         self._policy = policy or VaultPolicy()
@@ -330,6 +332,8 @@ class Vault:
                 old, new = before.accounts[key], candidate.accounts[key]
                 delta = new.spot_cents - old.spot_cents
                 explicit += delta; spot += delta; near += delta; supply += delta
+                if old.units is new.units:
+                    continue
                 for date in set(old.units) | set(new.units):
                     delta = new.units.get(date, 0) - old.units.get(date, 0)
                     if not delta: continue
@@ -342,17 +346,18 @@ class Vault:
                 spot = explicit + sum(v for d,v in dates.items() if d <= candidate.cutoff)
                 near = explicit + sum(v for d,v in dates.items() if d <= candidate.cutoff + self.policy.liquidity_days)
             invoice_totals = {}
-            for aggregate, field in (("invoice_face_cents","amount_cents"), ("invoice_issued_cents","issued_cents"), ("invoice_paid_cents","paid_cents"), ("invoice_outstanding_cents","outstanding_cents")):
-                total = getattr(before, aggregate)
+            if transition.changed_invoices:
+                fields = (("invoice_face_cents","amount_cents"), ("invoice_issued_cents","issued_cents"), ("invoice_paid_cents","paid_cents"), ("invoice_outstanding_cents","outstanding_cents"))
+                invoice_totals = {aggregate:getattr(before,aggregate) for aggregate,_ in fields}
                 for key in transition.changed_invoices:
-                    old = before.invoices.get(key)
-                    total += getattr(candidate.invoices[key], field) - (getattr(old, field) if old else 0)
-                invoice_totals[aggregate] = total
+                    old, new = before.invoices.get(key), candidate.invoices[key]
+                    for aggregate, field in fields:
+                        invoice_totals[aggregate] += getattr(new,field) - (getattr(old,field) if old else 0)
             activity_updates, ending_updates = {}, {}
             for key in transition.changed_entitlements:
                 if key in before.entitlements: continue
                 right = candidate.entitlements[key]
-                ending_updates[right.end_day] = ending_updates.get(right.end_day, before.entitlement_endings.get(right.end_day, ())) + (key,)
+                ending_updates[right.end_day] = ending_updates.get(right.end_day, before.entitlement_endings.get(right.end_day, AppendLog())) + (key,)
                 if right.start_day <= right.end_day:
                     for date, amount in ((right.start_day, right.amount_cents), (right.end_day+1, -right.amount_cents)):
                         activity_updates[date] = activity_updates.get(date, before.activity_delta.get(date, 0)) + amount
@@ -364,7 +369,7 @@ class Vault:
             if candidate.backing_asset_units is before.backing_asset_units and candidate.asset_price_cents is before.asset_price_cents:
                 object.__setattr__(candidate, "backing_value_cents", before.backing_value_cents)
             scoped = perf_counter()
-            if kind == "checkpoint" or self.operation_count % self.check_every == 0:
+            if kind == "checkpoint" or (self.check_every != "checkpoint" and self.operation_count % self.check_every == 0):
                 checks = invariants.check_all(before, candidate, transition, self.policy)
             else:
                 checks = {"hard": {f.__name__: None for f in invariants.HARD_CHECKS},

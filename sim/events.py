@@ -32,7 +32,7 @@ DATA_FIELDS.update({
     "sell": {"seller", "buyer", "date", "spot_cents", "discount_bps", "clearing_discount"},
     "day_opened": {"previous_cutoff"},
     "checkpoint": {"gross_backing_value_cents", "previous_backing_value_cents", "deposits_cents", "withdrawals_cents", "fees_cents", "investment_result_cents", "previous_principal_cents", "active_entitlement_cents", "distributable_cents", "entitlement_accrual_cents", "unallocated_to_reserve_cents", "deficit_repair_cents", "reserve_floor_topup_cents", "policy_reserve_cents", "index_increment", "matured_cents", "locked_principal_cent_days", "bootstrap"},
-    "story": {"story_id", "beat", "caption", "camera_accounts", "settled_cents", "committed_cents"},
+    "story": {"story_id", "branch", "beat", "caption", "camera_accounts", "settled_cents", "committed_cents"},
     "day_summary": {"new_invoices", "invoices_settled", "principal_committed_cents", "gross_settled_to_date_cents", "principal_committed_to_date_cents", "settled_to_committed", "extensions", "sells", "withdrawals", "balance_sheet"},
     "funding_shortfall": {"invoice_id", "deadline", "shortfall_cents", "kind"},
     "scenario_result": {"name", "passed", "detail"},

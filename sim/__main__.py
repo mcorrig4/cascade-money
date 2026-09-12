@@ -37,8 +37,12 @@ def write_json(path,data):
     path.write_text(json.dumps(data,sort_keys=True,indent=2)+"\n",encoding="utf-8")
 
 
+def check_interval(value):
+    return value if value == "checkpoint" else positive_int(value)
+
+
 def world_args(parser):
-    parser.add_argument("--check-every", type=positive_int, default=1, help="check each Nth operation; checkpoints and final reconciliation always run")
+    parser.add_argument("--check-every", type=check_interval, default="checkpoint", help="checkpoint (default) or each Nth operation; daily and final reconciliation always run")
     parser.add_argument("--days",type=positive_int,default=365)
     parser.add_argument("--seed",type=nonnegative_int,default=1)
     parser.add_argument("--suppliers",type=positive_int,default=2000)
@@ -103,7 +107,8 @@ def main(argv=None):
         vault=apple_fixture(days=args.days,seed=args.seed)
         with args.out.open("w",encoding="utf-8") as output:
             write_ndjson(vault.events.lines,output)
-        print(f"Wrote {len(vault.events.lines)} events; settled $400,000,000; locked $100,000,000; bootstrap fixture.")
+        metrics = vault.events.events[-1]["data"]["metrics"]
+        print(f"Wrote {len(vault.events.lines)} events; settled ${metrics['gross_invoice_settled_cents']/100:,.0f}; locked ${metrics['principal_locked_cents']/100:,.0f}; bootstrap fixture.")
         return 0
     with args.out.open("w",encoding="utf-8") as output:
         result=run_world(destination=output,date_policy=args.date_policy,**kwargs)

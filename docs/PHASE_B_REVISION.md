@@ -1,3 +1,5 @@
+> Superseded by [the branching proof and checkpoint-verification report](BRANCHING_REPORT.md).
+
 # Phase B story and performance revision
 
 The corrected display chain reaches **$400 million settled on $100 million locked until maturity day 90, by simulated day 3**. All five requested story routes replace the previous scripts, including the ten-event quick fixture. There is no scripted TSMC-to-Corning payment.

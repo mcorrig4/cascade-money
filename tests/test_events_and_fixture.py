@@ -7,35 +7,24 @@ import sys
 import pytest
 
 from sim.events import DATA_FIELDS, validate_event
-from sim.world import APPLE_AMOUNT_CENTS, APPLE_CHAIN, apple_fixture
+from sim.world import APPLE_AMOUNT_CENTS, apple_fixture
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_apple_fixture_is_four_real_settlements():
-    vault = apple_fixture()
-    events = vault.events.events
-    assert len(events) == 10
-    settlements = [event for event in events if event["type"] in ("issue", "pay")]
-    assert [event["accounts"] for event in settlements] == [list(pair) for pair in zip(APPLE_CHAIN, APPLE_CHAIN[1:])]
-    assert [sum(e["amount_cents"] for e in settlements[:index]) for index in range(1, 5)] == [APPLE_AMOUNT_CENTS * index for index in range(1, 5)]
-    assert all(event["balance_sheet"]["dated_cents"] == APPLE_AMOUNT_CENTS for event in settlements)
-    assert all(invoice.outstanding_cents == 0 for invoice in vault.state.invoices.values())
-    assert dict(vault.state.accounts["Pacific Freight"].units) == {90: APPLE_AMOUNT_CENTS}
-    assert all(not vault.state.accounts[name].units for name in APPLE_CHAIN[:-1])
-    assert len(vault.state.entitlements) == 1
-    assert next(iter(vault.state.entitlements.values())).account_id == "Apple"
-    metrics = events[-1]["data"]["metrics"]
-    assert metrics["reuse_multiple"] == "4/1"
-    assert metrics["circulation_efficiency_per_day"] is None
-    assert metrics["observed_principal_cent_days"] == 0
-    assert vault.state.cutoff == 0
-    for sequence, event in enumerate(events, 1):
-        validate_event(event)
-        assert event["seq"] == sequence
-        assert all(event["checks"]["hard"].values())
-        assert not any(event["checks"]["breaches"].values())
+def test_apple_fixture_is_ten_branched_settlements():
+    vault=apple_fixture()
+    events=vault.events.events
+    settlements=[e for e in events if e['type'] in ('issue','pay')]
+    assert len(settlements)==10 and len(events)==32
+    assert sum(e['amount_cents'] for e in settlements)==45_000_000_000
+    assert all(e['balance_sheet']['dated_cents']==APPLE_AMOUNT_CENTS for e in settlements)
+    assert all(i.outstanding_cents==0 for i in vault.state.invoices.values())
+    assert len(vault.state.entitlements)==1
+    assert events[-1]['data']['metrics']['reuse_multiple']=='9/2'
+    assert sum(a.units.get(90,0) for a in vault.state.accounts.values())==APPLE_AMOUNT_CENTS
+    for event in events:validate_event(event)
 
 
 def test_fixture_is_byte_identical_for_same_configuration():
@@ -47,10 +36,10 @@ def test_cli_writes_real_deterministic_ndjson_across_hash_seeds(tmp_path):
     for hash_seed in ("1", "999"):
         target = tmp_path / f"events-{hash_seed}.ndjson"
         result = subprocess.run([sys.executable, "-m", "sim", "run", "--world", "apple-fixture", "--days", "5", "--seed", "1", "--out", str(target)], cwd=ROOT, env={**os.environ, "PYTHONHASHSEED": hash_seed}, capture_output=True, text=True, check=True)
-        assert "$400,000,000" in result.stdout
+        assert "$450,000,000" in result.stdout
         outputs.append(target.read_bytes())
     assert outputs[0] == outputs[1]
-    assert len(outputs[0].splitlines()) == 10
+    assert len(outputs[0].splitlines()) == 32
     assert outputs[0].endswith(b"\n")
 
 

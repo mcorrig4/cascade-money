@@ -5,26 +5,29 @@ from fractions import Fraction
 from .core import Vault, _integer
 from .events import rational
 
-APPLE_CHAIN = ("Apple", "Samsung Display", "Corning", "Great Lakes Silica", "Pacific Freight")
 APPLE_AMOUNT_CENTS = 100_000_000 * 100
 
 
 def apple_fixture(*, days: int = 5, seed: int = 1) -> Vault:
     _integer(days, "days", 1)
     _integer(seed, "seed")
-    vault = Vault(APPLE_CHAIN)
+    annotations = [b for b in json.loads(Path(__file__).with_name("story_annotations.json").read_text()) if b["story_id"] == "apple-fixture"]
+    actors = list(dict.fromkeys(a for b in annotations for a in (b["debtor"],b["creditor"])))
+    vault = Vault(actors)
     vault.emit_run_event("run_started", {
         "world": "apple-fixture", "seed": seed, "requested_days": days,
-        "nodes": [node_record(name, NAMED_SITES[name]) for name in APPLE_CHAIN],
+        "nodes": [node_record(name, NAMED_SITES[name]) for name in actors],
         "policy": vault.policy.as_dict(), "phase": "A",
     })
-    annotations = [b for b in json.loads(Path(__file__).with_name("story_annotations.json").read_text()) if b["story_id"] == "apple-fixture"]
-    for hop, (debtor, creditor) in enumerate(zip(APPLE_CHAIN, APPLE_CHAIN[1:]), 1):
-        note = annotations[hop-1]
-        vault.register_invoice(request_id=f"register:{hop}", actor=creditor, invoice_id=f"apple:{hop}", debtor=debtor, amount_cents=APPLE_AMOUNT_CENTS, due_day=90, maturity_bound=90, item=note["item"],quantity=note["quantity"],unit=note["unit"],deliver_to=note["deliver_to"])
-    vault.issue(request_id="settle:1", actor="Apple", invoice_id="apple:1", amount_cents=APPLE_AMOUNT_CENTS)
-    for hop, debtor in enumerate(APPLE_CHAIN[1:-1], 2):
-        vault.pay(request_id=f"settle:{hop}", actor=debtor, invoice_id=f"apple:{hop}", amount_cents=APPLE_AMOUNT_CENTS)
+    settled = committed = 0
+    for hop, note in enumerate(annotations, 1):
+        debtor, creditor, amount = note["debtor"], note["creditor"], note["amount_cents"]
+        vault.register_invoice(request_id=f"register:{hop}", actor=creditor, invoice_id=f"apple:{hop}", debtor=debtor, amount_cents=amount, due_day=90, maturity_bound=90, item=note["item"],quantity=note["quantity"],unit=note["unit"],deliver_to=note["deliver_to"])
+        operation = vault.issue if note["operation"] == "issue" else vault.pay
+        operation(request_id=f"settle:{hop}", actor=debtor, invoice_id=f"apple:{hop}", amount_cents=amount)
+        settled += amount
+        committed += amount if note["operation"] == "issue" else 0
+        vault.emit_run_event("story", {"story_id":"apple-fixture", "branch":note["branch"], "beat":note["beat"], "caption":note["caption"], "camera_accounts":[debtor,creditor], "settled_cents":settled, "committed_cents":committed})
     # Derive counters from actual settlement events; never from the story target.
     settled = sum(event["amount_cents"] for event in vault.events.events if event["type"] in ("issue", "pay"))
     deposited = sum(event["amount_cents"] for event in vault.events.events if event["type"] == "issue")
@@ -113,7 +116,7 @@ def eligible_legs(vault, actor, bound, amount):
     return legs
 
 
-def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps=1000, date_policy="exact", destination=None, retain=False, check_every=1):
+def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps=1000, date_policy="exact", destination=None, retain=False, check_every="checkpoint"):
     if date_policy not in {"exact","bucketed"}:
         raise ValueError("unknown date policy")
     nodes, obligations = generate_world(seed=seed,suppliers=suppliers,days=days,invoices=invoices,cash_need_bps=cash_need_bps)
@@ -150,6 +153,10 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
     for obligation in obligations:
         schedule.setdefault(obligation["day"],[]).append(obligation)
     stories = [b for b in json.loads(Path(__file__).with_name("story_annotations.json").read_text()) if b["story_id"] != "apple-fixture"]
+    protected = {}
+    for beat in stories:
+        if beat["operation"] != "issue":
+            protected.setdefault(beat["day"]-1,set()).add(beat["debtor"])
     story_totals = {}
     pending = {n["id"]:set() for n in nodes}
     due = {}
@@ -214,7 +221,7 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
             totals[0] += beat["amount_cents"]
             if beat["operation"] == "issue":
                 totals[1] += beat["amount_cents"]
-            vault.emit_run_event("story",{"story_id":beat["story_id"],"beat":beat["beat"],"caption":beat["caption"],"camera_accounts":[beat["debtor"],beat["creditor"]],"settled_cents":totals[0],"committed_cents":totals[1]})
+            vault.emit_run_event("story",{"story_id":beat["story_id"],"branch":beat.get("branch", "root"),"beat":beat["beat"],"caption":beat["caption"],"camera_accounts":[beat["debtor"],beat["creditor"]],"settled_cents":totals[0],"committed_cents":totals[1]})
         if day == 4:
             for term in (7,30,60,90,180):
                 identifier = f"curve:{term}"
@@ -231,7 +238,7 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
                 if node["role"] == "institution":
                     continue
                 # Hold the next hop's consigned story principal until its scripted payment.
-                if any(b["debtor"] == actor and b["operation"] != "issue" and b["day"] == day + 1 for b in stories):
+                if actor in protected.get(day, ()) :
                     continue
                 treasury = node["policy"] == "treasury" or node["policy"] == "mixed" and rng.randrange(2) == 0
                 for identifier in sorted(pending[actor],key=lambda key:(vault.state.invoices[key].due_day,key)):

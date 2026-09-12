@@ -165,8 +165,8 @@ def test_globe_has_daily_summaries_early_apple_shape_and_five_trades():
     result=run_world(days=10,suppliers=40,invoices=30,retain=True)
     events=result.vault.events.events
     assert len([e for e in events if e['type']=='day_summary'])==10
-    fourth=next(e for e in events if e['type']=='story' and e['data']['beat']=='four-times')
-    assert fourth['day']<30 and fourth['data']['settled_cents']==40_000_000_000 and fourth['data']['committed_cents']==10_000_000_000
+    fourth=next(e for e in events if e['type']=='story' and e['data']['beat']=='chemicals-feedstock-rail')
+    assert fourth['day']<30 and fourth['data']['settled_cents']==45_000_000_000 and fourth['data']['committed_cents']==10_000_000_000
     curve=[e for e in events if e['type']=='sell' and e['data']['seller']=='Curve Seller']
     assert {e['data']['date']-e['day'] for e in curve}=={7,30,60,90,180}
     summaries=[e for e in events if e['type']=='day_summary']

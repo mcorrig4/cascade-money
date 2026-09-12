@@ -62,7 +62,13 @@ NAMED_SITES.update({
     "Pohang Cathode": [site("pohang-cathode",36.02,129.34,"Pohang","South Korea","East Asia")],
     "Shenzhen PCB": [site("shenzhen-pcb",22.55,114.06,"Shenzhen","China","East Asia")],
 })
+NAMED_SITES.update({
+    "Ohio Valley Chemicals": [site("ohio-valley-chemicals",39.42,-81.45,"Marietta, Ohio","United States","North America")],
+    "Superior Sands Refining": [site("superior-sands-refining",46.72,-92.10,"Superior, Wisconsin","United States","North America")],
+    "Great Plains Rail": [site("great-plains-rail",39.10,-94.58,"Kansas City, Missouri","United States","North America")],
+})
 STORY_CATEGORIES = {
+    "Ohio Valley Chemicals": (2,"refining"), "Superior Sands Refining": (3,"refining"), "Great Plains Rail": (3,"logistics"),
     "Great Lakes Silica": (3,"raw"), "Pacific Freight": (3,"logistics"),
     "Sumco": (2,"components"), "Wacker": (2,"refining"),
     "Bécancour Silicon": (3,"raw"), "Pohang Cathode": (2,"refining"),
