@@ -1,0 +1,6 @@
+dist/
+events.ndjson
+.hypothesis/
+node_modules/
+__pycache__/
+.pytest_cache/
