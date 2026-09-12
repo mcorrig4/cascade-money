@@ -1,176 +1,242 @@
-# Cascade NDJSON events — schema version 1, Phase A
+# Cascade NDJSON events — schema version 2
 
-Each UTF-8 line is one complete JSON object, terminated by LF. Event order is
-authoritative: `seq` starts at 1 and increases by one within a stream. Keys are
-sorted and JSON is compact. No wall-clock time, output path, UUID or process hash
-is serialized. Same configuration produces identical bytes.
+Version 2 preserves every version-1 envelope field, balance-sheet field and
+operation field. It adds `iso_date`, invoice line items, geographical nodes and
+Phase B operations/aggregates. All monetary spendable amounts are integer cents.
+Exact rational values use reduced `numerator/denominator` strings. Asset units
+are not cents. Latitude/longitude are approximate geographic floats, never money.
 
-This document covers **every currently emitted event type**. Phase B operation
-types are not implemented or represented by placeholder events. Consumers should
-dispatch on `type` and reject unsupported schema versions.
+One UTF-8 JSON object per LF-terminated line; keys are sorted, output is compact,
+and sequence numbers start at 1. Same seed and configuration produce identical
+NDJSON bytes. Measured wall times are diagnostic output only, never event fields.
 
-## Common envelope (present on every line)
+## Common envelope (every event)
 
-| Field | Type / meaning |
+| Field | Meaning |
 |---|---|
-| `schema_version` | Integer, currently 1 |
-| `seq` | Positive integer sequence number |
-| `type` | One of the seven event types below |
-| `day` | Nonnegative integer execution day; all Phase A events use bootstrap day 0 |
-| `request_id` | Successful or attempted mutation ID; null for run metadata |
-| `actor` | Authenticated simulation actor, attempted actor on rejection, or null for metadata |
-| `accounts` | Ordered unique account IDs involved; debtor/sender precedes creditor/recipient; empty for run metadata |
-| `amount_cents` | Integer nominal amount on registration, minted/moved/settled amount on success, zero for metadata/rejection |
-| `dates` | Sorted unique relevant integer dates: M/D on registration, M on Issue, selected dated buckets on Transfer/Pay; empty for spot-only movement or metadata/rejection |
-| `index` | `{day, value}`: latest completed cutoff and exact index as a reduced rational string |
-| `balance_sheet` | Aggregate post-operation state, or unchanged state for rejection; fields below |
-| `checks` | `{hard: {name: boolean}, breaches: {name: boolean}}`; true means passing for hard checks, but active breach for indicators |
-| `data` | Type-specific object; fields below |
+| `schema_version` | Integer 2 |
+| `seq` | Consecutive positive event sequence number |
+| `type` | One of the 17 types documented below |
+| `day` | Nonnegative integer execution day |
+| `iso_date` | `2025-09-09 + day` in ISO format; day 364 is 2026-09-08 |
+| `request_id` | Mutation request ID, attempted ID on rejection, null for metadata |
+| `actor` | Simulation account actor; null for clock/checkpoint or metadata |
+| `accounts` | Ordered unique affected account IDs, sender/debtor before recipient/creditor |
+| `amount_cents` | Nominal invoice registration amount, successful operation amount, or zero for metadata/rejection/checkpoint |
+| `dates` | Sorted unique relevant integer days; spot-only operations use an empty array |
+| `index` | `{day,value}`: completed cutoff and exact published index |
+| `balance_sheet` | Post-transition aggregate snapshot; unchanged on rejection |
+| `checks` | Every hard check and both breach indicators, described below |
+| `data` | Type-specific fields |
 
-Account IDs are strings. All spendable money is **integer cents**, not dollars.
-Exact rational strings have form `numerator/denominator` with a positive
-denominator. Their unit follows the field name; `100000000/1` asset units are
-not `100000000` cents. Clients must preserve integer precision when handling
-amounts beyond their language's safe numeric range.
+The balance sheet retains `backing_asset_units` (rational asset quantity),
+`backing_value_cents` (integer marked dollars in cents), `principal_cents`,
+`dated_cents`, `spot_cents` (integers), and `unclaimed_accrued_cents`,
+`claimable_cents`, `reserve_cents`, `deficit_cents` (rational cents). Claimable is
+part of unclaimed accrual; do not add it twice. Dated excludes buckets at or
+before the completed cutoff. Consumers must preserve integer precision beyond
+JavaScript's safe-number range and parse rational strings without float rounding.
 
-`balance_sheet` fields:
+`checks.hard` always contains `state_integrity`, `principal_identity`,
+`encumbrance`, `date_rule`, `cursor_monotonicity`, `yield_conservation`,
+`index_monotonicity`, `invoice_conservation`, `maturity_is_atomic`,
+`issue_is_unconditional`. True means passed. `checks.breaches` always contains
+`solvency` and `liquidity_standard`: true means an active breach. Either breach
+suspends Claim/Withdraw. A liquidity-only breach does not invent dollar deficit.
+All hard functions execute after each operation and checkpoint. Unchanged frozen
+records retain their checked proof; a checkpoint additionally reconciles complete
+ledgers and exact entitlement interval totals. Metadata reuses the unchanged
+state's check results. Rejected-candidate hard failures appear in `error_code`;
+the rejection snapshot/checks describe the valid rolled-back state.
 
-| Field | Type / unit |
-|---|---|
-| `backing_asset_units` | Exact rational asset quantity |
-| `backing_value_cents` | Integer marked backing value |
-| `principal_cents` | Integer dated plus effective-spot liability |
-| `dated_cents` | Integer units with date greater than completed cutoff |
-| `spot_cents` | Integer explicit spot plus matured buckets |
-| `unclaimed_accrued_cents` | Exact rational accrued liability, including claimable yield |
-| `claimable_cents` | Exact rational claimable subset of unclaimed accrual |
-| `reserve_cents` | Exact rational reserve accounting balance |
-| `deficit_cents` | Exact rational backing shortfall |
+## Nested objects
 
-All ten hard-check keys are always present: `state_integrity`,
-`principal_identity`, `encumbrance`, `date_rule`, `cursor_monotonicity`,
-`yield_conservation`, `index_monotonicity`, `invoice_conservation`,
-`maturity_is_atomic`, `issue_is_unconditional`. The two breach keys are
-`solvency` and `liquidity_standard`. Either breach suspends Claim/Withdraw when
-those operations exist. A liquidity-only breach does not imply a dollar deficit.
+**Invoice:** `invoice_id`, `creditor`, `debtor`, `amount_cents`, `due_day` (D),
+`maturity_bound` (M), `signed_day`, `outstanding_cents`, `issued_cents`,
+`paid_cents`, plus `item`, positive integer `quantity`, `unit`, `deliver_to`.
+The latter is a site ID and can identify a third-party assembly destination,
+as in the Samsung Display-to-Foxconn example. All approved fields are immutable.
 
-Phase A checks prohibit index/allocation changes in its supported operations.
-The stream does not imply that Phase B checkpoint and interval-extension checks
-already exist. A rejected invariant-violating candidate is rolled back: the
-rejection's hard checks describe the unchanged valid state, while its error code
-identifies the failed candidate.
+**Entitlement:** `entitlement_id`, `account_id`, `amount_cents`, `start_day`,
+`end_day`, `claimed`. Empty intervals are zero; nonempty ones use the inclusive
+index formula. Transfers, Pay and Sell never change entitlement ownership.
 
-## Type-specific fields and example lines
+**Payment leg:** `{amount_cents,date}`; null date is effective spot, otherwise
+an unchanged future maturity. Legs sum to the operation's amount. Same-date
+balances split/merge implicitly; no separate Split/Merge transaction is emitted.
 
-Examples are actual emitted records. Each is independently illustrative; they
-are not intended to form a concatenated run. Every field in the shown `data`
-objects is required for that type.
+**Node:** preserves `id`, `name`, `role`, and adds `lat`, `lon`, `city`, `country`,
+`region`, `sites`, `tier`, `category`, `policy`, `cash_need_bps`. A site contains
+`site_id`, `lat`, `lon`, `city`, `country`, `region`. Primary coordinates duplicate
+the first site. Roles are anchor, supplier or institution. There are 2,000
+suppliers, two anchors and two separately identified window actors by default.
+The network and purchases are illustrative, not asserted commercial contracts.
+
+**Policy:** retains `liquidity_days`, `immediately_realizable_fraction`,
+`reserve_floor_cents`, `reserve_share`, `daily_fee_cents`. Full runs additionally
+record `date_policy`, `cash_need_bps`, `illustrative`, `opening_spot_cents`,
+`opening_reserve_cents`. Opening window spot/reserve is explicitly backed.
+
+## Event types
+
+Each following example is an actual emitted record, independently illustrative;
+the examples are not a single concatenated run. All listed `data` fields are
+required. Unknown future types must not be mistaken for successful payments.
 
 ### `run_started`
 
-`world`: fixture name; `seed`: nonnegative integer; `requested_days`: positive
-integer viewing horizon; `phase`: `"A"`; `nodes`: ordered `{id,name,role}` records
-(`role` is `anchor` or `supplier`); `policy`: `liquidity_days`,
-`immediately_realizable_fraction`, `reserve_floor_cents`, `reserve_share`,
-`daily_fee_cents`. Fractions are exact strings. Accounts begin with zero balances.
+`world`, `seed`, `requested_days`, `nodes`, `policy`, `phase`. The full apple/tesla world contains both anchors and runs the calendar; apple-fixture preserves the ten-event bootstrap demonstration.
 
 ```json
-{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"0/1","backing_value_cents":0,"claimable_cents":"0/1","dated_cents":0,"deficit_cents":"0/1","principal_cents":0,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"nodes":[{"id":"Apple","name":"Apple","role":"anchor"},{"id":"Foxconn","name":"Foxconn","role":"supplier"},{"id":"TSMC","name":"TSMC","role":"supplier"},{"id":"Corning","name":"Corning","role":"supplier"},{"id":"Clearview Glass","name":"Clearview Glass","role":"supplier"}],"phase":"A","policy":{"daily_fee_cents":0,"immediately_realizable_fraction":"1/1","liquidity_days":7,"reserve_floor_cents":0,"reserve_share":"0/1"},"requested_days":5,"seed":1,"world":"apple-fixture"},"dates":[],"day":0,"index":{"day":0,"value":"1/1"},"request_id":null,"schema_version":1,"seq":1,"type":"run_started"}
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"0/1","backing_value_cents":0,"claimable_cents":"0/1","dated_cents":0,"deficit_cents":"0/1","principal_cents":0,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"nodes":[{"cash_need_bps":1000,"category":"components","city":"Cupertino","country":"United States","id":"Apple","lat":37.3349,"lon":-122.009,"name":"Apple","policy":"naive","region":"North America","role":"anchor","sites":[{"city":"Cupertino","country":"United States","lat":37.3349,"lon":-122.009,"region":"North America","site_id":"apple-park"}],"tier":1},{"cash_need_bps":1000,"category":"components","city":"Zhengzhou","country":"China","id":"Foxconn","lat":34.535,"lon":113.85,"name":"Foxconn","policy":"naive","region":"East Asia","role":"supplier","sites":[{"city":"Zhengzhou","country":"China","lat":34.535,"lon":113.85,"region":"East Asia","site_id":"foxconn-zhengzhou"},{"city":"Chennai","country":"India","lat":12.973,"lon":79.946,"region":"South Asia","site_id":"foxconn-chennai"}],"tier":1},{"cash_need_bps":1000,"category":"components","city":"Hsinchu","country":"Taiwan","id":"TSMC","lat":24.773,"lon":121.012,"name":"TSMC","policy":"naive","region":"East Asia","role":"supplier","sites":[{"city":"Hsinchu","country":"Taiwan","lat":24.773,"lon":121.012,"region":"East Asia","site_id":"tsmc-hsinchu"}],"tier":1},{"cash_need_bps":1000,"category":"components","city":"Harrodsburg, Kentucky","country":"United States","id":"Corning","lat":37.772,"lon":-84.837,"name":"Corning","policy":"naive","region":"North America","role":"supplier","sites":[{"city":"Harrodsburg, Kentucky","country":"United States","lat":37.772,"lon":-84.837,"region":"North America","site_id":"corning-harrodsburg"}],"tier":1},{"cash_need_bps":1000,"category":"components","city":"Harrodsburg, Kentucky","country":"United States","id":"Clearview Glass","lat":37.8,"lon":-84.85,"name":"Clearview Glass","policy":"naive","region":"North America","role":"supplier","sites":[{"city":"Harrodsburg, Kentucky","country":"United States","lat":37.8,"lon":-84.85,"region":"North America","site_id":"clearview-glass"}],"tier":1}],"phase":"A","policy":{"daily_fee_cents":0,"immediately_realizable_fraction":"1/1","liquidity_days":7,"reserve_floor_cents":0,"reserve_share":"0/1"},"requested_days":5,"seed":1,"world":"apple-fixture"},"dates":[],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":null,"schema_version":2,"seq":1,"type":"run_started"}
 ```
 
 ### `invoice_registered`
 
-`invoice` contains `invoice_id`, `creditor`, `debtor`, `amount_cents`, `due_day`
-(D), `maturity_bound` (M), `signed_day`, `outstanding_cents`, `issued_cents`,
-`paid_cents`. New invoices have full outstanding balance and zero settlements.
-The actor is the approving creditor. Registration is not a settlement.
+`invoice` (the complete object above). Actor is the approving creditor. Registration increases the daily new-invoice counter, not gross settlement.
 
 ```json
-{"accounts":["Corning","Clearview Glass"],"actor":"Clearview Glass","amount_cents":10000000000,"balance_sheet":{"backing_asset_units":"0/1","backing_value_cents":0,"claimable_cents":"0/1","dated_cents":0,"deficit_cents":"0/1","principal_cents":0,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"invoice":{"amount_cents":10000000000,"creditor":"Clearview Glass","debtor":"Corning","due_day":90,"invoice_id":"apple:4","issued_cents":0,"maturity_bound":90,"outstanding_cents":10000000000,"paid_cents":0,"signed_day":0}},"dates":[90],"day":0,"index":{"day":0,"value":"1/1"},"request_id":"register:4","schema_version":1,"seq":5,"type":"invoice_registered"}
+{"accounts":["Apple","Foxconn"],"actor":"Foxconn","amount_cents":10000000000,"balance_sheet":{"backing_asset_units":"0/1","backing_value_cents":0,"claimable_cents":"0/1","dated_cents":0,"deficit_cents":"0/1","principal_cents":0,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"invoice":{"amount_cents":10000000000,"creditor":"Foxconn","debtor":"Apple","deliver_to":"foxconn-zhengzhou","due_day":90,"invoice_id":"apple:1","issued_cents":0,"item":"iPhone assembly services","maturity_bound":90,"outstanding_cents":10000000000,"paid_cents":0,"quantity":2000000,"signed_day":0,"unit":"pieces"}},"dates":[90],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":"register:1","schema_version":2,"seq":2,"type":"invoice_registered"}
 ```
 
 ### `issue`
 
-`invoice_id`, `debtor`, `creditor`, `outstanding_cents` (after Issue),
-`asset_units` (exact deposited quantity), `mint_date` (signed M), and
-`entitlement`: `{entitlement_id,account_id,amount_cents,start_day,end_day,claimed}`.
-The entitlement belongs to the debtor. The envelope amount is both the deposit
-value and the invoice settlement value. Minting at/before cutoff is immediately
-interpreted as spot, even though its stored mint identifier remains M.
+`invoice_id`, `debtor`, `creditor`, `outstanding_cents` after Issue, `asset_units` deposited, `mint_date` (always M), `entitlement`. The envelope amount is both capital deposited and invoice value settled.
 
 ```json
-{"accounts":["Apple","Foxconn"],"actor":"Apple","amount_cents":10000000000,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"asset_units":"100000000/1","creditor":"Foxconn","debtor":"Apple","entitlement":{"account_id":"Apple","amount_cents":10000000000,"claimed":false,"end_day":90,"entitlement_id":"entitlement:settle:1","start_day":1},"invoice_id":"apple:1","mint_date":90,"outstanding_cents":0},"dates":[90],"day":0,"index":{"day":0,"value":"1/1"},"request_id":"settle:1","schema_version":1,"seq":6,"type":"issue"}
+{"accounts":["Apple","Foxconn"],"actor":"Apple","amount_cents":10000000000,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"asset_units":"100000000/1","creditor":"Foxconn","debtor":"Apple","entitlement":{"account_id":"Apple","amount_cents":10000000000,"claimed":false,"end_day":90,"entitlement_id":"entitlement:settle:1","start_day":1},"invoice_id":"apple:1","mint_date":90,"outstanding_cents":0},"dates":[90],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":"settle:1","schema_version":2,"seq":6,"type":"issue"}
 ```
 
 ### `transfer`
 
-`sender`, `recipient`, `legs`: list of `{amount_cents,date}`. `date: null` means
-effective spot; otherwise the integer date is preserved. The Phase A Transfer
-API accepts one leg; its list representation matches Pay. Entitlements do not
-move, and Transfer contributes zero to invoice settlement counters.
+`sender`, `recipient`, `legs`. Dates and entitlement owners remain unchanged. This does not settle an invoice.
 
 ```json
-{"accounts":["Clearview Glass","Corning"],"actor":"Clearview Glass","amount_cents":100,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"legs":[{"amount_cents":100,"date":90}],"recipient":"Corning","sender":"Clearview Glass"},"dates":[90],"day":0,"index":{"day":0,"value":"1/1"},"request_id":"example:transfer","schema_version":1,"seq":11,"type":"transfer"}
+{"accounts":["B","C"],"actor":"B","amount_cents":5000,"balance_sheet":{"backing_asset_units":"100/1","backing_value_cents":10000,"claimable_cents":"0/1","dated_cents":10000,"deficit_cents":"0/1","principal_cents":10000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"legs":[{"amount_cents":5000,"date":2}],"recipient":"C","sender":"B"},"dates":[2],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":"share","schema_version":2,"seq":3,"type":"transfer"}
 ```
 
 ### `pay`
 
-`invoice_id`, `debtor`, `creditor`, `outstanding_cents` (after Pay), `legs`:
-ordered list of `{amount_cents,date}`. Legs sum to the envelope amount. All
-non-null dates must be after cutoff and no later than both D and M. Explicit
-valid order is allowed; automatic selection is earliest eligible date first,
-then spot. Dates and existing entitlement owners remain unchanged.
+`invoice_id`, `debtor`, `creditor`, `outstanding_cents` after Pay, `legs`, plus `extension_request_ids`. Links must refer to unused extensions by this actor whose amounts are delivered at their ending dates. Empty links mean no attributed preceding extension. Default selection is earliest eligible dates, then spot; explicit valid order is allowed.
 
 ```json
-{"accounts":["Corning","Clearview Glass"],"actor":"Corning","amount_cents":10000000000,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"creditor":"Clearview Glass","debtor":"Corning","invoice_id":"apple:4","legs":[{"amount_cents":10000000000,"date":90}],"outstanding_cents":0},"dates":[90],"day":0,"index":{"day":0,"value":"1/1"},"request_id":"settle:4","schema_version":1,"seq":9,"type":"pay"}
+{"accounts":["Foxconn","TSMC"],"actor":"Foxconn","amount_cents":10000000000,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"creditor":"TSMC","debtor":"Foxconn","extension_request_ids":[],"invoice_id":"apple:2","legs":[{"amount_cents":10000000000,"date":90}],"outstanding_cents":0},"dates":[90],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":"settle:2","schema_version":2,"seq":7,"type":"pay"}
 ```
 
 ### `operation_rejected`
 
-`operation`: attempted type; `error_code`: stable machine-readable reason;
-`message`: human-readable detail. Neither protocol state nor the successful
-request-ID set changes. The envelope amount is zero so a failed attempt cannot
-look like settlement. The request ID may repeat a previous successful request.
-Relevant codes: `invalid_argument`, `unknown_account`, `unknown_invoice`,
-`duplicate_invoice`, `invalid_bound`, `unauthorized`, `invoice_balance`, `replay`,
-`maturity_bound`, `payment_total`, `matured_is_spot`, `insufficient_balance`,
-`invariant_violation`. Constructor errors precede the event stream. Unexpected
-programming/serialization failures raise and may prevent a rejection record.
+`operation`, `error_code`, `message`. State and successful request IDs are unchanged; amount is zero. Codes include invalid_argument, unknown_account, unknown_invoice, duplicate_invoice, invalid_bound, unauthorized, invoice_balance, replay, maturity_bound, payment_total, matured_is_spot, insufficient_balance, invariant_violation, invalid_extension, invalid_extension_link, unknown_entitlement, already_claimed, not_claimable, suspended, window_gate, invalid_discount, invalid_day, day_closed, invalid_mark, bootstrap_income, zero_asset_price. Serialization failures may prevent a rejection event, but cannot commit ledger state.
 
 ```json
-{"accounts":["Clearview Glass"],"actor":"Clearview Glass","amount_cents":0,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"error_code":"insufficient_balance","message":"insufficient dated balance","operation":"transfer"},"dates":[],"day":0,"index":{"day":0,"value":"1/1"},"request_id":"example:rejected","schema_version":1,"seq":12,"type":"operation_rejected"}
+{"accounts":["B"],"actor":"B","amount_cents":0,"balance_sheet":{"backing_asset_units":"101/1","backing_value_cents":9900,"claimable_cents":"0/1","dated_cents":0,"deficit_cents":"200/1","principal_cents":10100,"reserve_cents":"0/1","spot_cents":10100,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":true,"solvency":true},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"error_code":"suspended","message":"Withdraw suspended by deficit or liquidity breach","operation":"withdraw"},"dates":[],"day":3,"index":{"day":2,"value":"101/100"},"iso_date":"2025-09-12","request_id":"blocked","schema_version":2,"seq":10,"type":"operation_rejected"}
+```
+
+### `extend`
+
+`from_date` (null for effective spot), `effective_from_date` (execution day for spot), `to_date`, `entitlement`. Burns/debits and mints the envelope amount atomically. Interval begins at max(tomorrow, old cursor+1). No principal enters or leaves.
+
+```json
+{"accounts":["B"],"actor":"B","amount_cents":5000,"balance_sheet":{"backing_asset_units":"100/1","backing_value_cents":10000,"claimable_cents":"0/1","dated_cents":10000,"deficit_cents":"0/1","principal_cents":10000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"effective_from_date":2,"entitlement":{"account_id":"B","amount_cents":5000,"claimed":false,"end_day":5,"entitlement_id":"entitlement:before-cutoff","start_day":3},"from_date":2,"to_date":5},"dates":[2,5],"day":2,"index":{"day":1,"value":"1/1"},"iso_date":"2025-09-11","request_id":"before-cutoff","schema_version":2,"seq":8,"type":"extend"}
+```
+
+### `claim`
+
+`entitlement_id`, `value_cents` (exact), `residual_cents` (exact fractional-cent amount routed to reserve). Envelope amount is the whole-cent payout, which can be zero. The claimed flag is set once.
+
+```json
+{"accounts":["A"],"actor":"A","amount_cents":100,"balance_sheet":{"backing_asset_units":"101/1","backing_value_cents":10200,"claimable_cents":"0/1","dated_cents":0,"deficit_cents":"0/1","principal_cents":10100,"reserve_cents":"100/1","spot_cents":10100,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"entitlement_id":"entitlement:issue:initial","residual_cents":"0/1","value_cents":"100/1"},"dates":[1],"day":2,"index":{"day":1,"value":"101/100"},"iso_date":"2025-09-11","request_id":"claimed","schema_version":2,"seq":7,"type":"claim"}
+```
+
+### `withdraw`
+
+`asset_units` (exact quantity leaving backing). Envelope amount is the equal spot liability debit at the current checkpoint price.
+
+```json
+{"accounts":["C"],"actor":"C","amount_cents":2500,"balance_sheet":{"backing_asset_units":"75/1","backing_value_cents":7500,"claimable_cents":"0/1","dated_cents":5000,"deficit_cents":"0/1","principal_cents":7500,"reserve_cents":"0/1","spot_cents":2500,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"asset_units":"25/1"},"dates":[],"day":3,"index":{"day":2,"value":"1/1"},"iso_date":"2025-09-12","request_id":"after-cutoff","schema_version":2,"seq":12,"type":"withdraw"}
+```
+
+### `sell`
+
+`seller`, `buyer`, `date`, `spot_cents`, `discount_bps` (posted quote), `clearing_discount` (actual exact fractional discount after cent rounding). Envelope amount is face principal, not spot consideration. Only a distinct gated buyer with its own spot can fund it. Reserve and existing entitlements do not move.
+
+```json
+{"accounts":["Curve Seller","Window Fund"],"actor":"Curve Seller","amount_cents":1000000,"balance_sheet":{"backing_asset_units":"102190107894000000/452148619","backing_value_cents":22608430950,"claimable_cents":"0/1","dated_cents":12501000000,"deficit_cents":"0/1","principal_cents":22501000000,"reserve_cents":"929723800/9","spot_cents":10000000000,"unclaimed_accrued_cents":"37154750/9"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"buyer":"Window Fund","clearing_discount":"3/2500","date":11,"discount_bps":12,"seller":"Curve Seller","spot_cents":998800},"dates":[11],"day":4,"index":{"day":3,"value":"450148619/450000000"},"iso_date":"2025-09-13","request_id":"curve-sell:19","schema_version":2,"seq":39,"type":"sell"}
+```
+
+### `day_opened`
+
+`previous_cutoff`. Moves to the next consecutive execution day and resets daily capital-flow counters. Only allowed after the previous closing checkpoint.
+
+```json
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"101/1","backing_value_cents":10100,"claimable_cents":"0/1","dated_cents":10000,"deficit_cents":"0/1","principal_cents":10000,"reserve_cents":"100/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"previous_cutoff":0},"dates":[],"day":1,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-10","request_id":"day:1","schema_version":2,"seq":4,"type":"day_opened"}
+```
+
+### `checkpoint`
+
+`gross_backing_value_cents`, `previous_backing_value_cents`, `deposits_cents`, `withdrawals_cents`, `fees_cents`, `investment_result_cents`, `previous_principal_cents`, `active_entitlement_cents`, `distributable_cents`, `entitlement_accrual_cents`, `unallocated_to_reserve_cents`, `deficit_repair_cents`, `reserve_floor_topup_cents`, `policy_reserve_cents`, `index_increment`, `matured_cents`, `locked_principal_cent_days`, `bootstrap`. Allocation/repair fields and increment are rational strings; other amounts/counts are integers. Gross mark is before fees; fees leave as asset units once. Bootstrap day 0 seals I(0)=1 without income. Every later day publishes one index, completes its maturity interpretation, and reports prior-cutoff locked exposure. Mature is represented here, not by a token rewrite event.
+
+```json
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"101/1","backing_value_cents":10100,"claimable_cents":"0/1","dated_cents":10000,"deficit_cents":"0/1","principal_cents":10000,"reserve_cents":"100/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"active_entitlement_cents":0,"bootstrap":true,"deficit_repair_cents":"0/1","deposits_cents":10000,"distributable_cents":"0/1","entitlement_accrual_cents":"0/1","fees_cents":0,"gross_backing_value_cents":10100,"index_increment":"0/1","investment_result_cents":0,"locked_principal_cent_days":0,"matured_cents":0,"policy_reserve_cents":"0/1","previous_backing_value_cents":100,"previous_principal_cents":0,"reserve_floor_topup_cents":"0/1","unallocated_to_reserve_cents":"0/1","withdrawals_cents":0},"dates":[0],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":"checkpoint:0","schema_version":2,"seq":3,"type":"checkpoint"}
+```
+
+### `story`
+
+`story_id`, `beat`, `caption`, `camera_accounts`, `settled_cents`, `committed_cents`. Camera accounts identify geographical nodes; site destinations are available from the associated invoice. Totals are specific to this story, so the early Apple 4x shot is distinct from simultaneous Tesla/world activity. Captions are editable in sim/story_annotations.json.
+
+```json
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"201000000/1","backing_value_cents":20100000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":20000000000,"reserve_cents":"100000000/1","spot_cents":10000000000,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"beat":"processors","camera_accounts":["Apple","TSMC"],"caption":"Illustrative: Apple bought 2,000,000 processors from TSMC in Hsinchu, delivered to Foxconn Zhengzhou.","committed_cents":10000000000,"settled_cents":10000000000,"story_id":"apple-duo"},"dates":[],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":null,"schema_version":2,"seq":4,"type":"story"}
+```
+
+### `day_summary`
+
+`new_invoices` {count,cents} means invoices registered that day; `invoices_settled` {count,cents} counts fully closed invoices and all settlement value including partial payments; `principal_committed_cents` is newly deposited Issue capital that day; `gross_settled_to_date_cents`, `principal_committed_to_date_cents`, `settled_to_committed` (exact ratio or null); `extensions` {count,cents}; `sells` {count,cents,spot_cents}, with cents meaning face value; `withdrawals` {count,cents}; `balance_sheet` duplicates the common final daily snapshot. Exactly one follows each daily checkpoint, including day 0.
+
+```json
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"226000000/1","backing_value_cents":22600000000,"claimable_cents":"0/1","dated_cents":12500000000,"deficit_cents":"0/1","principal_cents":22500000000,"reserve_cents":"100000000/1","spot_cents":10000000000,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"balance_sheet":{"backing_asset_units":"226000000/1","backing_value_cents":22600000000,"claimable_cents":"0/1","dated_cents":12500000000,"deficit_cents":"0/1","principal_cents":22500000000,"reserve_cents":"100000000/1","spot_cents":10000000000,"unclaimed_accrued_cents":"0/1"},"extensions":{"cents":0,"count":0},"gross_settled_to_date_cents":12500000000,"invoices_settled":{"cents":12500000000,"count":2},"new_invoices":{"cents":12500000000,"count":2},"principal_committed_cents":12500000000,"principal_committed_to_date_cents":12500000000,"sells":{"cents":0,"count":0,"spot_cents":0},"settled_to_committed":"1/1","withdrawals":{"cents":0,"count":0}},"dates":[],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":null,"schema_version":2,"seq":9,"type":"day_summary"}
+```
+
+### `funding_shortfall`
+
+`invoice_id`, `deadline`, `shortfall_cents`, `kind`. Kind invoice is the eligible shortfall recorded once at its due-day decision; projected is the end-run forecast for a later deadline; cash is an unmet off-network need (synthetic cash:account ID). These categories remain separate. Later payments do not erase a historical missed-deadline observation.
+
+```json
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"4695104282347797808262468097744828748706467035310383167567100000/21952360210780792031962804319507262166918284563261757181","backing_value_cents":21408934080,"claimable_cents":"0/1","dated_cents":12556920000,"deficit_cents":"0/1","principal_cents":21287306738,"reserve_cents":"20394150964317217157788267370068994158384787/186723403859839885183556673502582986","spot_cents":8730386738,"unclaimed_accrued_cents":"2316520336347648622672912934412004563218425/186723403859839885183556673502582986"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"deadline":64,"invoice_id":"world:00017","kind":"projected","shortfall_cents":290000},"dates":[],"day":9,"index":{"day":9,"value":"175226716718197147218834002027190366906814139/175053191118599892359584381408671549375000000"},"iso_date":"2025-09-18","request_id":null,"schema_version":2,"seq":164,"type":"funding_shortfall"}
+```
+
+### `scenario_result`
+
+`name`, `passed`, `detail` (text for named scenarios, structured counts for stress). Expected protocol rejections may be part of a passing scenario. A hard-invariant failure never counts as an expected rejection.
+
+```json
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"10100/99","backing_value_cents":10350,"claimable_cents":"0/1","dated_cents":100,"deficit_cents":"0/1","principal_cents":10200,"reserve_cents":"7625/51","spot_cents":10100,"unclaimed_accrued_cents":"25/51"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"detail":"all expected state transitions and invariant checks passed","name":"loss_then_recovery","passed":true},"dates":[],"day":4,"index":{"day":4,"value":"1294/1275"},"iso_date":"2025-09-13","request_id":null,"schema_version":2,"seq":16,"type":"scenario_result"}
 ```
 
 ### `run_completed`
 
-`world`, `requested_days`, `daily_checkpoints_executed` (0 in Phase A), and
-`metrics`: `gross_invoice_settled_cents`, `principal_deposited_cents`,
-`principal_locked_cents`, `reuse_multiple` (exact ratio),
-`observed_principal_cent_days` (0), `circulation_efficiency_per_day` (null),
-`circulation_efficiency_status` (`"unavailable_until_daily_checkpoints"`).
-
-The Apple fixture's counters are calculated from successful Issue/Pay events,
-not assigned from narrative targets. Reuse and circulation efficiency are
-different fields; the latter requires elapsed checkpoints and remains unknown
-in Phase A. `--days 5` never fabricates five days of income or lock exposure.
+`world`, `requested_days`, `daily_checkpoints_executed`, `metrics`. Legacy fields principal_deposited_cents, principal_locked_cents, observed_principal_cent_days, reuse_multiple, gross_invoice_settled_cents, circulation_efficiency_per_day and circulation_efficiency_status are retained. Full runs add invoice_count, settled_invoice_count, principal_committed_cents, locked_settlement_cents, principal_cent_days, yield_paid_cents, yield_cost_per_settled_dollar, funding_deficit_cents, future_funding_deficit_cents, cash_need_shortfall_cents, funding_deficits (itemized by deadline), payments, payments_with_extension, extension_share, accepted_bound_days, discount_window, balance_sheets, story_totals, suppliers, days, date_policy. Ratios use exact strings or null when the denominator is zero. Discount-window entries aggregate face/spot/trades and value-weighted realized clearing discount by absolute maturity date. Balance sheets retain each checkpoint and its check results.
 
 ```json
-{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"daily_checkpoints_executed":0,"metrics":{"circulation_efficiency_per_day":null,"circulation_efficiency_status":"unavailable_until_daily_checkpoints","gross_invoice_settled_cents":40000000000,"observed_principal_cent_days":0,"principal_deposited_cents":10000000000,"principal_locked_cents":10000000000,"reuse_multiple":"4/1"},"requested_days":5,"world":"apple-fixture"},"dates":[],"day":0,"index":{"day":0,"value":"1/1"},"request_id":null,"schema_version":1,"seq":10,"type":"run_completed"}
+{"accounts":[],"actor":null,"amount_cents":0,"balance_sheet":{"backing_asset_units":"100000000/1","backing_value_cents":10000000000,"claimable_cents":"0/1","dated_cents":10000000000,"deficit_cents":"0/1","principal_cents":10000000000,"reserve_cents":"0/1","spot_cents":0,"unclaimed_accrued_cents":"0/1"},"checks":{"breaches":{"liquidity_standard":false,"solvency":false},"hard":{"cursor_monotonicity":true,"date_rule":true,"encumbrance":true,"index_monotonicity":true,"invoice_conservation":true,"issue_is_unconditional":true,"maturity_is_atomic":true,"principal_identity":true,"state_integrity":true,"yield_conservation":true}},"data":{"daily_checkpoints_executed":0,"metrics":{"circulation_efficiency_per_day":null,"circulation_efficiency_status":"unavailable_until_daily_checkpoints","gross_invoice_settled_cents":40000000000,"observed_principal_cent_days":0,"principal_deposited_cents":10000000000,"principal_locked_cents":10000000000,"reuse_multiple":"4/1"},"requested_days":5,"world":"apple-fixture"},"dates":[],"day":0,"index":{"day":0,"value":"1/1"},"iso_date":"2025-09-09","request_id":null,"schema_version":2,"seq":10,"type":"run_completed"}
 ```
 
-## Front-end consumption
+## Globe playback and metric separation
 
-Create the five nodes from `run_started`, then edges from registered invoices.
-On Issue/Pay, add `amount_cents` to the gross settled counter and animate the
-debtor-to-creditor hop. Set the locked counter from `balance_sheet.dated_cents`.
-Do not add registration, Transfer or rejected amounts to settlements. Display
-the date stamp from `mint_date`/payment legs. Preserve the debtor's entitlement
-owner independently of the coin's current holder.
+Use nodes/sites for geography and registered invoices for annotated edges. On
+Issue/Pay animate the debtor-to-creditor flow and increment gross settled by the
+envelope amount. Do not add invoice registration, Transfer, Extend, Sell or
+rejected attempts to that counter. Drive the camera from story markers and the
+bottom chart from day_summary. Use dates/index cutoff to interpret liquidity.
 
-The requested fixture emits exactly ten lines: start, four registrations, Issue,
-three Pays, completion. It shows $100m, $200m, $300m, $400m settled while the
-locked counter remains $100m. For sample generation:
+Reuse is gross settlement divided by cumulative Issue deposits. Extending the
+same principal does not inflate this committed-capital denominator. Circulation
+efficiency is locked settlement value divided by actual principal dollar-days.
+Yield cost, funding deficits, extension share and window discounts are independent
+metrics. The full 365-day run publishes 365 summaries and 365 checkpoint records
+(including bootstrap), with 364 elapsed inter-cutoff earning intervals.
 
 ```sh
-python3 -m sim run --world apple-fixture --days 5 --seed 1 --out events.ndjson
+python3 -m sim run --world apple --days 365 --seed 1 --out artifacts/apple-365.ndjson
+python3 -m sim scenarios --out-dir artifacts/scenarios
+python3 -m sim stress --ops 10000 --out artifacts/stress.ndjson
+python3 -m sim compare --days 365 --out-dir artifacts/paired
 ```
