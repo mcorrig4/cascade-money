@@ -19,3 +19,11 @@ firms with multiple sites expose every site in their node's `sites` list. Invoic
 `deliver_to` is a site ID and can identify a third-party assembler. All named
 scripted annotations, including the retained Phase A fixture, are editable in
 `sim/story_annotations.json`.
+
+The corrected scripts add Sumco in Tokyo and Wacker in Burghausen. Great Lakes
+Silica (Ottawa, Illinois), Pacific Freight (Long Beach), Bécancour Silicon
+(Quebec), Pohang Cathode (Pohang) and Shenzhen PCB (Shenzhen) are fictional
+suppliers with fixed pins. These firms count within the 2,000-supplier total.
+Apple consigns its directly purchased components to Foxconn; supplier payments
+then follow each supplier's own input chain. The display chain is the early
+four-times proof; no scripted TSMC-to-Corning payment remains.

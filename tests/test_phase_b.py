@@ -162,7 +162,7 @@ def test_geography_and_invoice_generation_are_deterministic_and_complete():
 
 
 def test_globe_has_daily_summaries_early_apple_shape_and_five_trades():
-    result=run_world(days=10,suppliers=30,invoices=30,retain=True)
+    result=run_world(days=10,suppliers=40,invoices=30,retain=True)
     events=result.vault.events.events
     assert len([e for e in events if e['type']=='day_summary'])==10
     fourth=next(e for e in events if e['type']=='story' and e['data']['beat']=='four-times')
@@ -176,7 +176,7 @@ def test_globe_has_daily_summaries_early_apple_shape_and_five_trades():
 
 
 def test_paired_runs_preserve_bounds_and_report_separate_delta():
-    results=paired_runs(days=10,suppliers=30,invoices=30)
+    results=paired_runs(days=10,suppliers=40,invoices=30)
     assert results['exact']['invoice_count']==results['bucketed']['invoice_count']
     assert results['delta_bucketed_minus_exact']['gross_invoice_settled_cents']==results['bucketed']['gross_invoice_settled_cents']-results['exact']['gross_invoice_settled_cents']
 
@@ -185,7 +185,7 @@ def test_scripted_annotations_live_in_one_editable_file():
     story=json.loads((Path(__file__).parents[1]/'sim/story_annotations.json').read_text())
     assert any(b['creditor']=='Samsung Display' and b['quantity']==2000000 for b in story)
     assert any(b['creditor']=='Panasonic' and b['quantity']==12000000 for b in story)
-    assert [b for b in story if b['story_id']=='apple-duo'][0]['creditor']=='TSMC'
+    assert [b for b in story if b['story_id']=='apple-duo'][0]['creditor']=='Samsung Display'
 
 
 def test_pay_extension_annotation_cannot_reuse_issue_or_old_link():

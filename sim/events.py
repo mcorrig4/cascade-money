@@ -45,7 +45,7 @@ COMMON_FIELDS = {
 
 @lru_cache(maxsize=8192)
 def rational(value: Fraction | int) -> str:
-    value = Fraction(value)
+    value = value.as_fraction() if hasattr(value, "as_fraction") else Fraction(value)
     return f"{value.numerator}/{value.denominator}"
 
 

@@ -34,7 +34,7 @@ def assert_rejected(vault, code, operation):
     assert event["type"] == "operation_rejected"
     assert event["data"]["error_code"] == code
     assert all(event["checks"]["hard"].values())
-    assert event["balance_sheet"] == before.balance_sheet()
+    assert event["balance_sheet"] == before.balance_sheet(compact=True)
 
 
 def test_issue_mints_at_m_and_separates_asset_quantity_from_value():

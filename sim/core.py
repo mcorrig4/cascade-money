@@ -1,6 +1,6 @@
 """Exact dated-dollar ledger, atomic operations and daily investment checkpoints."""
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, replace as dataclass_replace
 from fractions import Fraction
 from functools import cached_property
 from time import perf_counter
@@ -10,6 +10,8 @@ from typing import Callable, Mapping
 from .events import EventStream, rational, iso_date
 from . import invariants
 from .storage import FrozenMap, FrozenSet
+from .index import IndexSeries
+from .money import ExactCents
 
 
 class ProtocolError(ValueError):
@@ -36,7 +38,8 @@ class Account:
     entitlement_ids: tuple[str, ...] = ()
 
     def __post_init__(self):
-        object.__setattr__(self, "units", MappingProxyType(dict(self.units)))
+        if not isinstance(self.units, MappingProxyType):
+            object.__setattr__(self, "units", MappingProxyType(dict(self.units)))
 
     def effective_spot(self, cutoff: int) -> int:
         return self.spot_cents + sum(amount for date, amount in self.units.items() if date <= cutoff)
@@ -75,7 +78,7 @@ class Entitlement:
     def accrued(self, indices: Mapping[int, Fraction], cutoff: int) -> Fraction:
         if self.end_day < self.start_day or cutoff < self.start_day:
             return Fraction(0)
-        return self.amount_cents * (indices[min(cutoff, self.end_day)] - indices[self.start_day - 1])
+        return self.amount_cents * (indices.interval(self.start_day, min(cutoff, self.end_day)) if isinstance(indices, IndexSeries) else indices[min(cutoff, self.end_day)] - indices[self.start_day - 1])
 
     def as_dict(self) -> dict:
         return dict(vars(self))
@@ -122,18 +125,28 @@ class State:
     backing_asset_units: Fraction = Fraction(0)
     asset_price_cents: Fraction = Fraction(100)
     principal_cents: int = 0
-    reserve_cents: Fraction = Fraction(0)
-    deficit_cents: Fraction = Fraction(0)
+    reserve_cents: ExactCents = ExactCents()
+    deficit_cents: ExactCents = ExactCents()
     deposits_today_cents: int = 0
     withdrawals_today_cents: int = 0
     previous_checkpoint_principal_cents: int = 0
     applied_requests: FrozenSet = field(default_factory=FrozenSet)
     closed: bool = False
     previous_backing_value_cents: int = 0
-    accrued_total: Fraction = Fraction(0)
-    claimable_total: Fraction = Fraction(0)
+    accrued_total: ExactCents = ExactCents()
+    claimable_total: ExactCents = ExactCents()
     date_totals: Mapping[int, int] = field(default_factory=dict)
     explicit_spot_cents: int = 0
+    spot_total_cents: int = 0
+    near_liquid_cents: int = 0
+    supply_cents: int = 0
+    activity_delta: Mapping[int, int] = field(default_factory=dict)
+    entitlement_endings: Mapping[int, tuple[str, ...]] = field(default_factory=dict)
+    active_notional_cents: int = 0
+    invoice_face_cents: int = 0
+    invoice_issued_cents: int = 0
+    invoice_paid_cents: int = 0
+    invoice_outstanding_cents: int = 0
     opening_principal_cents: int = 0
     claimed_paid_cents: int = 0
     withdrawn_cents: int = 0
@@ -142,27 +155,34 @@ class State:
     extension_requests: FrozenSet = field(default_factory=FrozenSet)
 
     def __post_init__(self):
-        for name in ("accounts", "invoices", "entitlements"):
+        for name in ("accounts", "invoices", "entitlements", "date_totals", "activity_delta", "entitlement_endings"):
             if not isinstance(getattr(self, name), FrozenMap):
                 object.__setattr__(self, name, FrozenMap(getattr(self, name)))
-        for name in ("indices", "date_totals"):
-            if not isinstance(getattr(self, name), MappingProxyType):
-                object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
+        for name in ("accrued_total", "claimable_total", "reserve_cents", "deficit_cents"):
+            object.__setattr__(self, name, ExactCents.of(getattr(self, name)))
+        if not isinstance(self.indices, IndexSeries):
+            object.__setattr__(self, "indices", IndexSeries(self.indices))
 
     @cached_property
     def backing_value_cents(self) -> Fraction:
         return self.backing_asset_units * self.asset_price_cents
 
     @property
-    def accrued_cents(self) -> Fraction:
+    def accrued_cents(self) -> ExactCents:
         return self.accrued_total
 
     @property
-    def claimable_cents(self) -> Fraction:
+    def claimable_cents(self) -> ExactCents:
         return self.claimable_total
 
-    def balance_sheet(self) -> dict:
-        spot = self.explicit_spot_cents + sum(v for d, v in self.date_totals.items() if d <= self.cutoff)
+    def balance_sheet(self, *, compact=False) -> dict:
+        spot = self.spot_total_cents
+        if compact:
+            return {"backing_value_cents": int(self.backing_value_cents),
+                    "principal_cents": self.principal_cents, "dated_cents": self.principal_cents-spot,
+                    "spot_cents": spot, "unclaimed_accrued_cents": int(self.accrued_cents),
+                    "claimable_cents": int(self.claimable_cents), "reserve_cents": int(self.reserve_cents),
+                    "deficit_cents": int(self.deficit_cents)}
         return {
             "backing_asset_units": rational(self.backing_asset_units),
             "backing_value_cents": int(self.backing_value_cents),
@@ -174,6 +194,35 @@ class State:
             "reserve_cents": rational(self.reserve_cents),
             "deficit_cents": rational(self.deficit_cents),
         }
+
+
+def replace(record, **changes):
+    """Copy immutable State storage in C rather than reinitializing every field.
+
+    Ordinary dataclass construction/replacement remains available to tests and
+    callers; only the internal transition builder takes this equivalent path.
+    """
+    if not isinstance(record, State):
+        return dataclass_replace(record, **changes)
+    unknown = changes.keys() - State.__dataclass_fields__.keys()
+    if unknown:
+        raise TypeError(f"unknown State fields: {sorted(unknown)}")
+    data = record.__dict__.copy()
+    data.update(changes)
+    for name in ("accounts", "invoices", "entitlements", "date_totals", "activity_delta", "entitlement_endings"):
+        if name in changes and not isinstance(data[name], FrozenMap):
+            data[name] = FrozenMap(data[name])
+    for name in ("accrued_total", "claimable_total", "reserve_cents", "deficit_cents"):
+        if name in changes:
+            data[name] = ExactCents.of(data[name])
+    if "indices" in changes and not isinstance(data["indices"], IndexSeries):
+        data["indices"] = IndexSeries(data["indices"])
+    if data["backing_asset_units"] is not record.backing_asset_units or data["asset_price_cents"] is not record.asset_price_cents:
+        data.pop("backing_value_cents", None)
+    data.pop("_liquidity_result", None)
+    result = object.__new__(State)
+    object.__setattr__(result, "__dict__", data)
+    return result
 
 
 @dataclass(frozen=True)
@@ -191,13 +240,16 @@ class Transition:
 
 
 class Vault:
-    def __init__(self, accounts: list[str] | tuple[str, ...], *, asset_price_cents: Fraction | int = 100, policy: VaultPolicy | None = None, opening_spot: Mapping[str, int] | None = None, opening_reserve_cents: int = 0, window_participants: tuple[str, ...] = (), event_stream: EventStream | None = None):
+    def __init__(self, accounts: list[str] | tuple[str, ...], *, asset_price_cents: Fraction | int = 100, policy: VaultPolicy | None = None, opening_spot: Mapping[str, int] | None = None, opening_reserve_cents: int = 0, window_participants: tuple[str, ...] = (), event_stream: EventStream | None = None, check_every: int = 1):
         for account in accounts:
             _identifier(account, "account")
         if len(set(accounts)) != len(accounts):
             raise ProtocolError("duplicate_account", "account identifiers must be unique")
         if type(asset_price_cents) not in (int, Fraction) or asset_price_cents <= 0:
             raise ProtocolError("invalid_argument", "asset price must be an exact positive value")
+        _integer(check_every, "check_every", 1)
+        self.check_every = check_every
+        self.operation_count = 0
         self._policy = policy or VaultPolicy()
         self._state = State(accounts={a: Account(a) for a in sorted(accounts)}, asset_price_cents=Fraction(asset_price_cents))
         opening_spot = dict(opening_spot or {})
@@ -211,7 +263,7 @@ class Vault:
         self.window_participants = frozenset(window_participants)
         principal = sum(opening_spot.values())
         backing = principal + opening_reserve_cents
-        self._state = replace(self.state, accounts={key: replace(a, spot_cents=opening_spot.get(key, 0)) for key, a in self.state.accounts.items()}, principal_cents=principal, explicit_spot_cents=principal, opening_principal_cents=principal, backing_asset_units=Fraction(backing)/self.state.asset_price_cents, reserve_cents=Fraction(opening_reserve_cents), previous_backing_value_cents=backing)
+        self._state = replace(self.state, accounts={key: replace(a, spot_cents=opening_spot.get(key, 0)) for key, a in self.state.accounts.items()}, principal_cents=principal, explicit_spot_cents=principal, spot_total_cents=principal, near_liquid_cents=principal, supply_cents=principal, opening_principal_cents=principal, backing_asset_units=Fraction(backing)/self.state.asset_price_cents, reserve_cents=Fraction(opening_reserve_cents), previous_backing_value_cents=backing)
         self.events = event_stream or EventStream()
         self._last_checks = self.audit()
         self.timings = {name: 0.0 for name in ("prepare", "scope_diff", "invariants", "event_encoding")}
@@ -239,8 +291,8 @@ class Vault:
         return {
             "type": kind, "day": state.day, "iso_date": iso_date(state.day), "request_id": request_id, "actor": actor,
             "accounts": list(dict.fromkeys(accounts)), "amount_cents": amount_cents,
-            "dates": list(sorted(set(dates))), "index": {"day": state.cutoff, "value": rational(state.indices[state.cutoff])},
-            "balance_sheet": state.balance_sheet(), "checks": checks, "data": data,
+            "dates": list(sorted(set(dates))), "index": {"day": state.cutoff, "value": state.indices.serialized(state.cutoff)},
+            "balance_sheet": state.balance_sheet(compact=kind not in {"checkpoint", "day_summary"}), "checks": checks, "data": data,
         }
 
     def emit_run_event(self, kind: str, data: dict) -> dict:
@@ -272,32 +324,66 @@ class Vault:
                     raise invariants.InvariantViolation({"state_integrity": "ledger records removed"})
                 changes["changed_" + field_name] = keys
             transition = replace(transition, **changes)
-            dates = dict(before.date_totals)
-            explicit = before.explicit_spot_cents
+            updates = {}
+            explicit, spot, near, supply = before.explicit_spot_cents, before.spot_total_cents, before.near_liquid_cents, before.supply_cents
             for key in transition.changed_accounts:
                 old, new = before.accounts[key], candidate.accounts[key]
-                explicit += new.spot_cents - old.spot_cents
+                delta = new.spot_cents - old.spot_cents
+                explicit += delta; spot += delta; near += delta; supply += delta
                 for date in set(old.units) | set(new.units):
-                    dates[date] = dates.get(date, 0) + new.units.get(date, 0) - old.units.get(date, 0)
-                    if not dates[date]:
-                        del dates[date]
-            candidate = replace(candidate, date_totals=dates, explicit_spot_cents=explicit)
-            candidate = replace(candidate, applied_requests=before.applied_requests | {request_id})
+                    delta = new.units.get(date, 0) - old.units.get(date, 0)
+                    if not delta: continue
+                    updates[date] = updates.get(date, before.date_totals.get(date, 0)) + delta
+                    supply += delta
+                    if date <= before.cutoff: spot += delta
+                    if date <= before.cutoff + self.policy.liquidity_days: near += delta
+            dates = before.date_totals.updated(updates) if updates else before.date_totals
+            if candidate.cutoff != before.cutoff:
+                spot = explicit + sum(v for d,v in dates.items() if d <= candidate.cutoff)
+                near = explicit + sum(v for d,v in dates.items() if d <= candidate.cutoff + self.policy.liquidity_days)
+            invoice_totals = {}
+            for aggregate, field in (("invoice_face_cents","amount_cents"), ("invoice_issued_cents","issued_cents"), ("invoice_paid_cents","paid_cents"), ("invoice_outstanding_cents","outstanding_cents")):
+                total = getattr(before, aggregate)
+                for key in transition.changed_invoices:
+                    old = before.invoices.get(key)
+                    total += getattr(candidate.invoices[key], field) - (getattr(old, field) if old else 0)
+                invoice_totals[aggregate] = total
+            activity_updates, ending_updates = {}, {}
+            for key in transition.changed_entitlements:
+                if key in before.entitlements: continue
+                right = candidate.entitlements[key]
+                ending_updates[right.end_day] = ending_updates.get(right.end_day, before.entitlement_endings.get(right.end_day, ())) + (key,)
+                if right.start_day <= right.end_day:
+                    for date, amount in ((right.start_day, right.amount_cents), (right.end_day+1, -right.amount_cents)):
+                        activity_updates[date] = activity_updates.get(date, before.activity_delta.get(date, 0)) + amount
+            activity = before.activity_delta.updated(activity_updates) if activity_updates else before.activity_delta
+            endings = before.entitlement_endings.updated(ending_updates) if ending_updates else before.entitlement_endings
+            candidate = replace(candidate, activity_delta=activity, entitlement_endings=endings, date_totals=dates, explicit_spot_cents=explicit, spot_total_cents=spot,
+                                near_liquid_cents=near, supply_cents=supply, **invoice_totals,
+                                applied_requests=before.applied_requests | {request_id})
             if candidate.backing_asset_units is before.backing_asset_units and candidate.asset_price_cents is before.asset_price_cents:
                 object.__setattr__(candidate, "backing_value_cents", before.backing_value_cents)
             scoped = perf_counter()
-            checks = invariants.check_all(before, candidate, transition, self.policy)
+            if kind == "checkpoint" or self.operation_count % self.check_every == 0:
+                checks = invariants.check_all(before, candidate, transition, self.policy)
+            else:
+                checks = {"hard": {f.__name__: None for f in invariants.HARD_CHECKS},
+                          "breaches": {f.__name__: f(candidate, self.policy) for f in invariants.BREACH_CHECKS}}
+
             checked = perf_counter()
             # All validation and JSON encoding happen before publishing the state.
             event = self.events.append(self._envelope(candidate, checks, kind=kind, request_id=request_id, actor=actor, accounts=transition.accounts, amount_cents=transition.amount_cents, dates=transition.dates, data=transition.data))
         except (ProtocolError, invariants.InvariantViolation) as error:
-            self.events.append(self._envelope(before, self.audit(), kind="operation_rejected", request_id=request_id if isinstance(request_id, str) else None, actor=actor if isinstance(actor, str) else None, accounts=(actor,) if isinstance(actor, str) else (), amount_cents=0, dates=(), data={"operation": kind, "error_code": error.code, "message": str(error)}))
+            rejected = Transition("rejected", "", actor, (), 0, (), {})
+            checks = invariants.check_all(before, before, rejected, self.policy)
+            self.events.append(self._envelope(before, checks, kind="operation_rejected", request_id=request_id if isinstance(request_id, str) else None, actor=actor if isinstance(actor, str) else None, accounts=(actor,) if isinstance(actor, str) else (), amount_cents=0, dates=(), data={"operation": kind, "error_code": error.code, "message": str(error)}))
             raise
         self.timings["prepare"] += prepared - started
         self.timings["scope_diff"] += scoped - prepared
         self.timings["invariants"] += checked - scoped
         self.timings["event_encoding"] += perf_counter() - checked
         self._state = candidate
+        self.operation_count += 1
         self._last_checks = checks
         return event
 
@@ -351,7 +437,7 @@ class Vault:
             if not state.asset_price_cents:
                 raise ProtocolError("zero_asset_price", "worthless backing cannot fund an Issue")
             asset_units = Fraction(amount_cents) / state.asset_price_cents
-            candidate = replace(state, accounts=state.accounts.updated(accounts), invoices=state.invoices.updated({invoice_id: invoice}), entitlements=state.entitlements.updated({entitlement.entitlement_id: entitlement}), backing_asset_units=state.backing_asset_units + asset_units, principal_cents=state.principal_cents + amount_cents, deposits_today_cents=state.deposits_today_cents + amount_cents)
+            candidate = replace(state, accounts=state.accounts.updated(accounts), invoices=state.invoices.updated({invoice_id: invoice}), entitlements=state.entitlements.updated({entitlement.entitlement_id: entitlement}), backing_asset_units=(state.backing_value_cents + amount_cents) / state.asset_price_cents, principal_cents=state.principal_cents + amount_cents, deposits_today_cents=state.deposits_today_cents + amount_cents)
             data = {"invoice_id": invoice_id, "debtor": actor, "creditor": invoice.creditor, "outstanding_cents": invoice.outstanding_cents, "asset_units": rational(asset_units), "mint_date": invoice.maturity_bound, "entitlement": entitlement.as_dict()}
             return candidate, Transition("issue", request_id, actor, (actor, invoice.creditor), amount_cents, (invoice.maturity_bound,), data)
         return self._execute("issue", request_id, actor, prepare)
@@ -536,7 +622,7 @@ class Vault:
                 raise ProtocolError("suspended", "Withdraw suspended by deficit or liquidity breach")
             account = self._debit(state.accounts[actor], amount_cents, None, state.cutoff)
             quantity = Fraction(amount_cents) / state.asset_price_cents
-            candidate = replace(state, accounts=state.accounts.updated({actor: account}), backing_asset_units=state.backing_asset_units - quantity, principal_cents=state.principal_cents - amount_cents, withdrawals_today_cents=state.withdrawals_today_cents + amount_cents, withdrawn_cents=state.withdrawn_cents + amount_cents)
+            candidate = replace(state, accounts=state.accounts.updated({actor: account}), backing_asset_units=(state.backing_value_cents - amount_cents) / state.asset_price_cents, principal_cents=state.principal_cents - amount_cents, withdrawals_today_cents=state.withdrawals_today_cents + amount_cents, withdrawn_cents=state.withdrawn_cents + amount_cents)
             return candidate, Transition("withdraw", request_id, actor, (actor,), amount_cents, (), {"asset_units": rational(quantity)})
         return self._execute("withdraw", request_id, actor, prepare)
 
@@ -583,7 +669,7 @@ class Vault:
             closing = gross - fee
             if not state.backing_asset_units and closing:
                 raise ProtocolError("invalid_mark", "cannot mark nonexistent assets")
-            reserve, deficit = state.reserve_cents, state.deficit_cents
+            reserve, deficit = state.reserve_cents.as_fraction(), state.deficit_cents.as_fraction()
             repair = floor_topup = policy_share = Fraction(0)
             income = Fraction(0)
             if result < 0:
@@ -601,15 +687,21 @@ class Vault:
                 reserve += policy_share
                 income = remainder - policy_share
             principal = state.previous_checkpoint_principal_cents
-            active = sum(e.amount_cents for e in state.entitlements.values() if not e.claimed and e.start_day <= state.day <= e.end_day)
+            active = state.active_notional_cents + state.activity_delta.get(state.day, 0)
             increment = income / principal if principal else Fraction(0)
             allocated = active * increment
             unallocated = income - allocated
             reserve += unallocated
             index = state.indices[state.cutoff] + increment
-            indices = {**state.indices, state.day: index}
-            newly_claimable = sum((e.accrued(indices, state.day) for e in state.entitlements.values() if not e.claimed and e.end_day == state.day and e.end_day > state.cutoff), Fraction(0))
-            candidate = replace(state, indices=indices, cutoff=state.day, closed=True, asset_price_cents=Fraction(gross)/state.backing_asset_units if state.backing_asset_units else state.asset_price_cents, backing_asset_units=state.backing_asset_units * Fraction(closing, gross) if gross else state.backing_asset_units, previous_locked_cents=sum(v for d,v in state.date_totals.items() if d > state.day), accrued_total=state.accrued_total + allocated, claimable_total=state.claimable_total + newly_claimable, reserve_cents=reserve, deficit_cents=deficit, previous_checkpoint_principal_cents=state.principal_cents, previous_backing_value_cents=closing)
+            indices = state.indices.publish(state.day, index, increment)
+            ending_numerator = 0
+            if state.day > state.cutoff:
+                for key in state.entitlement_endings.get(state.day, ()):
+                    right = state.entitlements[key]
+                    if not right.claimed and right.start_day <= right.end_day:
+                        ending_numerator += right.amount_cents * (indices.prefixes[right.end_day] - indices.prefixes[right.start_day-1])
+            newly_claimable = Fraction(ending_numerator, indices.scale)
+            candidate = replace(state, active_notional_cents=active, indices=indices, cutoff=state.day, closed=True, asset_price_cents=Fraction(gross)/state.backing_asset_units if state.backing_asset_units else state.asset_price_cents, backing_asset_units=state.backing_asset_units * Fraction(closing, gross) if gross else state.backing_asset_units, previous_locked_cents=sum(v for d,v in state.date_totals.items() if d > state.day), accrued_total=state.accrued_total + allocated, claimable_total=state.claimable_total + newly_claimable, reserve_cents=reserve, deficit_cents=deficit, previous_checkpoint_principal_cents=state.principal_cents, previous_backing_value_cents=closing)
             data = {"gross_backing_value_cents": gross, "previous_backing_value_cents": state.previous_backing_value_cents, "deposits_cents": state.deposits_today_cents, "withdrawals_cents": state.withdrawals_today_cents, "fees_cents": fee, "investment_result_cents": result, "previous_principal_cents": principal, "active_entitlement_cents": active, "distributable_cents": rational(income), "entitlement_accrual_cents": rational(allocated), "unallocated_to_reserve_cents": rational(unallocated), "deficit_repair_cents": rational(repair), "reserve_floor_topup_cents": rational(floor_topup), "policy_reserve_cents": rational(policy_share), "index_increment": rational(increment), "matured_cents": sum(v for d,v in state.date_totals.items() if state.cutoff < d <= state.day), "locked_principal_cent_days": state.previous_locked_cents if not bootstrap else 0, "bootstrap": bootstrap}
             return candidate, Transition("checkpoint", f"checkpoint:{state.day}", None, (), 0, (state.day,), data)
         return self._execute("checkpoint", f"checkpoint:{self.state.day}", None, prepare)

@@ -5,7 +5,7 @@ from fractions import Fraction
 from .core import Vault, _integer
 from .events import rational
 
-APPLE_CHAIN = ("Apple", "Foxconn", "TSMC", "Corning", "Clearview Glass")
+APPLE_CHAIN = ("Apple", "Samsung Display", "Corning", "Great Lakes Silica", "Pacific Freight")
 APPLE_AMOUNT_CENTS = 100_000_000 * 100
 
 
@@ -49,7 +49,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from .core import ProtocolError, PaymentLeg
 from .events import EventStream
-from .geography import NAMED_SITES, ITEMS, generated_site, node_record
+from .geography import NAMED_SITES, STORY_CATEGORIES, ITEMS, generated_site, node_record
 from .metrics import Metrics
 
 
@@ -72,6 +72,7 @@ def generate_world(*, seed=1, suppliers=2000, days=365, invoices=12000, cash_nee
     for name, sites in NAMED_SITES.items():
         category = "raw" if name == "Glencore" else "refining" if name in {"Dow","BASF","Shell","Exxon","Northstar Cell Materials"} else "assembly" if name in {"Foxconn","Pegatron","Luxshare"} else "packaging" if name == "Duo Packaging" else "retail" if name == "Duo Retail" else "components"
         tier = 0 if name in {"Apple","Tesla"} else 3 if category == "raw" else 2 if category == "refining" else 1
+        tier, category = STORY_CATEGORIES.get(name, (tier, category))
         nodes.append(node_record(name, sites, tier=tier, category=category, policy=rng.choice(("naive","treasury","mixed")), cash_need_bps=cash_need_bps))
     remaining = suppliers - (len(nodes)-2)
     for number in range(remaining):
@@ -112,7 +113,7 @@ def eligible_legs(vault, actor, bound, amount):
     return legs
 
 
-def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps=1000, date_policy="exact", destination=None, retain=False):
+def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps=1000, date_policy="exact", destination=None, retain=False, check_every=1):
     if date_policy not in {"exact","bucketed"}:
         raise ValueError("unknown date policy")
     nodes, obligations = generate_world(seed=seed,suppliers=suppliers,days=days,invoices=invoices,cash_need_bps=cash_need_bps)
@@ -124,15 +125,27 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
         nodes.append(node)
     metrics = Metrics()
     needs = {n["id"]:0 for n in nodes}
+    ready = {n["id"]: set() for n in nodes}
+    rights_due, right_order = {}, {}
     def observe(event):
         metrics.observe(event)
+        if event["type"] in {"issue", "extend"}:
+            right = event["data"]["entitlement"]
+            identifier, owner = right["entitlement_id"], right["account_id"]
+            right_order[identifier] = len(right_order)
+            if right["end_day"] <= event["index"]["day"]:
+                ready[owner].add(identifier)
+            else:
+                rights_due.setdefault(right["end_day"]+1, []).append((owner, identifier))
+        elif event["type"] == "claim":
+            ready[event["actor"]].discard(event["data"]["entitlement_id"])
         if event["type"] in {"issue","pay"}:
             target = event["data"]["creditor"]
             if target in node_by_id:
                 needs[target] += event["amount_cents"] * node_by_id[target]["cash_need_bps"] // 10000
     stream = EventStream(destination=destination,retain=retain,observer=observe)
-    vault = Vault([n["id"] for n in nodes], opening_spot={"Window Fund":10_000_000_000}, opening_reserve_cents=100_000_000, window_participants=("Window Fund",), event_stream=stream)
-    vault.emit_run_event("run_started",{"world":"apple","seed":seed,"requested_days":days,"nodes":nodes,"policy":{**vault.policy.as_dict(),"date_policy":date_policy,"cash_need_bps":cash_need_bps,"illustrative":True,"opening_spot_cents":10_000_000_000,"opening_reserve_cents":100_000_000},"phase":"B"})
+    vault = Vault([n["id"] for n in nodes], opening_spot={"Window Fund":10_000_000_000}, opening_reserve_cents=100_000_000, window_participants=("Window Fund",), event_stream=stream, check_every=check_every)
+    vault.emit_run_event("run_started",{"world":"apple","seed":seed,"requested_days":days,"nodes":nodes,"policy":{**vault.policy.as_dict(),"date_policy":date_policy,"check_every":check_every,"cash_need_bps":cash_need_bps,"illustrative":True,"opening_spot_cents":10_000_000_000,"opening_reserve_cents":100_000_000},"phase":"B"})
     schedule = {}
     for obligation in obligations:
         schedule.setdefault(obligation["day"],[]).append(obligation)
@@ -180,6 +193,8 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
     for day in range(days):
         if day:
             vault.begin_day(day)
+        for owner, identifier in rights_due.pop(day, ()):
+            ready[owner].add(identifier)
         for index, beat in enumerate(stories):
             if beat["day"] != day:
                 continue
@@ -215,6 +230,9 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
                 actor = node["id"]
                 if node["role"] == "institution":
                     continue
+                # Hold the next hop's consigned story principal until its scripted payment.
+                if any(b["debtor"] == actor and b["operation"] != "issue" and b["day"] == day + 1 for b in stories):
+                    continue
                 treasury = node["policy"] == "treasury" or node["policy"] == "mixed" and rng.randrange(2) == 0
                 for identifier in sorted(pending[actor],key=lambda key:(vault.state.invoices[key].due_day,key)):
                     pay_invoice(identifier,treasury)
@@ -240,7 +258,7 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
                             break
                 # Claim at the first following execution day; end index is published.
                 if not vault.claim_withdraw_suspended:
-                    for identifier in vault.state.accounts[actor].entitlement_ids:
+                    for identifier in sorted(ready[actor], key=right_order.__getitem__):
                         entitlement = vault.state.entitlements[identifier]
                         if not entitlement.claimed and entitlement.end_day <= vault.state.cutoff:
                             vault.claim(request_id=request("claim"),actor=actor,entitlement_id=identifier)
@@ -266,6 +284,7 @@ def run_world(*, days=365, seed=1, suppliers=2000, invoices=12000, cash_need_bps
     for actor, amount in sorted(needs.items()):
         if amount:
             vault.emit_run_event("funding_shortfall",{"invoice_id":f"cash:{actor}","deadline":days-1,"shortfall_cents":amount,"kind":"cash"})
+    vault.audit()
     report = metrics.report()
     report["story_totals"] = {key:{"settled_cents":v[0],"committed_cents":v[1]} for key,v in sorted(story_totals.items())}
     report["suppliers"] = suppliers

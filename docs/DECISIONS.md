@@ -246,8 +246,10 @@ contracts or the iPhone's bill of materials. `story_annotations.json` is the
 single editable source for named scripted invoices. Delivery sites can belong
 to a third-party assembler: the explicit product examples resolve the phrase
 "payee-side site" in favor of the physical destination, not creditor ownership.
-The full Apple story starts with processors and reaches 400M/100M on day 3;
-the separate legacy fixture preserves its original Foxconn-first route.
+The corrected display proof starts Apple → Samsung Display and reaches
+400M/100M on day 3. The quick fixture uses this same corrected chain. Processor,
+battery and assembly payments fan out directly from Apple, then flow into each
+supplier’s own inputs. Scripted TSMC → Corning payments have been removed.
 
 ## 16. World funding, schedules and wallet policies
 
@@ -304,10 +306,11 @@ identity differences, not from caller-declared affected accounts. Ledger maps an
 replay sets use immutable CRC32-sharded storage: a transition copies touched
 shards, while identity comparisons prove that all other shards are unchanged.
 Iteration order is independent of Python hash randomization. Every daily
-checkpoint, explicit audit and rejection fully reconciles ledger aggregates.
+checkpoint and explicit audit fully reconciles ledger aggregates. Rejections
+check the unchanged transition incrementally.
 Full accrual reconciliation groups equal entitlement intervals before exact
-arithmetic; it is algebraically identical to summing each entitlement. No hard
-check is sampled or disabled for large runs. Timings are diagnostic CLI output,
+arithmetic; it is algebraically identical to summing each entitlement. The default keeps every operation checked; only an explicit `--check-every N`
+with N greater than one defers intermediate hard checks. Timings are diagnostic CLI output,
 excluded from deterministic NDJSON. The stream can be written without retaining
 all previous event lines in memory.
 
@@ -320,3 +323,47 @@ and records deficit. An Issue cannot price a fresh deposit at zero, and rejects
 until a positive valuation is restored. Recovery of that quantity follows the
 same capital-flow-adjusted repair waterfall. No replacement asset or bailout is
 created automatically.
+
+
+## 20. Product-owner story and performance revision
+
+The latest user instruction replaces both the full-world scripts and the quick
+fixture with the supplied display/processor/battery/assembly relationships.
+New fictional firms have fixed story pins in Illinois, Long Beach, Quebec,
+Pohang and Shenzhen and count toward the 2,000 suppliers. Sumco and Wacker have
+Tokyo and Burghausen pins. Third-party delivery to Foxconn is explicit. A supplier
+with an outgoing scripted payment tomorrow holds its story funds for that hop;
+this prevents its general wallet policy from consuming the scripted principal.
+The four Apple chains use separate markers; the display proof retains
+`story_id=apple-duo` for the existing camera consumer.
+
+The user explicitly requests incremental post-operation checking, full daily
+and end-of-run reconciliation, compact operation snapshots, and `--check-every`.
+Default `--check-every 1` runs every hard checker using changed records and
+maintained aggregates: supply by date, effective spot, near-term principal,
+invoice totals, accrued/claimable yield, and scheduled entitlement activity.
+Immutable radix maps journal actual updates; weak parent links avoid retaining
+historical snapshots. Full checkpoint/end reconciliation is unconditional.
+An optional N greater than one defers intermediate hard checks and marks them
+null in the stream; it does not defer breach monitoring. The exhaustive stress
+mode runs a full reconciliation at each selected attempt as well.
+
+Short entitlement intervals sum the exact published daily index increments;
+this telescopes to `I(E)-I(S-1)` without subtracting very large prefix fractions.
+Wallets queue claimable rights in the original creation order, instead of scanning
+previously claimed rights. Neither optimization changes earning intervals,
+Claim rounding, payment selections, or any financial aggregate.
+
+Only checkpoint and day-summary snapshots contain exact asset quantity and
+rational liability/reserve totals. Other snapshots omit quantity and truncate
+rational totals to display cents. The exact index and Claim payloads remain
+available; these display values never feed back into the ledger or metrics.
+
+Checkpoint reconciliation can put all published indices over their exact least
+common denominator and sum integer entitlement numerators. The final totals are
+compared by exact cross multiplication with the rational ledger. This is the
+same inclusive interval formula, without per-record fraction normalization.
+
+Internal reserve, deficit and accrued totals use unreduced exact integer ratios (`ExactCents`) to avoid normalizing the same large denominators after every operation. Checkpoint distribution and published index values remain canonical `Fraction` values. Claim still rounds down exactly once; exact output canonicalizes the ratio. Property tests compare accumulator arithmetic and serialization with `Fraction`. The final audit additionally reconstructs future entitlement activity and ending schedules; checkpoint checks independently reconcile current activity, accrued and claimable value.
+
+Capital flows compute the new backing asset quantity as `(backing_value + flow) / current_price`, algebraically equal to adding or subtracting `flow / current_price` from the previous quantity. End-of-day claimable additions sum exact scaled interval numerators before a single canonical conversion. Both avoid repeated large-rational normalization; neither changes valuation or Claim rounding.

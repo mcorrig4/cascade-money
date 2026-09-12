@@ -151,12 +151,12 @@ def run_scenarios():
     return [scenario() for scenario in SCENARIOS]
 
 
-def stress(*, ops=10000, seed=1, destination=None, retain=False):
+def stress(*, ops=10000, seed=1, destination=None, retain=False, check_every=1, exhaustive=False):
     if type(ops) is not int or ops < 1:
         raise ValueError("ops must be positive")
     rng=random.Random(seed)
     names=[f"firm-{i}" for i in range(12)]
-    v=Vault(names+["window"],opening_spot={**{a:100000 for a in names},"window":10000000},opening_reserve_cents=100000,event_stream=EventStream(destination=destination,retain=retain),window_participants=("window",))
+    v=Vault(names+["window"],opening_spot={**{a:100000 for a in names},"window":10000000},opening_reserve_cents=100000,event_stream=EventStream(destination=destination,retain=retain),window_participants=("window",),check_every=check_every)
     counts=Counter()
     for number in range(ops):
         if number and number%40==0:
@@ -199,6 +199,8 @@ def stress(*, ops=10000, seed=1, destination=None, retain=False):
             counts[kind]+=1
         except ProtocolError:
             counts["rejected"]+=1
+        if exhaustive and number % check_every == 0:
+            v.audit()
         # InvariantViolation deliberately propagates: never count it as an expected rejection.
     if not v.state.closed:
         v.checkpoint()

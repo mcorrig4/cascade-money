@@ -22,7 +22,7 @@ def test_apple_fixture_is_four_real_settlements():
     assert [sum(e["amount_cents"] for e in settlements[:index]) for index in range(1, 5)] == [APPLE_AMOUNT_CENTS * index for index in range(1, 5)]
     assert all(event["balance_sheet"]["dated_cents"] == APPLE_AMOUNT_CENTS for event in settlements)
     assert all(invoice.outstanding_cents == 0 for invoice in vault.state.invoices.values())
-    assert dict(vault.state.accounts["Clearview Glass"].units) == {90: APPLE_AMOUNT_CENTS}
+    assert dict(vault.state.accounts["Pacific Freight"].units) == {90: APPLE_AMOUNT_CENTS}
     assert all(not vault.state.accounts[name].units for name in APPLE_CHAIN[:-1])
     assert len(vault.state.entitlements) == 1
     assert next(iter(vault.state.entitlements.values())).account_id == "Apple"

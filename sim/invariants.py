@@ -23,7 +23,7 @@ def full(tx):
 
 
 def keys(state, tx, field):
-    return getattr(state, field) if full(tx) else getattr(tx, "changed_" + field)
+    return getattr(state, field) if tx is None else getattr(tx, "changed_" + field)
 
 
 def state_integrity(before, after, tx):
@@ -38,18 +38,20 @@ def state_integrity(before, after, tx):
     for key in keys(after, tx, "invoices"):
         i = after.invoices[key]
         require(key == i.invoice_id and i.debtor in after.accounts and i.creditor in after.accounts, "invalid invoice identity")
-    if tx is not None:
+    if tx is not None and tx.kind == "rejected":
+        require(after is before, "rejection changed state")
+    if tx is not None and tx.kind != "rejected":
         system = tx.kind in {"checkpoint", "day_opened"}
         require(system or tx.actor in before.accounts, "unknown actor")
         require(len(after.accounts) == len(before.accounts), "account set changed")
         require(tx.request_id not in before.applied_requests, "replayed transition")
-        require(after.applied_requests == before.applied_requests | {tx.request_id}, "incorrect replay ledger")
+        require(after.applied_requests.added_since(before.applied_requests) == ((tx.request_id,), ()), "incorrect replay ledger")
         if tx.kind not in {"checkpoint", "day_opened"}:
             require(after.day == before.day and after.cutoff == before.cutoff, "operation moved clock")
             require(not before.closed, "operation after cutoff")
         require(after.opening_principal_cents == before.opening_principal_cents, "opening capital changed")
-        require(after.extension_requests == (before.extension_requests | {tx.request_id} if tx.kind == "extend" else before.extension_requests), "extension registry changed unexpectedly")
-        require(after.linked_extensions == (before.linked_extensions | set(tx.data["extension_request_ids"]) if tx.kind == "pay" else before.linked_extensions), "extension linkage registry changed unexpectedly")
+        require(after.extension_requests.added_since(before.extension_requests) == (((tx.request_id,), ()) if tx.kind == "extend" else ((), ())), "extension registry changed unexpectedly")
+        require(after.linked_extensions.added_since(before.linked_extensions) == ((tuple(sorted(tx.data["extension_request_ids"])), ()) if tx.kind == "pay" else ((), ())), "extension linkage registry changed unexpectedly")
         if tx.kind != "checkpoint":
             require(after.previous_checkpoint_principal_cents == before.previous_checkpoint_principal_cents, "operation changed frozen denominator")
             require(after.deficit_cents == before.deficit_cents, "operation manufactured deficit")
@@ -61,7 +63,7 @@ def state_integrity(before, after, tx):
 
 
 def principal_identity(before, after, tx):
-    principal = after.explicit_spot_cents + sum(after.date_totals.values())
+    principal = after.supply_cents
     require(after.principal_cents == principal, "principal aggregate disagrees with balances")
     liabilities = principal + after.accrued_cents
     require(after.backing_value_cents + after.deficit_cents >= liabilities, "backing plus deficit below liabilities")
@@ -69,7 +71,7 @@ def principal_identity(before, after, tx):
     require(after.backing_value_cents + after.deficit_cents == principal + (after.accrued_cents + after.reserve_cents), "reserve balance sheet does not reconcile")
     if full(tx):
         require(principal == sum(a.spot_cents + sum(a.units.values()) for a in after.accounts.values()), "ledger principal differs from aggregates")
-        require(principal == after.opening_principal_cents + sum(i.issued_cents for i in after.invoices.values()) + after.claimed_paid_cents - after.withdrawn_cents, "principal sources do not reconcile")
+        require(principal == after.opening_principal_cents + after.invoice_issued_cents + after.claimed_paid_cents - after.withdrawn_cents, "principal sources do not reconcile")
 
 
 def encumbrance(before, after, tx):
@@ -179,23 +181,36 @@ def yield_conservation(before, after, tx):
         require(not added, "unexpected new entitlement")
     if full(tx):
         owned = {k: set() for k in after.accounts}
-        accrued = claimable = Fraction(0)
+        accrued = claimable = 0
+        active_notional = 0
         intervals = {}
         matured_intervals = {}
+        activity, endings = {}, {}
         for key, e in after.entitlements.items():
             owned[e.account_id].add(key)
+            if tx is None:
+                endings.setdefault(e.end_day,set()).add(key)
+                if e.start_day <= e.end_day:
+                    activity[e.start_day] = activity.get(e.start_day,0) + e.amount_cents
+                    activity[e.end_day+1] = activity.get(e.end_day+1,0) - e.amount_cents
+            if e.start_day <= after.cutoff <= e.end_day:
+                active_notional += e.amount_cents
             if not e.claimed and e.start_day <= min(e.end_day, after.cutoff):
                 interval = (e.start_day, min(e.end_day, after.cutoff))
                 intervals[interval] = intervals.get(interval, 0) + e.amount_cents
                 if e.end_day <= after.cutoff:
                     matured_intervals[interval] = matured_intervals.get(interval, 0) + e.amount_cents
         for (start,end), amount in intervals.items():
-            delta = after.indices[end] - after.indices[start-1]
+            delta = after.indices.prefixes[end] - after.indices.prefixes[start-1]
             accrued += amount * delta
             claimable += matured_intervals.get((start,end),0) * delta
         for key, a in after.accounts.items():
             require(len(a.entitlement_ids) == len(set(a.entitlement_ids)) and set(a.entitlement_ids) == owned[key], "entitlement owner index differs")
-        require(accrued == after.accrued_total and claimable == after.claimable_total, "accrual aggregate differs from interval formula")
+        if tx is None:
+            require({d:n for d,n in activity.items() if n} == {d:n for d,n in after.activity_delta.items() if n}, "activity schedule differs from entitlements")
+            require(endings == {d:set(ids) for d,ids in after.entitlement_endings.items()} and all(len(ids)==len(set(ids)) for ids in after.entitlement_endings.values()), "ending schedule differs from entitlements")
+        require(active_notional == after.active_notional_cents, "active notional cache differs")
+        require(accrued * after.accrued_total.denominator == after.accrued_total.numerator * after.indices.scale and claimable * after.claimable_total.denominator == after.claimable_total.numerator * after.indices.scale, "accrual aggregate differs from interval formula")
     else:
         for key in tx.changed_accounts:
             previous = before.accounts[key].entitlement_ids
@@ -206,7 +221,7 @@ def yield_conservation(before, after, tx):
     elif tx.kind == "checkpoint":
         d = tx.data
         increment = Fraction(d["index_increment"])
-        active = sum(e.amount_cents for e in before.entitlements.values() if not e.claimed and e.start_day <= after.day <= e.end_day)
+        active = active_notional
         require(active == d["active_entitlement_cents"] and active <= d["previous_principal_cents"], "active intervals exceed previous principal")
         allocated = active * increment
         income = Fraction(d["distributable_cents"])
@@ -244,6 +259,7 @@ def index_monotonicity(before, after, tx):
         for day in range(after.cutoff + 1):
             value = after.indices[day]
             require(isinstance(value, Fraction) and value >= previous, "index decreased or is inexact")
+            require(after.indices.prefixes[day] * value.denominator == value.numerator * after.indices.scale, "scaled index cache differs")
             previous = value
     if tx is not None and tx.kind == "checkpoint":
         require(after.cutoff == after.day and after.closed, "checkpoint did not close day")
@@ -254,6 +270,10 @@ def index_monotonicity(before, after, tx):
 
 
 def invoice_conservation(before, after, tx):
+    require(after.invoice_face_cents == after.invoice_issued_cents + after.invoice_paid_cents + after.invoice_outstanding_cents, "invoice aggregates do not conserve balances")
+    if full(tx):
+        for aggregate, field in (("invoice_face_cents","amount_cents"), ("invoice_issued_cents","issued_cents"), ("invoice_paid_cents","paid_cents"), ("invoice_outstanding_cents","outstanding_cents")):
+            require(getattr(after, aggregate) == sum(getattr(i,field) for i in after.invoices.values()), "invoice aggregate does not reconcile")
     for key in keys(after, tx, "invoices"):
         i = after.invoices[key]
         require(type(i.amount_cents) is int and i.amount_cents > 0 and all(type(v) is int and v >= 0 for v in (i.issued_cents,i.paid_cents,i.outstanding_cents)), "invalid invoice balances")
@@ -283,11 +303,12 @@ def maturity_is_atomic(before, after, tx):
             spot += a.spot_cents
             for d,v in a.units.items():
                 dates[d] = dates.get(d,0) + v
-        require(dates == after.date_totals and spot == after.explicit_spot_cents and spot + sum(dates.values()) == after.principal_cents, "spot/dated aggregates double-count or lose principal")
+        require(dates == {d:v for d,v in after.date_totals.items() if v} and spot == after.explicit_spot_cents and spot + sum(dates.values()) == after.principal_cents, "spot/dated aggregates double-count or lose principal")
+        require(after.spot_total_cents == spot + sum(v for d,v in dates.items() if d <= after.cutoff), "effective spot aggregate differs")
 
 
 def issue_is_unconditional(before, after, tx):
-    candidates = before.invoices if full(tx) else tx.changed_invoices
+    candidates = before.invoices if tx is None else tx.changed_invoices
     for key in candidates:
         if key in before.invoices:
             require(key in after.invoices and after.invoices[key].issued_cents >= before.invoices[key].issued_cents and after.invoices[key].paid_cents >= before.invoices[key].paid_cents, "settlement clawed back")
@@ -300,8 +321,13 @@ def solvency(state, policy):
 
 
 def liquidity_standard(state, policy):
-    required = state.explicit_spot_cents + state.claimable_cents + sum(v for d,v in state.date_totals.items() if d <= state.cutoff + policy.liquidity_days)
-    return state.backing_value_cents * policy.immediately_realizable_fraction < required
+    cached = getattr(state, "_liquidity_result", None)
+    if cached is not None and cached[0] is policy:
+        return cached[1]
+    required = state.near_liquid_cents + state.claimable_cents
+    result = state.backing_value_cents * policy.immediately_realizable_fraction < required
+    object.__setattr__(state, "_liquidity_result", (policy, result))
+    return result
 
 
 HARD_CHECKS = (state_integrity, principal_identity, encumbrance, date_rule, cursor_monotonicity, yield_conservation, index_monotonicity, invoice_conservation, maturity_is_atomic, issue_is_unconditional)
@@ -310,6 +336,10 @@ BREACH_CHECKS = (solvency, liquidity_standard)
 
 def check_all(before, after, tx, policy):
     failures, hard, breaches = {}, {}, {}
+    if full(tx):
+        expected = after.explicit_spot_cents + sum(v for d,v in after.date_totals.items() if d <= after.cutoff + policy.liquidity_days)
+        if expected != after.near_liquid_cents:
+            failures["liquidity_standard"] = "near-term principal aggregate differs"
     for check in HARD_CHECKS:
         try:
             check(before, after, tx)

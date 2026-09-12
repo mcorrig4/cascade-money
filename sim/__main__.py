@@ -38,6 +38,7 @@ def write_json(path,data):
 
 
 def world_args(parser):
+    parser.add_argument("--check-every", type=positive_int, default=1, help="check each Nth operation; checkpoints and final reconciliation always run")
     parser.add_argument("--days",type=positive_int,default=365)
     parser.add_argument("--seed",type=nonnegative_int,default=1)
     parser.add_argument("--suppliers",type=positive_int,default=2000)
@@ -61,6 +62,8 @@ def main(argv=None):
     scenarios=commands.add_parser("scenarios")
     scenarios.add_argument("--out-dir",type=Path)
     random_run=commands.add_parser("stress")
+    random_run.add_argument("--check-every",type=positive_int,default=1)
+    random_run.add_argument("--exhaustive",action="store_true",help="also reconcile the whole ledger at the selected attempt interval")
     random_run.add_argument("--ops",type=positive_int,default=10000)
     random_run.add_argument("--seed",type=nonnegative_int,default=1)
     random_run.add_argument("--out",type=Path)
@@ -83,13 +86,13 @@ def main(argv=None):
     if args.command=="stress":
         if args.out:
             with args.out.open("w",encoding="utf-8") as output:
-                report,_=stress(ops=args.ops,seed=args.seed,destination=output)
+                report,_=stress(ops=args.ops,seed=args.seed,destination=output,check_every=args.check_every,exhaustive=args.exhaustive)
             write_json(args.out.with_suffix(".metrics.json"),report)
         else:
-            report,_=stress(ops=args.ops,seed=args.seed)
+            report,_=stress(ops=args.ops,seed=args.seed,check_every=args.check_every,exhaustive=args.exhaustive)
         print(json.dumps({**report,"wall_seconds":round(perf_counter()-start,6)},sort_keys=True))
         return 0
-    kwargs=dict(days=args.days,seed=args.seed,suppliers=args.suppliers,invoices=args.invoices,cash_need_bps=args.cash_need_fraction)
+    kwargs=dict(days=args.days,seed=args.seed,suppliers=args.suppliers,invoices=args.invoices,cash_need_bps=args.cash_need_fraction,check_every=args.check_every)
     if args.command=="compare":
         args.out_dir.mkdir(parents=True,exist_ok=True)
         reports=paired_runs(output_dir=args.out_dir,**kwargs)

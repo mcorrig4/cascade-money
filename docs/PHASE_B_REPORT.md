@@ -1,3 +1,5 @@
+> Superseded by [the story and performance revision](PHASE_B_REVISION.md). The figures and routes below are historical.
+
 # Phase B implementation and verification
 
 Phase B is implemented. The performance target is **not met**: the exact-date

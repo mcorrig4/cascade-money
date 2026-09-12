@@ -50,6 +50,25 @@ NAMED_SITES = {
     "Clearview Glass": [site("clearview-glass",37.80,-84.85,"Harrodsburg, Kentucky","United States","North America")],
 }
 
+
+# Product-owner supplied scripted sites; the named fictional firms are generated
+# story actors, included in the 2,000-supplier total.
+NAMED_SITES.update({
+    "Great Lakes Silica": [site("great-lakes-illinois",41.35,-88.84,"Ottawa, Illinois","United States","North America")],
+    "Pacific Freight": [site("pacific-freight-long-beach",33.77,-118.19,"Long Beach","United States","North America")],
+    "Sumco": [site("sumco-tokyo",35.66,139.75,"Tokyo","Japan","East Asia")],
+    "Wacker": [site("wacker-burghausen",48.18,12.83,"Burghausen","Germany","Europe")],
+    "Bécancour Silicon": [site("becancour-silicon",46.34,-72.43,"Bécancour, Quebec","Canada","North America")],
+    "Pohang Cathode": [site("pohang-cathode",36.02,129.34,"Pohang","South Korea","East Asia")],
+    "Shenzhen PCB": [site("shenzhen-pcb",22.55,114.06,"Shenzhen","China","East Asia")],
+})
+STORY_CATEGORIES = {
+    "Great Lakes Silica": (3,"raw"), "Pacific Freight": (3,"logistics"),
+    "Sumco": (2,"components"), "Wacker": (2,"refining"),
+    "Bécancour Silicon": (3,"raw"), "Pohang Cathode": (2,"refining"),
+    "Shenzhen PCB": (2,"components"),
+}
+
 CLUSTERS = {
     "raw": [(46.81,-71.21,"Quebec City","Canada","North America"),(-10.716,25.473,"Kolwezi","Democratic Republic of the Congo","Africa"),(-23.65,-70.40,"Antofagasta","Chile","South America"),(-20.31,118.58,"Port Hedland","Australia","Oceania"),(-2.84,122.17,"Morowali","Indonesia","Southeast Asia")],
     "refining": [(35.54,129.31,"Ulsan","South Korea","East Asia"),(34.97,136.62,"Yokkaichi","Japan","East Asia"),(49.50,8.43,"Ludwigshafen","Germany","Europe"),(29.74,-95.02,"Baytown","United States","North America")],
