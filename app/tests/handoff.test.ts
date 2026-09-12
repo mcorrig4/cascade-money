@@ -31,9 +31,9 @@ test('branch proof reveals one, two, four real payments with constant principal'
   assert.deepEqual(cascadeBeats(payments.slice(2)).map(b => b.length), [2,4]);
   const engine = new PlaybackEngine(index); playShot(engine,4);
   assert.deepEqual(engine.totals(), { settled:200n, committed:100n });
-  engine.tick(.4); assert.equal(engine.drainStoryEvents().length,1);
+  engine.tick(7); assert.equal(engine.drainStoryEvents().length,1);
   engine.tick(.22); assert.equal(engine.drainStoryEvents().length,1);
-  engine.tick(11.38);
+  engine.tick(2.78);
   assert.deepEqual(engine.totals(), { settled:400n, committed:100n });
   assert.equal(engine.drainStoryEvents().length,4);
   engine.stopShot(); assert.equal(engine.storyEvents,null);

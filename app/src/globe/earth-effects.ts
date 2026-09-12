@@ -1,3 +1,4 @@
+import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import {
   AmbientLight, DirectionalLight, ACESFilmicToneMapping, AdditiveBlending, BufferGeometry, Color, DataTexture, Float32BufferAttribute,
   Mesh, Points, PointsMaterial, ShaderMaterial, SphereGeometry, SRGBColorSpace,
@@ -48,22 +49,33 @@ export function createEarthEffects(globe: GlobeInstance) {
   };
   const sunDirection = new Vector3(0.1, 0.35, -1).normalize();
   const earth = new ShaderMaterial({
-    uniforms: { dayMap: { value: black }, nightMap: { value: black }, sunDirection: { value: sunDirection } },
+    uniforms: { dayMap: { value: black }, nightMap: { value: black }, sunDirection: { value: sunDirection }, shutterRadians:{value:0} },
     vertexShader,
     fragmentShader: /* glsl */ `
       #include <logdepthbuf_pars_fragment>
       uniform sampler2D dayMap;
       uniform sampler2D nightMap;
       uniform vec3 sunDirection;
+      uniform float shutterRadians;
       varying vec2 vEarthUv;
       varying vec3 vWorldNormal;
       void main() {
         float sunDot = dot(normalize(vWorldNormal), normalize(sunDirection));
-        float daylight = smoothstep(-0.12, 0.18, sunDot);
+        float daylight = 0.0;
+        float illumination = 0.0;
+        // Integrate the moving terminator across a shutter interval instead of
+        // displaying alternating unblurred day/night frames at rewind speed.
+        for(int i=0;i<7;i++) {
+          float a=(float(i)/6.0-0.5)*shutterRadians;
+          vec3 d=vec3(cos(a)*sunDirection.x-sin(a)*sunDirection.z,sunDirection.y,sin(a)*sunDirection.x+cos(a)*sunDirection.z);
+          float light=dot(normalize(vWorldNormal),normalize(d));
+          daylight+=smoothstep(-0.12,0.18,light)/7.0;
+          illumination+=max(light,0.0)/7.0;
+        }
         vec3 surface = texture2D(dayMap, vEarthUv).rgb;
         vec3 lights = texture2D(nightMap, vEarthUv).rgb;
         // Keep the terminator soft, the ocean dark, and city lights on the night side only.
-        vec3 dayColor = surface * (0.16 + 0.65 * max(sunDot, 0.0));
+        vec3 dayColor = surface * (0.16 + 0.65 * illumination);
         vec3 nightColor = surface * 0.025 + lights * 0.8;
         gl_FragColor = vec4(mix(nightColor, dayColor, daylight), 1.0);
         #include <logdepthbuf_fragment>
@@ -92,10 +104,11 @@ export function createEarthEffects(globe: GlobeInstance) {
     });
   }));
   const atmosphereMaterial = new ShaderMaterial({
-    uniforms: { sunDirection: { value: sunDirection } }, vertexShader,
+    uniforms: { sunDirection: { value: sunDirection }, shutterRadians:{value:0} }, vertexShader,
     fragmentShader: /* glsl */ `
       #include <logdepthbuf_pars_fragment>
       uniform vec3 sunDirection;
+      uniform float shutterRadians;
       varying vec3 vWorldNormal;
       varying vec3 vWorldPosition;
       void main() {
@@ -127,16 +140,20 @@ export function createEarthEffects(globe: GlobeInstance) {
   const renderer = globe.renderer(); renderer.toneMapping = ACESFilmicToneMapping;
   const bloom = new ArcBloomPass(renderer, globe.scene(), globe.camera());
   const output = new OutputPass(), composer = globe.postProcessingComposer();
-  composer.addPass(bloom); composer.addPass(output);
+  const trails=new AfterimagePass(.88);trails.enabled=false;composer.addPass(bloom);composer.addPass(trails);composer.addPass(output);
   const sunClock = new SunClock();
   const previousLights = globe.lights();
   const ambient = new AmbientLight('#c8d6e8', 0.75), sunlight = new DirectionalLight('#fff0d9', 3);
   globe.lights([ambient, sunlight]);
   return {
-    update(position: number, elapsed: number, campusScale: boolean, holdSun: boolean, shotSun?: Vector3, dusk = false) {
+    update(position: number, elapsed: number, campusScale: boolean, holdSun: boolean, shotSun?: Vector3, dusk = false, timelapse?:{days:number;direction:number;duration:number;elapsed:number}|null) {
       const sun = sunClock.update(position, elapsed, holdSun);
-      const direction = globe.getCoords(sun.lat, sun.lng, 0);
-      earth.userData.sunLongitude = sun.lng;
+      const sweeping=!!timelapse && timelapse.elapsed<timelapse.duration;
+      trails.enabled=sweeping;
+      earth.uniforms.shutterRadians.value=sweeping?2.8:0;
+      const rewindLng=timelapse?sun.lng+timelapse.direction*timelapse.days/30*360*Math.min(1,timelapse.elapsed/timelapse.duration):sun.lng;
+      const direction = globe.getCoords(sun.lat,rewindLng,0);
+      earth.userData.sunLongitude = rewindLng;
       sunDirection.set(direction.x, direction.y, direction.z).normalize();
       if (shotSun) sunDirection.copy(shotSun);
       sunlight.position.copy(sunDirection).multiplyScalar(globe.getGlobeRadius() * 4);
@@ -145,7 +162,7 @@ export function createEarthEffects(globe: GlobeInstance) {
     },
     dispose() {
       globe.lights(previousLights);
-      composer.removePass(bloom); composer.removePass(output); bloom.dispose(); output.dispose();
+      composer.removePass(bloom);composer.removePass(trails);trails.dispose(); composer.removePass(output); bloom.dispose(); output.dispose();
       globe.scene().remove(atmosphere, stars);
       atmosphere.geometry.dispose(); atmosphereMaterial.dispose(); starsGeometry.dispose(); stars.material.dispose();
       disposed = true; pendingFrames.forEach(cancelAnimationFrame);

@@ -47,12 +47,12 @@ test('new display chain drives proof counters and Asan camera without unrelated 
   index.payments.forEach((p, i) => { p.from = ids[i]; p.to = ids[i + 1]; });
   assert.deepEqual(proofPayments(index).map(e => e.to), ids.slice(1));
   const engine = new PlaybackEngine(index); playShot(engine, 3); engine.tick(0.5);
-  assert.equal(engine.state.camera.lng, 127.057);
+  assert.equal(engine.state.camera.lng, 127.06);
   engine.tick(11.5); assert.equal(engine.totals().settled, 20000000000n);
 });
 test('all overlay shots start independently, pause and cancel scheduled flights', () => {
-  const engine = new PlaybackEngine(makeIndex()); assert.equal(SHOTS.length, 12);
-  for (let shot = 6; shot <= 12; shot++) {
+  const engine = new PlaybackEngine(makeIndex()); assert.equal(SHOTS.length, 20);
+  for (const {id:shot} of SHOTS) {
     playShot(engine, shot); assert.equal(engine.state.shot, shot);
     engine.tick(0.1); engine.toggle(); const elapsed = engine.state.shotElapsed;
     engine.tick(5); assert.equal(engine.state.shotElapsed, elapsed);
@@ -62,8 +62,8 @@ test('all overlay shots start independently, pause and cancel scheduled flights'
   playShot(engine, 10); engine.tick(4); assert.equal(engine.state.stage, 'cube');
   assert.equal(engine.state.camera.altitude, 8 / 6_371_000);
   assert.equal(engine.state.camera.site, 'fifth-avenue');
-  engine.tick(5); assert.equal(engine.state.stage, 'cube');
-  engine.tick(.21); assert.equal(engine.state.stage, 'wide');
+  engine.tick(1.7); assert.equal(engine.state.stage, 'cube');
+  engine.tick(.11); assert.equal(engine.state.stage, 'wide');
 });
 test('legacy v1 without geographic enrichment still gets its five presentation positions', () => {
   const index = createIndex();

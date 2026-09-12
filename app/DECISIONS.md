@@ -153,3 +153,37 @@ stream byte-for-byte. Unit checks cover clip direction, fixed ground distances,
 amount bursts, stable shader geometry, sun rate/holds, all monogram entries, and
 existing accounting/playback/mobile behavior. Browser checks have been extended
 but remain blocked by Chrome's forbidden socket operation in this sandbox.
+
+## Stage 11 — shooting script v2.1
+
+The 20 scenes follow the shooting script's explicit timecodes (236 seconds). Stable
+numeric shot IDs remain distinct from film scene numbers; scenes 1/2 retain IDs
+1/2, new opening beats use 13–16, treasury uses 17, and descent/line use 19/20.
+Existing proof/cascade/year/coin/curve/vault/laws/reframe/composable IDs remain intact.
+The last wordmark retains the old close-card ID 12; the spoken Close is ID 18.
+
+Two source conflicts are resolved explicitly. Scene 15's camera block ends at wide
+Earth but its continuity table requires the store: its final 3.2 seconds return
+continuously toward the store. The close uses the current v5 "Money with a date."
+wording rather than the retired phrase quoted in the shooting script. The title
+and location label move to scene 4, the first caption permitted by the opening.
+
+The Apple Park orbit uses globe-relative radii converted to meters. For the arch,
+the other lane's existing appleParkShotCamera supplies calibrated entry/exit
+points to the spline: the shooting script's rough .0006/.00005 altitudes would
+otherwise pass kilometres/hundreds of metres above the physical arch. No edits
+were made to site-math.ts, site-scene.ts, tiles-policy.ts or GLBs. The current
+store camera remains supplied by siteCamera; interior descent is deliberately a
+subsurfaceInteriorCameraHook, with an above-ground approach and exposure fallback.
+
+The documents contain no timestamped narration take. Coin clause cues are editable
+at 0/6/12/18/24/31/38/44/49 seconds; diagram boxes at 0/1.5/3/4.5/6.5. They follow
+clause order and the specified 53s/8s durations, without claiming audio alignment
+that has not been measured. Unsupported curve tenors still have no invented price.
+The background Tesla cues replay only actual events from the baked stream.
+
+Rewind adds shutter-integrated day/night lighting, afterimage trails and a small
+scene blur. The normal month-scale sun policy is unchanged outside that explicit
+rewind. White transitions use renderer exposure plus a full-frame white overlay;
+black bookends are separate overlays. All camera primitives are driven by exact
+cue-boundary advancement, and camera moves start at the preceding live/sample pose.

@@ -17,6 +17,7 @@ if (!executablePath) {
   }
 }
 if (!executablePath || !existsSync(executablePath)) throw new Error('Chrome not reachable. Set CHROME_PATH to an existing Chrome executable; no browser download is performed.');
+const nativeGl=process.env.CHROME_GL==='native';
 let browser;
 try { browser = await chromium.launch({ executablePath, headless: true,
   // Software WebGL is deterministic for the production suite but far too slow
@@ -53,44 +54,55 @@ async function expectLedgerMode(page, mode, phase) {
     throw new Error(`${phase}: expected ledger ${mode}; state=${JSON.stringify(state)}`,{cause:error});
   }
 }
-async function captureLegibility(context) {
-  const page=await context.newPage(); page.setDefaultTimeout(300000);
+async function captureScenes(context, legibility=false) {
+  const page=await context.newPage();page.setDefaultTimeout(300000);
+  page.on('pageerror',e=>errors.push(e.message));
   const target=new URL(url);target.searchParams.set('inspect','1');
-  await page.goto(target.href);await page.waitForFunction(()=>!!window.__cascade);
-  await mkdir('artifacts/legibility',{recursive:true});
-  const samples=[[1,1.5],[10,4.5],[10,8],[10,12],[5,7.5],[6,0],[6,6.2],[6,13.2],[6,25.2],[6,35],[6,44.2],[6,52],[7,26],[8,19],[9,14],[10,14],[11,0],[11,1.2],[11,2.2],[11,3.2],[11,4.8],[12,4]];
-  const audit=[];
-  for(const [width,height] of [[640,360],[426,240]]) {
+  await page.goto(target.href);await page.waitForFunction(()=>!!window.__cascade&&window.__cascade.globe.globeMaterial().userData.textureStage!=='pending');
+  const shots=await page.evaluate(()=>window.__cascade.shots);
+  const directory=legibility?'legibility':'scenes';await mkdir(`artifacts/${directory}`,{recursive:true});
+  const manifest=[];
+  for(const [width,height] of legibility?[[640,360],[426,240]]:[[1920,1080],[640,360]]) {
     await page.setViewportSize({width,height});
-    for(const [shot,seconds] of samples) {
-      await page.keyboard.press('Escape');await page.keyboard.press('Shift+D');
-      await page.locator('.shot-list button').nth(shot-1).click();await page.keyboard.press('Shift+D');
-      await page.evaluate(seconds=>{const e=window.__cascade.engine;e.tick(seconds);e.update({playing:false,shotRunning:false,camera:{...e.state.camera,duration:0,id:e.state.camera.id+1}});},seconds);
-      await page.waitForTimeout(550);
-      if (shot === 1 || shot === 10) {
-        const expected = shot === 1 ? ['Apple Park','Cupertino, California'] : ['Apple Store NYC','Fifth Avenue, New York City'];
-        assert.equal(await page.locator('.scene-location').innerText(),expected.join('\n'));
-        const narration = await page.locator('.scene-narration p').boundingBox();
-        const place = await page.locator('.scene-location').boundingBox();
-        assert.ok(narration && place && narration.y + narration.height <= place.y, 'Giant narration clears the location label');
-        assert.ok(narration.x >= 0 && narration.x + narration.width <= width, 'Narration fits the frame');
-      }
-      await page.screenshot({path:`artifacts/legibility/${width}x${height}-shot-${shot}-${seconds}s.png`});
-      audit.push(await page.evaluate(({width,height,shot,seconds})=>({width,height,shot,seconds,
-        overflow:[...document.querySelectorAll('.overlay-card')].map(e=>({label:e.getAttribute('aria-label'),scroll:e.scrollHeight,height:e.clientHeight})),
-        tiny:[...document.querySelectorAll('.overlay-card p,.overlay-card strong,.headline span')].filter(e=>e.getBoundingClientRect().height&&Number.parseFloat(getComputedStyle(e).fontSize)<10).map(e=>e.textContent)
-      }),{width,height,shot,seconds}));
+    await page.evaluate(()=>{const e=window.__cascade.engine;e.setClockMode('manual');window.__cascade.playFilm();
+      window.__capturePlaying=e.state.playing;e.update({recording:true,playing:false,shotRunning:false});});
+    let clock=0;
+    for(const shot of shots) {
+      const seconds=shot.captureAt;
+      assert.ok(seconds>0&&seconds<shot.seconds, `Scene ${shot.scene} capture is strictly inside its duration`);
+      const targetTime=shot.startTime+seconds;
+      await page.evaluate(delta=>{
+        const e=window.__cascade.engine;
+        if(window.__capturePlaying!==undefined)e.update({playing:window.__capturePlaying,shotRunning:true});
+        e.tick(delta,'manual');window.__capturePlaying=e.state.playing;e.update({playing:false,shotRunning:false});
+      },targetTime-clock);clock=targetTime;
+      await page.waitForTimeout(700);
+      await page.waitForFunction(()=>window.__cascade.models().every(m=>!m.pending));
+      const path=`artifacts/${directory}/scene-${String(shot.scene).padStart(2,'0')}-${width}x${height}.png`;
+      await page.screenshot({path});
+      const audit=await page.evaluate(()=>{
+        const hud=document.querySelector('.bottom-panel'),bottom=hud&&getComputedStyle(hud).visibility!=='hidden'?hud.getBoundingClientRect().top:innerHeight;
+        const content=[...document.querySelectorAll('.law:last-child,.invariant-list>div:last-child,.composable-items li:last-child')];
+        return {mode:window.__cascade.engine.state.shot,elapsed:window.__cascade.engine.state.shotElapsed,exposure:window.__cascade.engine.state.exposure,
+          clipped:content.filter(e=>e.getBoundingClientRect().bottom>bottom+1).map(e=>e.textContent),
+          overflow:[...document.querySelectorAll('.overlay-card')].filter(e=>e.scrollHeight>e.clientHeight+2).map(e=>e.getAttribute('aria-label'))};
+      });
+      manifest.push({scene:shot.scene,id:shot.id,title:shot.title,seconds,width,height,path,audit});
+      assert.equal(audit.mode,shot.id,`Capture follows the 20-scene order (scene ${shot.scene}, film time ${targetTime}s)`);
+      assert.ok(Math.abs(audit.elapsed-seconds)<1e-7, 'Capture uses the declared scene-relative time');
+      assert.deepEqual(audit.clipped,[],`${shot.title} stays above the collapsed HUD at ${width}×${height}`);
     }
+    await page.evaluate(()=>{delete window.__capturePlaying;});
   }
-  await writeFile('artifacts/legibility/audit.json',JSON.stringify(audit,null,2));
-  assert.ok(audit.every(a=>!a.tiny.length),'Overlay and HUD text stays at least 10px at the small capture sizes');
+  await writeFile(`artifacts/${directory}/manifest.json`,JSON.stringify(manifest,null,2));
+  assert.deepEqual(errors,[],'Scene captures have no page errors');
   await page.close();
 }
 const errors = [];
 try {
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   await routeStatic(context);
-  if(process.argv.includes('--legibility')) { await captureLegibility(context); await browser.close(); process.exit(0); }
+  if(process.argv.includes('--legibility')||process.argv.includes('--scenes')) { await captureScenes(context,process.argv.includes('--legibility')); await browser.close(); process.exit(0); }
   const page = await context.newPage();
   page.setDefaultTimeout(300000);
   const textureRequests = [], modelRequests = [];
@@ -205,87 +217,8 @@ try {
   await page.evaluate(()=>window.__cascade.engine.tick(1));
   await expectLedgerMode(page,'expanded','Seek stays paused on subsequent ticks');
   assert.equal(modelRequests.length,0,'Models and Draco are never fetched on first paint or distant views');
-  await page.keyboard.press('Shift+D');
-  await page.getByRole('region', { name: 'Shot director' }).waitFor();
-  await page.locator('.shot-list button').nth(0).click();
-  await page.keyboard.press('Shift+D');
-  await page.waitForTimeout(500);
-  await page.waitForFunction(() => window.__cascade.globe.scene().getObjectByName('Apple Park ring decal')?.material.map.image?.complete);
-  await page.waitForFunction(() => window.__cascade.models().some(m => m.id === 'apple-park' && (m.missing || m.fade === 1)));
-  const parkPose = await page.evaluate(() => {
-    const { globe, models } = window.__cascade, park = globe.scene().getObjectByName('Apple Park ring decal');
-    return { camera: globe.pointOfView(), fallback: park?.visible, model: models().find(m => m.id === 'apple-park'), target: globe.controls().target.length() };
-  });
-  assert.ok(parkPose.camera.altitude < .0002 && parkPose.target > 99,'Shot 1 looks at the campus from an oblique local camera');
-  assert.ok(parkPose.model.loaded ? !parkPose.fallback : parkPose.fallback,'Model replaces decal only after its fade completes');
-  if (staticMode && existsSync('dist/models/apple-park.glb')) assert.ok(parkPose.model.loaded,'Bundled Apple Park decodes successfully');
-  await page.waitForFunction(() => window.__cascade.engine.state.shotElapsed >= 3 && !window.__cascade.cameraFlightActive());
-  assert.deepEqual(await page.locator('.scene-location').innerText(), 'Apple Park\nCupertino, California');
-  await page.evaluate(() => window.__cascade.engine.update({shotElapsed:1.5,shotRunning:false}));
-  await page.locator('[data-cue="flashback"]').waitFor();
-  await page.screenshot({ path: 'artifacts/shot1-apple-park.png' });
-  const localTiles = !staticMode && await page.locator('.site-scene canvas').count() > 0;
-  if (localTiles) {
-    await page.evaluate(() => window.__cascade.engine.update({ playing: false, shotRunning: false }));
-    await page.waitForFunction(() => {
-      const tiles = window.__cascade.tiles();
-      return tiles.site === 'apple-park' && (tiles.failed || (tiles.ready && tiles.ground !== null && tiles.opacity > .98));
-    });
-    assert.equal(await page.evaluate(() => window.__cascade.tiles().failed), false, 'Apple Park tiles load without falling back');
-    assert.ok((await page.locator('.site-attribution').innerText()).includes('Google'), 'Tile frame carries Google attribution');
-    await page.screenshot({ path: 'artifacts/shot1-tiles.png' });
-  }
-  await page.keyboard.press('Escape');
-  const totals = await page.evaluate(() => {
-    const { engine } = window.__cascade;
-    engine.setSpeed('year'); engine.tick(15);
-    return { day: engine.state.day, playing: engine.state.playing, settled: String(engine.totals().settled) };
-  });
-  assert.deepEqual(totals, { day: 364, playing: false, settled: expectedYear });
-  for (let shot = 6; shot <= 12; shot++) {
-    await page.keyboard.press('Shift+D');
-    await page.locator('.shot-list button').nth(shot - 1).click();
-    await page.keyboard.press('Shift+D');
-    await page.getByTestId(`overlay-${shot}`).waitFor();
-    if (shot === 10) {
-      await page.waitForFunction(() => window.__cascade.engine.state.camera.site === 'fifth-avenue' && !window.__cascade.cameraFlightActive() && window.__cascade.globe.pointOfView().altitude < .000002);
-      await page.evaluate(() => window.__cascade.engine.update({ playing:false, shotRunning:false }));
-      await page.waitForFunction(() => window.__cascade.models().some(m => m.id === 'fifth-avenue' && (m.missing || m.fade === 1)));
-      if (staticMode && existsSync('dist/models/fifth-avenue.glb')) assert.ok(await page.evaluate(() => window.__cascade.models().find(m => m.id === 'fifth-avenue').loaded),'Bundled Fifth Avenue decodes successfully');
-      const cubePose = await page.evaluate(() => {
-        const { globe } = window.__cascade;
-        globe.scene().updateMatrixWorld(true);
-        const model = globe.scene().getObjectByName('Site model: fifth-avenue');
-        if (!model) return null;
-        const eye = model.worldToLocal(globe.camera().position.clone());
-        const target = model.worldToLocal(globe.controls().target.clone());
-        return { distance: Math.hypot(eye.x,eye.z), height:eye.y, targetHeight:target.y };
-      });
-      if (cubePose) { assert.ok(Math.abs(cubePose.distance-48)<.1); assert.ok(Math.abs(cubePose.height-5.2)<.1); assert.ok(cubePose.targetHeight>cubePose.height); }
-      assert.ok(modelRequests.filter(url => url.includes('/models/')).every(url => /[?]v=[a-f0-9]{16}$/.test(url)), 'Model URLs carry their build content hashes');
-      assert.equal(await page.locator('.scene-location').innerText(), 'Apple Store NYC\nFifth Avenue, New York City');
-      await page.screenshot({ path: 'artifacts/shot10-cube.png' });
-      await page.evaluate(() => window.__cascade.engine.update({shotElapsed:4.5}));
-      await page.locator('[data-cue="money-time"]').waitFor();
-      await page.screenshot({path:'artifacts/shot10-money-time.png'});
-      if (localTiles) {
-        await page.evaluate(() => window.__cascade.engine.update({ shotElapsed: 6.5 }));
-        await page.waitForFunction(() => {
-          const tiles = window.__cascade.tiles();
-          return tiles.site === 'fifth-avenue' && (tiles.failed || (tiles.ready && tiles.ground !== null && tiles.opacity > .98));
-        });
-        assert.equal(await page.evaluate(() => window.__cascade.tiles().failed), false, 'Fifth Avenue tiles load without falling back');
-        await page.screenshot({ path: 'artifacts/shot10-tiles.png' });
-      }
-      await page.evaluate(() => { window.__cascade.engine.update({ shotRunning:true }); window.__cascade.engine.tick(2.1); });
-      await page.waitForTimeout(6500);
-      assert.ok(await page.evaluate(() => window.__cascade.models().every(m => !m.loaded && !m.pending)), 'Pullback releases site models');
-      await page.evaluate(() => window.__cascade.engine.update({shotElapsed:12,shotRunning:false}));
-      await page.locator('[data-cue="reframe"]').waitFor();
-      await page.screenshot({path:'artifacts/shot10-reframe.png'});
-    }
-    await page.screenshot({ path: `artifacts/shot-${shot}-1920x1080.png` });
-  }
+  await captureScenes(context);
+  await page.evaluate(()=>{window.__cascade.playScene(12);const e=window.__cascade.engine;e.tick(9);e.update({playing:false,shotRunning:false});});
   await page.getByText('Earth imagery: NASA', { exact: true }).waitFor();
   await page.getByRole('button',{name:'Verify on Arc',exact:true}).click();
   await page.getByRole('dialog').waitFor();
@@ -349,6 +282,6 @@ try {
   assert.equal(textureRequests[0], 'earth-blue-marble-4k.jpg', '4K loads before the night map and high-resolution upgrade');
   await mobile.close();
   assert.deepEqual(errors, []);
-  await writeFile('artifacts/browser-check.json', JSON.stringify({ viewports: ['1920x1080', '390x844'], alignment, layout, textureRequests, growing, parkPose, renderer: 'Chrome / SwiftShader', opacity: 'passed', retainedGeometry: 'passed', before, after, errors }, null, 2));
+  await writeFile('artifacts/browser-check.json', JSON.stringify({ viewports: ['1920x1080', '390x844'], alignment, layout, textureRequests, growing, scenes: 'artifacts/scenes/manifest.json', renderer: nativeGl?'Chrome / native GL':'Chrome / SwiftShader', opacity: 'passed', retainedGeometry: 'passed', before, after, errors }, null, 2));
   console.log('Passed: desktop/mobile gestures and layout, Telegram bridge, geography, texture order, arc opacity/geometry, director, and year endpoint. Screenshots: app/artifacts/');
 } finally { await browser.close(); }

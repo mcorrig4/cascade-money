@@ -29,3 +29,52 @@
 @media(max-width:600px) and (min-height:481px){.ledger-inspecting{width:auto}}
 @media(max-height:480px) and (min-aspect-ratio:4/3){.ledger-inspecting{width:300px}}
 @media(max-height:280px) and (min-aspect-ratio:4/3){.ledger-inspecting{width:270px}}
+/* Stage 11: overlays own the vertical frame; the HUD becomes one line. */
+.director-active .scene-heading,.director-active .globe-coordinate{display:none}
+.overlay-active .bottom-panel{height:34px;padding:4px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.overlay-active .timeline-top,.overlay-active .chart-track,.overlay-active .timeline-months,.overlay-active .speed-options,.overlay-active .playback-state{display:none}
+.overlay-active .timeline-region{width:auto}.overlay-active .transport{margin:0}.overlay-active .headline-counters{display:flex;gap:18px;border:0;padding:0;width:auto}
+.overlay-active .headline{display:flex;align-items:center;gap:7px}.overlay-active .headline>span,.overlay-active .ratio span{font-size:12px;max-width:none}.overlay-active .headline>strong,.overlay-active .ratio strong{font-size:19px;letter-spacing:0}.overlay-active .ratio{padding:0;display:flex;align-items:center;gap:6px}
+.overlay-active .shot-overlay{inset:55px 0 38px;display:grid;place-items:center;overflow:visible}.overlay-active .overlay-card{height:auto;min-height:0;max-height:100%;padding:8px 18px}
+.overlay-active .ledger-toggle{display:none}.scene-clean .topbar,.scene-clean .bottom-panel,.scene-clean .ledger,.scene-clean .ledger-toggle{visibility:hidden;pointer-events:none}
+.scene-clean .shot-overlay{inset:0}.scene-clean .scene-location{bottom:20px}.scene-clean .scene-narration{inset:10% 5% 25%}
+.network-card,.catch-card{text-align:center}.network-card h2,.catch-card h2{font-size:clamp(48px,8vw,130px)}
+.scene-overlay-coin .globe-dimmer,.scene-overlay-treasury .globe-dimmer{background:#030a0f66}.scene-overlay-network .globe-dimmer{background:#030a0f33}
+.coin-stage{position:relative;display:flex;align-items:center;justify-content:center;gap:18px}.coin-date .dated-coin{animation:date-flip .8s ease both}.twin-coin{position:absolute;left:55%;scale:.75;animation:card-in .6s ease both}.coin-fungibility .dated-coin:first-child{translate:-30% 0;scale:.75}
+.ghost-bill{position:absolute;right:0;top:25%;padding:15px;border:1px solid #9df7ca;display:grid;background:#122b27d9;animation:bill-paid 6s ease both}.ghost-bill strong{font-size:40px}.ghost-bill span{font-size:15px}.coin-claim .dated-coin{animation:pay-bill 6s ease both}
+.asset-composition{display:flex;gap:12px;align-items:center;font-size:23px;margin-top:16px}.asset-composition b{padding:8px;border:1px solid #5fa68e;border-radius:5px}.asset-composition small{display:block;font-size:.6em}.curve-ghost{position:absolute;left:9%;bottom:14%;height:65px;width:70px;border-left:4px solid #72d4ad;border-bottom:3px solid #72d4ad;opacity:.35;pointer-events:none;animation:card-in .8s ease}
+.treasury-dates{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:35px 0}.treasury-dates>div{display:flex;flex-direction:column;gap:15px}.treasury-dates strong{font-size:74px}.treasury-dates span{font-size:26px}.treasury-gap{font-size:32px}.gap-highlight{color:#8ce8c2;border-bottom:5px solid #8ce8c2}
+.curve-card svg .curve-line,.curve-card svg .curve-grid{stroke-width:3;vector-effect:non-scaling-stroke}.curve-card svg{font-size:32px}
+.film-exposure,.film-black{position:fixed;inset:0;background:white;pointer-events:none;z-index:23}.film-black{background:#000;z-index:29}.ending-line{position:fixed;inset:0;z-index:25;display:grid;place-items:center;color:#11241d;text-align:center;pointer-events:none}.ending-line p{font-size:clamp(32px,7vw,115px);line-height:1.1;letter-spacing:-.04em}
+.ending-wordmark .shot-overlay{z-index:26}.ending-wordmark .globe-dimmer{display:none}.ending-wordmark .close-card{color:#163329;text-align:center}.ending-wordmark .close-card p{color:#3a5c4d}.ending-wordmark .close-card nav{justify-content:center}.ending-wordmark .close-card a,.ending-wordmark .close-card button{color:#245b42;border-color:#6f9684;background:transparent}.ending-wordmark .close-footer{color:#456a58}.time-lapse-blur .globe-scene{filter:blur(3px)}
+@keyframes date-flip{0%{rotate:y 0deg}50%{rotate:y 90deg}100%{rotate:y 0deg}}
+@keyframes pay-bill{0%,15%{translate:0}60%,100%{translate:30%;opacity:.3}}
+@keyframes bill-paid{0%,40%{opacity:.2}65%{opacity:1}100%{opacity:0}}
+@media(max-height:480px) and (min-aspect-ratio:4/3){
+ .overlay-active .shot-overlay{inset:34px 0 30px}.overlay-active .bottom-panel{height:27px;padding:2px 8px}.overlay-active .headline-counters{gap:9px}.overlay-active .headline>span{font-size:10px}.overlay-active .headline>strong,.overlay-active .ratio strong{font-size:14px}.overlay-active .ratio span{font-size:10px}.overlay-active .transport .icon-button{display:none}
+ .overlay-active .overlay-card h2{font-size:27px;margin:2px 0 6px}.overlay-active .curve-card svg{height:185px;font-size:32px}.overlay-active .law{padding:7px 0}.overlay-active .law strong{font-size:18px}.overlay-active .law p{font-size:15px}.overlay-active .vault-card h2 br{display:none}.overlay-active .vault-columns dl>div{font-size:16px;padding:6px 0}.overlay-active .invariant-list>div{font-size:14px;line-height:1.15;padding:2px 0}.overlay-active .composable-items li{padding:9px 4px}.overlay-active .composable-items strong{font-size:19px}.overlay-active .composable-items p{font-size:14px}.asset-composition{font-size:15px;gap:5px}.treasury-dates{margin:20px 0}.treasury-dates strong{font-size:44px}.treasury-dates span{font-size:18px}.treasury-gap{font-size:21px}.coin-stage{width:100%}.ghost-bill{padding:7px}.ghost-bill span{font-size:11px}.scene-clean .shot-overlay{inset:0}.scene-overlay-network .network-card h2,.scene-overlay-catch .catch-card h2{font-size:55px}
+}
+@media(max-height:280px) and (min-aspect-ratio:4/3){
+ .overlay-active .shot-overlay{inset:28px 0 27px}.overlay-active .overlay-card{padding:3px 9px}.overlay-active .overlay-card h2{font-size:19px;margin:0 0 3px}.overlay-active .curve-card svg{height:123px;font-size:34px}.overlay-active .law{padding:4px 0}.overlay-active .law strong{font-size:14px}.overlay-active .law p{font-size:12px}.overlay-active .laws-card .law>span{font-size:11px}.overlay-active .vault-columns dl>div{font-size:13px;padding:4px 0}.overlay-active .invariant-list>div{font-size:11px;padding:1px 0;line-height:1.1}.overlay-active .vault-card h2 br{display:none}.overlay-active .composable-items li{padding:4px 2px}.overlay-active .composable-items strong{font-size:15px}.overlay-active .composable-items p{font-size:11px}.overlay-active .headline-counters{gap:5px}.overlay-active .headline>span{max-width:60px;font-size:9px}.overlay-active .ratio span{display:none}.treasury-dates{margin:15px 0;gap:8px}.treasury-dates strong{font-size:32px}.treasury-dates span{font-size:13px}.treasury-gap{font-size:15px}.asset-composition{font-size:12px;gap:3px}.asset-composition b{padding:5px}.scene-clean .shot-overlay{inset:0}.scene-overlay-network .network-card h2,.scene-overlay-catch .catch-card h2{font-size:40px}.curve-ghost{height:40px;width:45px}.coin-stage .ghost-bill strong{font-size:25px}
+}
+.wordmark-icon{width:.65em;height:.65em;margin-right:.2em;color:#397c5c}
+@media(max-height:280px) and (min-aspect-ratio:4/3){
+ .overlay-active .laws-card .law{display:grid;grid-template-columns:82px 1fr;gap:2px 8px;padding:5px 0}
+ .overlay-active .laws-card .law>span{grid-column:1;grid-row:1/3;font-size:11px;line-height:1.15}
+ .overlay-active .laws-card .law strong{grid-column:2;font-size:14px;line-height:1.1}
+ .overlay-active .laws-card .law p{grid-column:2;font-size:12px;line-height:1.1}
+ .overlay-active .headline>span{font-size:10px}
+}
+.treasury-card{width:min(1280px,88vw)}
+.yield-axis-bridge{position:fixed;left:16vw;top:53vh;width:4px;height:65px;background:#8ce8c2;transform-origin:bottom left;pointer-events:none}
+.composable-items{grid-template-columns:repeat(6,minmax(0,1fr));gap:20px 14px}
+.composable-items li{grid-column:span 2;min-width:0;border:1px solid #436658;border-radius:6px;position:relative}
+.composable-items li:nth-child(4){grid-column:2/span 2}.composable-items li:nth-child(5){grid-column:4/span 2}
+.composable-items li:nth-child(2)::before,.composable-items li:nth-child(3)::before{content:'→';position:absolute;left:-15px;top:35%;color:#82d5b8}
+.composable-items li:nth-child(4)::before,.composable-items li:nth-child(5)::before{content:'';position:absolute;height:20px;border-left:1px solid #82d5b8;left:50%;top:-21px}
+@media(max-height:280px) and (min-aspect-ratio:4/3){.composable-items{gap:12px 6px}.composable-items li:nth-child(2)::before,.composable-items li:nth-child(3)::before{font-size:10px;left:-8px}.composable-items li:nth-child(4)::before,.composable-items li:nth-child(5)::before{height:12px;top:-13px}.yield-axis-bridge{height:40px}}
+.overlay-active:not(.scene-clean) .scene-location{bottom:48px}
+.overlay-active:not(.scene-clean) .scene-narration{inset:70px 5% 120px}
+.scene-cue-context{display:block;font-size:25px;letter-spacing:.12em;margin-bottom:16px;color:#cbe5d8}
+@media(max-height:480px) and (min-aspect-ratio:4/3){.overlay-active:not(.scene-clean) .scene-location{bottom:35px}.overlay-active:not(.scene-clean) .scene-narration{inset:38px 4% 85px}.scene-cue-context{font-size:14px;margin-bottom:6px}}
+@media(max-height:280px) and (min-aspect-ratio:4/3){.overlay-active:not(.scene-clean) .scene-narration{inset:30px 4% 75px}.scene-cue-context{font-size:12px;margin-bottom:4px}}

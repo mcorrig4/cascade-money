@@ -11,7 +11,8 @@ import { ShotPanel } from './director/ShotPanel.tsx';
 import { SceneLabels } from './director/SceneLabels.tsx';
 import { ShotOverlays } from './director/ShotOverlays.tsx';
 import { OnchainPanel } from './components/OnchainPanel.tsx';
-import { playShot } from './director/shots.ts';
+import { FilmEffects } from './director/FilmEffects.tsx';
+import { SHOTS, playShot } from './director/shots.ts';
 import './stage.css';
 
 function LoadedApp({ index }: { index: EventIndex }) {
@@ -40,12 +41,12 @@ function LoadedApp({ index }: { index: EventIndex }) {
     };
     window.addEventListener('keydown', keyboard);
     const shot = Number(new URLSearchParams(location.search).get('shot'));
-    if (shot >= 1 && shot <= 12) playShot(engine, shot);
+    if (SHOTS.some(s=>s.id===shot)) playShot(engine, shot);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('keydown', keyboard); document.removeEventListener('visibilitychange', visibility); };
   }, [engine]);
   const tesla = [...index.firms.values()].some(f => f.id.toLowerCase().includes('tesla'));
-  return <main className={`app ${state.recording ? 'recording' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot && (state.shot >= 6 || state.shot === 1) ? 'overlay-active' : ''}`}>
-    <Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense>
+  return <main className={`app ${state.recording ? 'recording' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,14,19,20,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
+    <div className={state.timelapse&&state.timelapse.elapsed<state.timelapse.duration?'time-lapse-blur':''}><Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense></div>
     <header className="topbar"><Brand onDirector={openDirector} />
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>
       <button className="onchain-trigger" onClick={openOnchain}>On-chain</button>
@@ -60,7 +61,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
     {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
     {state.caption && <p className="year-caption">illustrative global supply chain</p>}
     <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
-    <SceneLabels shot={state.shot} elapsed={state.shotElapsed} />
+    <SceneLabels shot={state.shot} elapsed={state.shotElapsed} /><FilmEffects state={state} />
     {onchain && <OnchainPanel onClose={() => setOnchain(false)} />}
     {director && !state.recording && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;

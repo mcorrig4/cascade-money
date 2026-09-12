@@ -223,3 +223,22 @@ Run `pnpm --dir app check:browser --static --legibility` to capture the HUD and 
 Scene captions are location-only: Apple Park / Cupertino, California and Apple Store NYC / Fifth Avenue, New York City. `SCENE_TEXT_BEATS` in `src/director/shots.ts` controls the centered flashback date and shot-10 narration, including 350 ms entrance/exit fades. The browser check captures `shot10-money-time.png` and `shot10-reframe.png` alongside the site frames; `--legibility` captures these beats at both small sizes and checks that centered text clears the corner caption.
 
 Ledger inspection latches on the persistent scroll area’s pointer entry/movement or touch press. The displayed transactions and day remain fixed during inspection while the globe continues playback; the selected transaction stays visible. Leave the panel with the mouse or select “Resume log” to catch up to the current playback cursor. Keyboard focus also inspects a row. The real-data browser check moves the pointer into the running log, advances across a day boundary, and checks that inspection remains stable.
+
+Stage 11 supersedes the earlier 12-shot recording sequence. Open Shift+D (or
+long-press the logo) and choose **Play full film · 3:56**. The director shows film
+scene numbers 01–20; URL `?shot=` and inspector APIs continue to use stable shot
+IDs. Previous/Next follows scene order. Space pauses narration/playback; baseline
+camera drift remains active. Escape cancels the film and clears exposure effects.
+The 53-second coin and 8-second composable cues are editable in `shots.ts`; align
+these provisional clause times to the final recorded narration take.
+
+`pnpm --dir app check:browser --static --scenes` captures all 20 scenes at
+1920×1080 and 640×360 to `app/artifacts/scenes/scene-NN-WIDTHxHEIGHT.png` and writes
+a manifest. The standard browser check also includes this pass.
+`pnpm --dir app check:browser --static --legibility` captures the same scenes at
+640×360 and 426×240 under `app/artifacts/legibility/`, checking that the last law,
+invariant and composable box clear the collapsed one-line HUD. Capture manifests
+are produced only by a successful Chrome run; old Stage 10 captures are not proof
+of the new layouts. See `SCENES.md` for the scene-to-shot mapping and expected paths.
+The sub-surface interior is future scope; the current descent calls the existing
+store camera and exposes `engine.subsurfaceInteriorCameraHook` for that renderer.
