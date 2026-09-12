@@ -98,3 +98,35 @@ test('capture offsets stay inside every scene and ignore intervening real-time f
  playFilm(e);e.tick(10);assert.equal(e.state.shotElapsed,0);
  e.setClockMode('realtime');e.tick(SHOTS[0].seconds);assert.equal(e.state.shot,2);
 });
+
+test('opening orbit uses the authored Apple Park eye and fits the accepted tile radius',async()=>{
+ const {appleParkShotCamera,siteFrame}=await import('../src/globe/site-math.ts');
+ const authored=appleParkShotCamera(EARTH_METERS,0),e=new PlaybackEngine(index);playShot(e,1);
+ const pose=sampleCamera(e.state.camera,0),eye=siteFrame(pose.lat,pose.lng,EARTH_METERS).position.multiplyScalar(1+pose.altitude);
+ assert.ok(eye.distanceTo(authored.position)<.001,'Opening eye matches the site camera within a millimeter');
+ assert.deepEqual(pose,SHOTS[0].start);
+ const origin=siteFrame(37.3349,-122.009,EARTH_METERS).position;
+ assert.ok(eye.distanceTo(origin)<2500,'Inside even the stricter 2.5 km gate, and therefore the accepted 5 km campus radius');
+ e.tick(SHOTS[0].seconds);
+ assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),SHOTS[1].start);
+});
+
+test('scene 2 stays in orbit for ten seconds, swoops, and pulls out only on the last clause',async()=>{
+ const {applyNarrationDurations}=await import('../src/director/shots.ts');
+ try{
+  for(const scale of [1,.8,1.25]){
+   applyNarrationDurations({'2':16.2*scale});
+   const e=new PlaybackEngine(index);playShot(e,2);
+   e.tick(9.999*scale);assert.equal(e.state.camera.primitive?.kind,'orbit');
+   assert.ok(e.state.camera.altitude<.00004);
+   e.tick(.001*scale);assert.equal(e.state.camera.primitive?.kind,'spline');
+   assert.equal(e.state.camera.landmarkPath,'apple-park-arch');
+   e.tick(3.599*scale);assert.equal(e.state.camera.primitive?.kind,'spline');
+   e.tick(.001*scale);assert.equal(e.state.camera.primitive?.kind,'fly');
+   assert.equal(e.state.camera.altitude,2.5);
+   e.tick(2.6*scale);
+   assert.ok(Math.abs(sampleCamera(e.state.camera,e.state.cameraElapsed).altitude-2.5)<1e-7);
+   assert.equal(e.state.shotRunning,false);
+  }
+ }finally{applyNarrationDurations({});}
+});

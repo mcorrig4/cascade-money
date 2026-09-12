@@ -1,15 +1,26 @@
 import { eventPosition, PlaybackEngine } from '../playback/engine.ts';
 import type { PlaybackState } from '../playback/engine.ts';
 import type { Event, EventIndex } from '../data/types.ts';
+import { appleParkShotCamera, siteFrame } from '../globe/site-math.ts';
 import { orbitAt, EARTH_METERS, type Pose, type Ease } from '../camera/primitives.ts';
 export const APPLE={lat:37.3349,lng:-122.009,altitude:.0003};
 export const STORE={lat:40.7638,lng:-73.973,altitude:.05};
 const p=(lat:number,lng:number,altitude:number):Pose=>({lat,lng,altitude});
 // Spoken words from docs/script-v6-liam.md; contractions and hyphenated words count as one.
 // IDs preserve the existing camera/API contracts; scene is the narration order.
+// Scene 1's orbit starts at the authored site-camera eye, without replacing
+// its 225 m height / 520 m campus offset with a globe-scale altitude.
+const opening=appleParkShotCamera(EARTH_METERS,0);
+const campus=siteFrame(APPLE.lat,APPLE.lng,EARTH_METERS);
+const openingEast=opening.position.dot(campus.east),openingNorth=opening.position.dot(campus.north);
+const openingOrbit={
+ radius:Math.atan2(Math.hypot(openingEast,openingNorth),opening.position.dot(campus.up))*EARTH_METERS,
+ altitude:opening.position.length()/EARTH_METERS-1,
+ bearing:Math.atan2(openingEast,openingNorth)*180/Math.PI,
+};
 const table=[
- {id:1,title:"The object of desire",words:14,end:orbitAt(APPLE,3822.6,.0003,36),motion:'orbit',overlay:'none',site:'apple-park' as const},
- {id:2,title:"Apple Park",words:38,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
+ {id:1,title:"The object of desire",words:14,openingOrbit,end:orbitAt(APPLE,openingOrbit.radius,openingOrbit.altitude,openingOrbit.bearing+32),motion:'orbit',overlay:'none',site:'apple-park' as const},
+ {id:2,title:"Apple Park",words:38,orbitUntil:10,pullOutAt:13.6,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
  {id:13,title:"Rewind",words:47,end:p(37.3349,-122.009,.35),motion:'reverse time-lapse + flash + push',overlay:'title'},
  {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'westward payment sweep',overlay:'none'},
  {id:15,title:"The contradiction",words:39,end:p(35,-80,1.7),motion:'idle drift',overlay:'contradiction'},
@@ -48,7 +59,7 @@ export function buildShots(durations:NarrationDurations={}) {
   // The closing card is captured after its line-to-wordmark transition.
   const captureAt=seconds*(s.id===12?.9:s.id===11?.5:s.id===13?.55:.8);
   if(!(captureAt>0&&captureAt<seconds))throw new Error('Capture must be strictly inside scene');
-  return {...s,scene:i+1,baseSeconds,seconds,captureAt,start:i?table[i-1].end:orbitAt(APPLE,3822.6,.0003,4),
+  return {...s,scene:i+1,baseSeconds,seconds,captureAt,start:i?table[i-1].end:orbitAt(APPLE,openingOrbit.radius,openingOrbit.altitude,openingOrbit.bearing),
    startTime,endTime:time,duration:`${seconds.toFixed(1)}s`,detail:s.motion};
  });
 }
@@ -179,13 +190,14 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const all=straightProofPayments(engine.index,engine.state.story);
  const show=(event:Event)=>{engine.reveal(event);engine.setPosition(position(engine,event,true));};
  const focus=()=>{engine.storyEvents=[];engine.update({focusInvoices:all.map(e=>e.invoiceId!),paymentMaturity:proofMaturity(all[0]),paymentAmount:DEFAULT_CASCADE.committed});};
- if(id===1){engine.setPosition(0,true);engine.orbit(APPLE,3822.6,.0003,32/shot.seconds,ms,4);}
+ if(id===1){engine.setPosition(0,true);engine.orbit(APPLE,openingOrbit.radius,openingOrbit.altitude,32/shot.seconds,ms,openingOrbit.bearing);}
  else if(id===2){
-  engine.orbit(APPLE,3822.6,.0003,18/(shot.seconds*.45),ms*.45,36);
-  engine.after(shot.seconds*.45,()=>engine.splinePath([
+  const orbitUntil=table[1].orbitUntil!,pullOutAt=table[1].pullOutAt!;
+  engine.orbit(APPLE,openingOrbit.radius,openingOrbit.altitude,18/(orbitUntil*scale),orbitUntil*scale*1000,openingOrbit.bearing+32);
+  at(orbitUntil,()=>engine.splinePath([
    {...engine.currentCamera(),t:0},{lat:37.3355,lng:-122.0085,altitude:.0006,t:.5,tangent:{lat:0,lng:0,altitude:0}},
-   {...APPLE,altitude:.00005,t:1.2,tangent:{lat:0,lng:0,altitude:0}}],ms*.2,'apple-park-arch'));
-  engine.after(shot.seconds*.65,()=>engine.snapAndPullOut(APPLE,.00005,2.5,ms*.35));
+   {...APPLE,altitude:.00005,t:1.2,tangent:{lat:0,lng:0,altitude:0}}],(pullOutAt-orbitUntil)*scale*1000,'apple-park-arch'));
+  at(pullOutAt,()=>engine.snapAndPullOut(APPLE,.00005,2.5,(shot.baseSeconds-pullOutAt)*scale*1000));
  }else if(id===13){
   engine.timelapse('global',365,'reverse',scale*1000);
   at(1,()=>engine.flashToWhite(scale*250));
