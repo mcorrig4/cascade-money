@@ -6,7 +6,8 @@
   "scripts": {
     "start": "remotion studio",
     "build": "remotion render src/index.ts CascadeFilm out/cascade-film.mp4",
-    "still": "remotion still"
+    "still": "remotion still",
+    "scene-frames": "node scripts/scene-frames.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.484",
