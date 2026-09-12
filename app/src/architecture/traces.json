@@ -1,0 +1,123 @@
+{
+  "reference": [
+    {
+      "label": "Day 0",
+      "index": "1/1",
+      "backing": "101",
+      "principal": "100",
+      "accrued": "0",
+      "reserve": "1",
+      "deficit": "0"
+    },
+    {
+      "label": "Day 1",
+      "index": "101/100",
+      "backing": "102",
+      "principal": "100",
+      "accrued": "1",
+      "reserve": "1",
+      "deficit": "0"
+    },
+    {
+      "label": "Day 2",
+      "index": "101/100",
+      "backing": "99",
+      "principal": "101",
+      "accrued": "0",
+      "reserve": "0",
+      "deficit": "2"
+    },
+    {
+      "label": "Day 3",
+      "index": "101/100",
+      "backing": "205/2",
+      "principal": "102",
+      "accrued": "0",
+      "reserve": "1/2",
+      "deficit": "0"
+    },
+    {
+      "label": "Day 4",
+      "index": "1294/1275",
+      "backing": "207/2",
+      "principal": "102",
+      "accrued": "1/204",
+      "reserve": "305/204",
+      "deficit": "0"
+    }
+  ],
+  "local": [
+    {
+      "label": "Day 1",
+      "index": "101/100",
+      "backing": "101/10",
+      "principal": "10",
+      "accrued": "1/10",
+      "reserve": "0",
+      "deficit": "0"
+    },
+    {
+      "label": "Day 2",
+      "index": "51/50",
+      "backing": "51/5",
+      "principal": "10",
+      "accrued": "1/5",
+      "reserve": "0",
+      "deficit": "0"
+    },
+    {
+      "label": "Day 3",
+      "index": "103/100",
+      "backing": "103/10",
+      "principal": "10",
+      "accrued": "3/10",
+      "reserve": "0",
+      "deficit": "0"
+    },
+    {
+      "label": "Apple claim",
+      "index": "103/100",
+      "backing": "103/10",
+      "principal": "103/10",
+      "accrued": "0",
+      "reserve": "0",
+      "deficit": "0"
+    },
+    {
+      "label": "Day 4",
+      "index": "1039708737864077669/1000000000000000000",
+      "backing": "52/5",
+      "principal": "103/10",
+      "accrued": "1517/15625",
+      "reserve": "91/31250",
+      "deficit": "0"
+    },
+    {
+      "label": "Day 5",
+      "index": "524708737864077669/500000000000000000",
+      "backing": "21/2",
+      "principal": "103/10",
+      "accrued": "7767/40000",
+      "reserve": "233/40000",
+      "deficit": "0"
+    },
+    {
+      "label": "Silica claim",
+      "index": "524708737864077669/500000000000000000",
+      "backing": "21/2",
+      "principal": "5247087/500000",
+      "accrued": "0",
+      "reserve": "2913/500000",
+      "deficit": "0"
+    },
+    {
+      "label": "freight withdrawal",
+      "index": "524708737864077669/500000000000000000",
+      "backing": "1/2",
+      "principal": "247087/500000",
+      "accrued": "0",
+      "reserve": "2913/500000",
+      "deficit": "0"
+    }
+  ]
+}

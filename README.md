@@ -2,6 +2,8 @@
 
 Dated dollars: money that pays bills before it becomes cash.
 
+[Architecture page](/architecture) · [Submission SVGs and export instructions](docs/architecture/README.md)
+
 A dated dollar is one dollar of principal, redeemable on a calendar date, fully
 backed by value held in a vault on Arc. Every dated dollar sharing a date is
 interchangeable with every other, and a dollar dated earlier than a bill settles

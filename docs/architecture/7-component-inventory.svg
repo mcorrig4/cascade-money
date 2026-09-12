@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1730" height="1200" viewBox="0 0 1730 1200" role="img" aria-labelledby="title desc">
+<title id="title">Cascade: dated dollars on Arc</title>
+<desc id="desc">USDC or USYC backing feeds the Cascade vault. Date mints share a ledger with per-date ERC-20 views and on-chain metadata. Forward extension assigns added yield intervals. Reference and local-test evidence feed the front end beside the independent discount window.</desc>
+<metadata>Mermaid SHA-256: e50b41b504cea0b7857fffdacc3be327d583740118aff77c772d9781ae2f3167</metadata>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#52647a"/></marker></defs>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#172b45}.node{fill:white;stroke:#9cb4cb;stroke-width:1.5}.vault{fill:#dff4f0;stroke:#158474;stroke-width:2}.external{fill:#eef2f8;stroke:#a9b6c8;stroke-width:1.5}.edge{fill:none;stroke:#52647a;stroke-width:2;stroke-linejoin:round}</style>
+<rect width="1730" height="1200" fill="#f8fafc"/>
+<text x="460" y="100" font-size="34" font-weight="700">Cascade · dated dollars on Arc</text>
+<rect x="40" y="160" width="1650" height="700" rx="22" fill="#eff6fc" stroke="#a3c5e2" stroke-width="2"/>
+<text x="480" y="210" font-size="22" font-weight="700">Arc · EVM · USDC gas</text>
+<path class="edge" d="M230 125 V280" marker-end="url(#arrow)"/>
+<path class="edge" d="M230 390 V440 H450 V500" marker-end="url(#arrow)"/>
+<path class="edge" d="M605 390 V500" marker-end="url(#arrow)"/>
+<path class="edge" d="M1025 390 V445 H720 V500" marker-end="url(#arrow)"/>
+<path class="edge" d="M750 535 H850" marker-end="url(#arrow)"/>
+<path class="edge" d="M850 585 H780 V640 H700 V600" marker-end="url(#arrow)"/>
+<path class="edge" d="M1200 525 H1300" marker-end="url(#arrow)"/>
+<path class="edge" d="M1200 555 H1265 V755 H1300" marker-end="url(#arrow)"/>
+<path class="edge" d="M930 600 V710" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path class="edge" d="M510 600 V710" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path class="edge" d="M850 760 H750" marker-end="url(#arrow)"/>
+<path class="edge" d="M420 550 H365 V757 H340" marker-end="url(#arrow)"/>
+<path class="edge" d="M420 575 H390 V875 H800 V990" marker-end="url(#arrow)"/>
+<path class="edge" d="M1200 585 H1225 V885 H1435 V990" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<path class="edge" d="M1250 1045 H1000" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<path class="edge" d="M450 1067 H600" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<path class="edge" d="M450 955 H520 V1015 H600" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<g id="APPLE"><rect class="node external" x="100" y="60" width="260" height="65" rx="12"/>
+<text text-anchor="middle" x="230" y="98.5" font-size="19" font-weight="700">Debtor / Apple</text>
+</g>
+<g id="USDC"><rect class="node " x="100" y="280" width="260" height="110" rx="12"/>
+<text text-anchor="middle" x="230" y="317" font-size="19" font-weight="700">USDC</text>
+<text text-anchor="middle" x="230" y="341" font-size="14" font-weight="400">6-decimal ERC-20 interface</text>
+<text text-anchor="middle" x="230" y="365" font-size="14" font-weight="400">Default backing</text>
+</g>
+<g id="USYC"><rect class="node " x="420" y="280" width="370" height="110" rx="12"/>
+<text text-anchor="middle" x="605" y="317" font-size="19" font-weight="700">USYC backing</text>
+<text text-anchor="middle" x="605" y="341" font-size="15" font-weight="400">(mock on testnet, real after allowlist)</text>
+<text text-anchor="middle" x="605" y="365" font-size="15" font-weight="400">Price-valued shares · separate variant</text>
+</g>
+<g id="OWNER"><rect class="node " x="850" y="280" width="350" height="110" rx="12"/>
+<text text-anchor="middle" x="1025" y="317" font-size="19" font-weight="700">Checkpoint owner</text>
+<text text-anchor="middle" x="1025" y="341" font-size="15" font-weight="400">Funded delta /</text>
+<text text-anchor="middle" x="1025" y="365" font-size="15" font-weight="400">backing-price index</text>
+</g>
+<g id="VAULT"><rect class="node vault" x="420" y="500" width="330" height="100" rx="12"/>
+<text text-anchor="middle" x="585" y="532" font-size="19" font-weight="700">Cascade vault</text>
+<text text-anchor="middle" x="585" y="556" font-size="15" font-weight="400">Custody · invoices</text>
+<text text-anchor="middle" x="585" y="580" font-size="15" font-weight="400">Backing check</text>
+</g>
+<g id="DATES"><rect class="node " x="850" y="500" width="350" height="100" rx="12"/>
+<text text-anchor="middle" x="1025" y="544" font-size="19" font-weight="700">Date mints · ERC-1155</text>
+<text text-anchor="middle" x="1025" y="568" font-size="15" font-weight="400">ID = UTC epoch day</text>
+</g>
+<g id="DISPLAY"><rect class="node " x="1300" y="500" width="320" height="100" rx="12"/>
+<text text-anchor="middle" x="1460" y="532" font-size="19" font-weight="700">Wallet display</text>
+<text text-anchor="middle" x="1460" y="556" font-size="15" font-weight="400">Per-date ERC-20 views</text>
+<text text-anchor="middle" x="1460" y="580" font-size="15" font-weight="400">On-chain JSON + SVG metadata</text>
+</g>
+<g id="HOLDER"><rect class="node " x="100" y="710" width="240" height="95" rx="12"/>
+<text text-anchor="middle" x="220" y="751.5" font-size="19" font-weight="700">Holder</text>
+<text text-anchor="middle" x="220" y="775.5" font-size="15" font-weight="400">USDC / backing shares</text>
+</g>
+<g id="LEDGER"><rect class="node " x="420" y="710" width="330" height="95" rx="12"/>
+<text text-anchor="middle" x="585" y="739.5" font-size="19" font-weight="700">Entitlement ledger</text>
+<text text-anchor="middle" x="585" y="763.5" font-size="15" font-weight="400">Account · amount · S · E · claimed</text>
+<text text-anchor="middle" x="585" y="787.5" font-size="15" font-weight="400">Claim mints today-dated spot</text>
+</g>
+<g id="EXTEND"><rect class="node " x="850" y="710" width="350" height="95" rx="12"/>
+<text text-anchor="middle" x="1025" y="739.5" font-size="19" font-weight="700">Extend</text>
+<text text-anchor="middle" x="1025" y="763.5" font-size="15" font-weight="400">T1 → T2, only forward</text>
+<text text-anchor="middle" x="1025" y="787.5" font-size="15" font-weight="400">Assign added entitlement interval</text>
+</g>
+<g id="PAYEE"><rect class="node " x="1300" y="710" width="320" height="95" rx="12"/>
+<text text-anchor="middle" x="1460" y="751.5" font-size="19" font-weight="700">Creditor / next supplier</text>
+<text text-anchor="middle" x="1460" y="775.5" font-size="15" font-weight="400">Original date retained</text>
+</g>
+<g id="LOCAL"><rect class="node external" x="80" y="920" width="370" height="70" rx="12"/>
+<text text-anchor="middle" x="265" y="949" font-size="19" font-weight="700">Foundry tests</text>
+<text text-anchor="middle" x="265" y="973" font-size="15" font-weight="400">Maturity / claims evidence</text>
+</g>
+<g id="REF"><rect class="node external" x="80" y="1020" width="370" height="95" rx="12"/>
+<text text-anchor="middle" x="265" y="1049.5" font-size="19" font-weight="700">Python reference implementation</text>
+<text text-anchor="middle" x="265" y="1073.5" font-size="15" font-weight="400">Loss waterfall · stress scenarios</text>
+<text text-anchor="middle" x="265" y="1097.5" font-size="15" font-weight="400">Independent event stream</text>
+</g>
+<g id="FRONTEND"><rect class="node external" x="600" y="990" width="400" height="110" rx="12"/>
+<text text-anchor="middle" x="800" y="1027" font-size="19" font-weight="700">Cascade front end</text>
+<text text-anchor="middle" x="800" y="1051" font-size="15" font-weight="400">Events · balances · explorer receipts</text>
+<text text-anchor="middle" x="800" y="1075" font-size="15" font-weight="400">Reference scenarios / pricing</text>
+</g>
+<g id="WINDOW"><rect class="node external" x="1250" y="990" width="370" height="110" rx="12"/>
+<text text-anchor="middle" x="1435" y="1027" font-size="19" font-weight="700">Separate discount window</text>
+<text text-anchor="middle" x="1435" y="1051" font-size="15" font-weight="400">Participant-funded</text>
+<text text-anchor="middle" x="1435" y="1075" font-size="15" font-weight="400">Never vault reserve</text>
+</g>
+<text class="label" x="245" y="240" text-anchor="start" font-size="16">issue: deposit USDC</text>
+<text class="label" x="800" y="430" text-anchor="start" font-size="16">publish I(d)</text>
+<text class="label" x="800" y="518" text-anchor="middle" font-size="14">issue / claim</text>
+<text class="label" x="800" y="557" text-anchor="middle" font-size="14">mint</text>
+<text class="label" x="535" y="625" text-anchor="start" font-size="16">ID ≤ today: spot</text>
+<text class="label" x="535" y="676" text-anchor="start" font-size="15">Withdrawal burns liability</text>
+<text class="label" x="1280" y="662" text-anchor="start" font-size="16">pay / transfer</text>
+<text class="label" x="947" y="663" text-anchor="start" font-size="16">burn / mint</text>
+<text class="label" x="267" y="673" text-anchor="start" font-size="16">withdraw</text>
+<text class="label" x="830" y="925" text-anchor="start" font-size="16">events · balances · receipts</text>
+<text class="label" x="1240" y="847" text-anchor="start" font-size="15">principal only</text>
+<text class="label" x="1125" y="1028" text-anchor="middle" font-size="15">prices / yield curve</text>
+<text x="80" y="1165" font-size="16">Solid: vault operations and views · Dashed: separate components · Entitlements stay with their owner when principal moves</text>
+</svg>

@@ -10,7 +10,9 @@
     "build": "pnpm prepare:data && tsc -b && vite build",
     "preview": "node scripts/serve.mjs --preview",
     "test": "node --experimental-strip-types --test --experimental-test-isolation=none tests/*.test.ts",
-    "check:browser": "node scripts/check-browser.mjs"
+    "check:browser": "node scripts/check-browser.mjs",
+    "export:architecture": "node --experimental-strip-types scripts/export-architecture.mjs",
+    "check:architecture": "node scripts/check-architecture.mjs"
   },
   "dependencies": {
     "globe.gl": "2.46.2",
@@ -18,7 +20,11 @@
     "react-dom": "19.2.4",
     "three": "0.183.2"
   },
-  "pnpm": { "overrides": { "three": "0.183.2" } },
+  "pnpm": {
+    "overrides": {
+      "three": "0.183.2"
+    }
+  },
   "devDependencies": {
     "@types/node": "24.13.3",
     "@types/react": "19.2.14",
