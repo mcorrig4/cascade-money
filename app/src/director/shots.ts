@@ -8,8 +8,8 @@ const p=(lat:number,lng:number,altitude:number):Pose=>({lat,lng,altitude});
 // Spoken words from docs/script-v6-liam.md; contractions and hyphenated words count as one.
 // IDs preserve the existing camera/API contracts; scene is the narration order.
 const table=[
- {id:1,title:"The object of desire",words:14,end:orbitAt(APPLE,3822.6,.0003,36),motion:'orbit',overlay:'none'},
- {id:2,title:"Apple Park",words:38,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none'},
+ {id:1,title:"The object of desire",words:14,end:orbitAt(APPLE,3822.6,.0003,36),motion:'orbit',overlay:'none',site:'apple-park' as const},
+ {id:2,title:"Apple Park",words:38,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
  {id:13,title:"Rewind",words:47,end:p(37.3349,-122.009,.35),motion:'reverse time-lapse + flash + push',overlay:'title'},
  {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'westward payment sweep',overlay:'none'},
  {id:15,title:"The contradiction",words:39,end:p(35,-80,1.7),motion:'idle drift',overlay:'contradiction'},
@@ -22,9 +22,9 @@ const table=[
  {id:9,title:"Stress test",words:27,end:p(25,160,2.3),motion:'maturity drift',overlay:'vault'},
  {id:8,title:"The rules survive",words:28,end:p(30,170,2.3),motion:'east drift',overlay:'laws'},
  {id:11,title:"Zoom out",words:42,end:p(37.3349,-122.009,2.6),motion:'pull-out + east sweep',overlay:'composable'},
- {id:10,title:"New York",words:26,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + stair descent',overlay:'none'},
- {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift',overlay:'promises'},
- {id:12,title:"Close",words:9,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift + exposure',overlay:'wordmark'},
+ {id:10,title:"New York",words:26,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + stair descent',overlay:'none',site:'fifth-avenue' as const},
+ {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift',overlay:'promises',site:'fifth-avenue' as const},
+ {id:12,title:"Close",words:9,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift + exposure',overlay:'wordmark',site:'fifth-avenue' as const},
 ];
 export type NarrationDurations=Record<string,number>;
 /** narration.json: {"durations":{"1":6.6,"2":16.2}}; keys are scene numbers, values seconds. */
@@ -53,6 +53,10 @@ export function buildShots(durations:NarrationDurations={}) {
  });
 }
 export const SHOTS=buildShots();
+export type ShotSite='apple-park'|'fifth-avenue';
+export function shotSite(id:number|null):ShotSite|null {
+ return (SHOTS.find(shot=>shot.id===id) as ({site?:ShotSite}|undefined))?.site??null;
+}
 export let FILM_SECONDS=SHOTS.at(-1)!.endTime;
 export function applyNarrationDurations(durations:NarrationDurations) {
  SHOTS.splice(0,SHOTS.length,...buildShots(durations));FILM_SECONDS=SHOTS.at(-1)!.endTime;

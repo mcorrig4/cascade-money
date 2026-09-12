@@ -1,5 +1,6 @@
 import { Vector3 } from 'three';
 import type { PlaybackState } from '../playback/engine.ts';
+import { shotSite } from '../director/shots.ts';
 import { nearSite, SITES } from './site-math.ts';
 import type { SiteId } from './site-math.ts';
 
@@ -16,19 +17,19 @@ export function canUseTiles(enabled: boolean, key: string | undefined, failed = 
 
 export function shouldHoldForTiles(state: Pick<PlaybackState, 'shot' | 'shotElapsed' | 'shotRunning'>, ready: boolean, failed: boolean, configured: boolean) {
   if (!configured || failed || ready || !state.shotRunning) return false;
-  return state.shot === 1 && state.shotElapsed >= .25 && state.shotElapsed < 14 ||
-    state.shot === 10 && state.shotElapsed >= .25 && state.shotElapsed < 8.3;
+  if(state.shot===10)return state.shotElapsed>=3.2;
+  if(state.shot===19)return state.shotElapsed>=1;
+  return shotSite(state.shot) !== null && state.shotElapsed >= .25;
 }
 
 export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'>, lat: number, lng: number, altitude: number): TilePlan {
-  if (state.shot === 1 && state.shotElapsed <= 15.5) {
-    return { site: 'apple-park', prefetch: true, blend: 1 - smoothstep(14, 14.8, state.shotElapsed) };
+  const authoredSite=shotSite(state.shot);
+  if(state.shot===1)return {site:'apple-park',prefetch:true,blend:1-smoothstep(14,14.8,state.shotElapsed)};
+  if(state.shot===10){
+    const enter=smoothstep(.8,1.6,state.shotElapsed),leave=1-smoothstep(8.3,9,state.shotElapsed);
+    return {site:'fifth-avenue',prefetch:true,blend:enter*leave};
   }
-  if (state.shot === 10 && state.shotElapsed <= 9.4) {
-    const enter = smoothstep(.8, 1.6, state.shotElapsed);
-    const leave = 1 - smoothstep(8.3, 9, state.shotElapsed);
-    return { site: 'fifth-avenue', prefetch: true, blend: enter * leave };
-  }
+  if (authoredSite) return {site:authoredSite,prefetch:true,blend:1};
   const nearby = (Object.keys(SITES) as SiteId[]).find(id => nearSite(id, lat, lng, Math.min(altitude, 0.001)));
   if (!nearby || altitude >= 0.008) return { site: null, prefetch: false, blend: 0 };
   return { site: nearby, prefetch: true, blend: 1 - smoothstep(0.0012, 0.0035, altitude) };
@@ -37,7 +38,11 @@ export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'>, lat
 export function enoughTiles(progress: number, visible: number, failed: number) {
   // Do not release a close-up on planet-scale parents. Regional detail is
   // present only once a substantial visible working set has refined.
-  return failed === 0 && visible >= 40 && progress >= 0.55;
+  // loadProgress is not monotone: it can drop sharply when a moving camera
+  // exposes fresh descendants. Forty visible models is the stable signal that
+  // the regional hierarchy has arrived; a small non-zero progress floor avoids
+  // accepting only the root while allowing authored wide starts to resolve.
+  return failed === 0 && visible >= 40 && (progress >= 0.1 || visible >= 80);
 }
 
 export function medianGroundHeight(points: Vector3[]) {

@@ -1,4 +1,4 @@
-import { SHOTS, playShot, playFilm } from '../director/shots.ts';
+import { SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
 import { easeAt, sampleCamera, splineAt } from '../camera/primitives.ts';
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
@@ -41,9 +41,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const companyLayer = new CompanyLayer(companies.current, named);
     let arcIds = '', cinematic=false, campusFraming=0;
     let time = 250, last = performance.now(), lastColor = 0, raf = 0;
-    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false;
+    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false, previousShot: number | null = null;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
-    let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false, tileGatePaused = false;
+    let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
+    let tileGatePaused = false, tileGateWallMs = 0, tileGateShot: number | null = null, tileFallbackShot: number | null = null;
     let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
     // The descent scene (shot 19) hands off to this hook rather than a bare
@@ -115,6 +116,16 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const elapsed = now - last; last = now;
       if (document.hidden) { raf = requestAnimationFrame(frame); return; }
       const state = engine.state, moving = state.playing || state.shotRunning;
+      if(state.shot!==previousShot){
+        previousShot=state.shot;
+        tileGatePaused=false;tileGateWallMs=0;tileGateShot=null;tileFallbackShot=null;
+        // A URL/director entry has no preceding scene to provide its camera.
+        // Start from the authored pose; continuous film transitions still inherit.
+        if(state.shot!==null&&!state.film&&state.shotElapsed<.1){
+          const authored=SHOTS.find(shot=>shot.id===state.shot);
+          if(authored){flight=undefined;globe.pointOfView(authored.start,0);cameraId=-1;}
+        }
+      }
       if(cinematic!==(state.shot!==null)){cinematic=state.shot!==null;if(cinematic)globe.globeOffset([0,0]);else resize();}
       const desiredPixelRatio = state.recording ? 1 : Math.min(window.devicePixelRatio, 1.5);
       if (globe.renderer().getPixelRatio() !== desiredPixelRatio) globe.renderer().setPixelRatio(desiredPixelRatio);
@@ -212,11 +223,12 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if(!flight)engine.observeCamera(pov);
       models.update(pov.lat, pov.lng, pov.altitude, elapsed);
       const nearHero = (['apple-park', 'fifth-avenue'] as const).some(id => nearSite(id, pov.lat, pov.lng, Math.min(pov.altitude, 0.001)));
-      const wantsSite = (state.shot === 1 && state.shotElapsed <= 15.5) || (state.shot === 10 && state.shotElapsed <= 9.4) || (state.shot === null && pov.altitude < 0.008 && nearHero);
+      const wantsSite = shotSite(state.shot)!==null || (state.shot === null && pov.altitude < 0.008 && nearHero);
       if (LOCAL_TILES && import.meta.env.VITE_GOOGLE_TILES_KEY && wantsSite && !siteScene && !siteScenePromise) {
         siteScenePromise = import('./site-scene.ts').then(module => {
           if (disposed || !siteHost.current || !siteAttribution.current) return;
           siteScene = module.createSiteScene(siteHost.current, siteAttribution.current, import.meta.env.VITE_GOOGLE_TILES_KEY!);
+          if(tileFallbackShot===engine.state.shot)siteScene.releaseFallback();
         }).catch(() => { siteStatus = { ...siteStatus, failed: true }; }).finally(() => { siteScenePromise = undefined; });
       }
       if (siteScene) {
@@ -228,13 +240,21 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const tileFrameReady = siteStatus.ready && siteStatus.ground !== null;
       const tilesConfigured = LOCAL_TILES && !!import.meta.env.VITE_GOOGLE_TILES_KEY;
       if (!tileGatePaused && shouldHoldForTiles(state, tileFrameReady, siteStatus.failed, tilesConfigured)) {
-        tileGatePaused = true;
+        tileGatePaused = true;tileGateWallMs=0;tileGateShot=state.shot;
         engine.update({ shotRunning: false });
-      } else if (tileGatePaused && (tileFrameReady || siteStatus.failed || state.shot !== 1 && state.shot !== 10)) {
-        tileGatePaused = false;
-        if (state.shot === 1 || state.shot === 10) engine.update({ shotRunning: true });
+      } else if(tileGatePaused){
+        tileGateWallMs+=elapsed;
+        const changed=state.shot!==tileGateShot,expired=tileGateWallMs>=12_000;
+        if(expired&&!changed&&tileFallbackShot!==state.shot){
+          tileFallbackShot=state.shot;siteScene?.releaseFallback();
+          console.warn(`[Cascade tiles] scene ${state.shot} exceeded the 12s readiness budget; continuing with the local GLB fallback.`);
+        }
+        if(tileFrameReady||siteStatus.failed||expired||changed){
+          tileGatePaused=false;
+          if(!changed&&state.shot!==null)engine.update({shotRunning:true});
+        }
       }
-      const fullSiteShot = state.shot !== null && siteStatus.opacity > 0.985 && !((state.shot === 1 && state.shotElapsed >= 14) || (state.shot === 10 && state.shotElapsed >= 8.3));
+      const fullSiteShot = shotSite(state.shot)!==null && siteStatus.opacity > 0.985;
       if (fullSiteShot !== globePaused) {
         globePaused = fullSiteShot;
         if (globePaused) globe.pauseAnimation(); else globe.resumeAnimation();

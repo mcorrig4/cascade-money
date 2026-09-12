@@ -50,6 +50,7 @@ export interface SiteSceneStatus {
 export interface SiteSceneController {
   update(frame: SiteSceneFrame, elapsed: number): SiteSceneStatus;
   status(): SiteSceneStatus;
+  releaseFallback(): void;
   dispose(): void;
 }
 
@@ -240,7 +241,7 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
   room.dispose(); pmrem.dispose();
 
   let site: SiteId | null = null, tiles: TilesRenderer | null = null, model: Group | null = null;
-  let failed = false, ready = false, opacity = 0, ground: number | null = null;
+  let failed = false, ready = false, forcedFallback = false, opacity = 0, ground: number | null = null;
   let modelSize: [number, number, number] | null = null;
   let tileBounds: [number, number, number, number, number, number] | null = null;
   let request = 0, attributionClock = 0;
@@ -256,7 +257,7 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     modelAbort?.abort(); modelAbort = null;
     if (model) { disposeModel(model); model = null; }
     if (tiles) { scene.remove(tiles.group); tiles.dispose(); tiles = null; }
-    site = null; failed = false; ready = false; ground = null; modelSize = null; tileBounds = null;
+    site = null; failed = false; ready = false; forcedFallback = false; ground = null; modelSize = null; tileBounds = null;
   }
 
   async function mount(nextSite: SiteId) {
@@ -331,12 +332,13 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
         camera.fov = frame.fov; camera.aspect = width / height; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
         tiles.setResolution(camera, width * ratio, height * ratio);
         tiles.update();
-        tiles.group.visible = registrationMode !== 'model';
+        tiles.group.visible = registrationMode !== 'model' && !forcedFallback;
         const failedTiles = (tiles as TilesRenderer & { stats: { failed: number } }).stats.failed;
         // Refinement progress naturally dips again as a moving close-up exposes
         // new frustum edges. Once the local scene has reached detail quality,
         // keep it live while the renderer refines instead of flashing to fallback.
-        ready = ready || (!failed && !!model && localPosition.length() < 2500 &&
+        const withinAuthoredView=localPosition.length()<(site==='apple-park'?5_000:2_500);
+        ready = ready || (!failed && !!model && withinAuthoredView &&
           enoughTiles(tiles.loadProgress, tiles.visibleTiles.size, failedTiles));
         if (ready && tileBounds === null) {
           const bounds = new Box3();
@@ -364,6 +366,15 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
       return status();
     },
     status,
+    releaseFallback() {
+      forcedFallback = true;
+      failed = false;
+      ready = !!model;
+      if (site && model && ground === null) {
+        ground = SITE_GRADE[site];
+        model.position.y = ground + MODEL_LIFT[site];
+      }
+    },
     dispose() {
       clearSite(); environment.dispose(); renderer.dispose(); renderer.domElement.remove(); attribution.replaceChildren();
     },
