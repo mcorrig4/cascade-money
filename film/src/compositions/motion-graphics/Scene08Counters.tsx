@@ -1,23 +1,24 @@
 /**
  * Scene 8 — Let it land. Script-v6-liam.md: "One hundred million dollars
- * committed. [Four hundred million / Four hundred fifty million] dollars
- * of obligations settled... Nobody borrowed another dollar... That's the
- * cascade." Composited over the continuing shot-04-the-cascade capture.
+ * committed. Four hundred million dollars of obligations settled... Nobody
+ * borrowed another dollar... That's the cascade." Composited over the
+ * continuing shot-04-the-cascade capture.
  *
  * Two verified figure sets exist for the same sim run
  * (docs/verified-figures-v6.md): the straight line of hops reaches
- * $400M / 4 payees (the shorter spoken version the product owner may keep);
- * the full branch-out reaches $450M / 8 companies. `USE_EXTENDED_FIGURES`
- * is the switch between them — flip it to match whichever line the
- * recorded narration actually speaks.
+ * $400M / 4 payees — this is what the product owner recorded for scenes
+ * 7/8, so it is the default; the full branch-out reaches $450M / 8
+ * companies and stays available as the alternate. `USE_EXTENDED_FIGURES`
+ * is the switch between them — flip it to true only if the recorded
+ * narration is re-cut to speak the extended line.
  */
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {countUp, enter} from '../../motion/timing';
 import {color, font, scrim, type} from '../../brand/tokens';
 
-/** Flip to false to show the straight-line figures ($400M / 4 companies). */
-export const USE_EXTENDED_FIGURES = true;
+/** Flip to true to show the extended figures ($450M / 8 companies). */
+export const USE_EXTENDED_FIGURES = false;
 
 const COMMITTED = 100_000_000;
 const SETTLED = USE_EXTENDED_FIGURES ? 450_000_000 : 400_000_000;
