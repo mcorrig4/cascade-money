@@ -14,6 +14,12 @@ export function canUseTiles(enabled: boolean, key: string | undefined, failed = 
   return enabled && !!key?.trim() && !failed;
 }
 
+export function shouldHoldForTiles(state: Pick<PlaybackState, 'shot' | 'shotElapsed' | 'shotRunning'>, ready: boolean, failed: boolean, configured: boolean) {
+  if (!configured || failed || ready || !state.shotRunning) return false;
+  return state.shot === 1 && state.shotElapsed >= .25 && state.shotElapsed < 8 ||
+    state.shot === 10 && state.shotElapsed >= 3.5 && state.shotElapsed < 8.3;
+}
+
 export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'>, lat: number, lng: number, altitude: number): TilePlan {
   if (state.shot === 1 && state.shotElapsed <= 9.4) {
     return { site: 'apple-park', prefetch: true, blend: 1 - smoothstep(8, 8.7, state.shotElapsed) };

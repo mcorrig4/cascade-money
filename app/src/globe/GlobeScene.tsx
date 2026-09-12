@@ -19,6 +19,7 @@ import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import { createSiteModels } from './site-models.ts';
 import { nearSite, siteCamera, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
+import { shouldHoldForTiles } from './tiles-policy.ts';
 import parkUrl from '../assets/apple-park.svg';
 
 const MONEY = '#69e6c0';
@@ -40,7 +41,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     let time = 250, last = performance.now(), lastColor = 0, raf = 0;
     let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
-    let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
+    let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false, tileGatePaused = false;
     let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
     globe.backgroundColor('#00000000')
@@ -152,13 +153,22 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         siteScenePromise = import('./site-scene.ts').then(module => {
           if (disposed || !siteHost.current || !siteAttribution.current) return;
           siteScene = module.createSiteScene(siteHost.current, siteAttribution.current, import.meta.env.VITE_GOOGLE_TILES_KEY!);
-        }).catch(() => undefined).finally(() => { siteScenePromise = undefined; });
+        }).catch(() => { siteStatus = { ...siteStatus, failed: true }; }).finally(() => { siteScenePromise = undefined; });
       }
       if (siteScene) {
         siteStatus = siteScene.update({ state, lat: pov.lat, lng: pov.lng, altitude: pov.altitude, globeRadius: globe.getGlobeRadius(),
           cameraPosition: camera.position, cameraTarget: controls.target, cameraUp: camera.up, fov: camera.fov, recording: state.recording }, elapsed);
         siteIdle = wantsSite || siteStatus.opacity > 0 ? 0 : siteIdle + elapsed;
         if (siteIdle > 1800) { siteScene.dispose(); siteScene = undefined; siteStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null }; }
+      }
+      const tileFrameReady = siteStatus.ready && siteStatus.ground !== null;
+      const tilesConfigured = LOCAL_TILES && !!import.meta.env.VITE_GOOGLE_TILES_KEY;
+      if (!tileGatePaused && shouldHoldForTiles(state, tileFrameReady, siteStatus.failed, tilesConfigured)) {
+        tileGatePaused = true;
+        engine.update({ shotRunning: false });
+      } else if (tileGatePaused && (tileFrameReady || siteStatus.failed || state.shot !== 1 && state.shot !== 10)) {
+        tileGatePaused = false;
+        if (state.shot === 1 || state.shot === 10) engine.update({ shotRunning: true });
       }
       const fullSiteShot = state.shot !== null && siteStatus.opacity > 0.985 && !((state.shot === 1 && state.shotElapsed >= 8) || (state.shot === 10 && state.shotElapsed >= 8.3));
       if (fullSiteShot !== globePaused) {

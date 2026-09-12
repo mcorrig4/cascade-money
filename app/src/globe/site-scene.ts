@@ -1,6 +1,6 @@
 import {
   ACESFilmicToneMapping, AmbientLight, Box3, Color, DirectionalLight, DoubleSide, Fog, Group,
-  Mesh, PerspectiveCamera, PMREMGenerator, Raycaster, Scene,
+  Mesh, PerspectiveCamera, PMREMGenerator, Scene,
   SRGBColorSpace, Vector2, Vector3, WebGLRenderer,
 } from 'three';
 import type { Material, MeshPhysicalMaterial, Object3D, Texture } from 'three';
@@ -12,10 +12,11 @@ import type { PlaybackState } from '../playback/engine.ts';
 import { disposeModel, loadSiteModel } from './load-site-model.ts';
 import { globeDirectionToSite, globePointToSite, SITES } from './site-math.ts';
 import type { SiteId } from './site-math.ts';
-import { canUseTiles, enoughTiles, medianGroundHeight, tilePlan } from './tiles-policy.ts';
+import { canUseTiles, enoughTiles, tilePlan } from './tiles-policy.ts';
 
 const ROOT_TILESET = 'https://tile.googleapis.com/v1/3dtiles/root.json';
 const MODEL_LIFT: Record<SiteId, number> = { 'apple-park': 0.18, 'fifth-avenue': 0.08 };
+const SITE_GRADE: Record<SiteId, number> = { 'apple-park': 12.5, 'fifth-avenue': -16.34 };
 const SKY: Record<SiteId, string> = { 'apple-park': '#a9bbc1', 'fifth-avenue': '#263640' };
 
 export interface SiteSceneFrame {
@@ -93,7 +94,7 @@ function tuneModel(root: Object3D, environment: Texture) {
 }
 
 function attributionMarkup(attribution: HTMLElement, values: Array<{ type: string; value: unknown }>) {
-  const text = values.filter(value => value.type !== 'image').map(value => String(value.value || '').trim())
+  const text = values.filter(value => value.type !== 'image').map(value => String(value.value || '').trim().replace(/^Google[;,·\s]+/i, ''))
     .filter(value => value && value.toLowerCase() !== 'google').join(' · ');
   attribution.replaceChildren();
   const logo = document.createElement('span');
@@ -125,9 +126,9 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
   let site: SiteId | null = null, tiles: TilesRenderer | null = null, model: Group | null = null;
   let failed = false, ready = false, opacity = 0, ground: number | null = null;
   let modelSize: [number, number, number] | null = null;
-  let request = 0, attributionClock = 0, alignmentClock = 0;
+  let request = 0, attributionClock = 0;
   let modelAbort: AbortController | null = null;
-  const resolution = new Vector2(), raycaster = new Raycaster();
+  const resolution = new Vector2();
   const localPosition = new Vector3(), localTarget = new Vector3(), localUp = new Vector3();
 
   const status = (): SiteSceneStatus => ({ site, ready, failed, progress: tiles?.loadProgress ?? 0,
@@ -138,13 +139,13 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     modelAbort?.abort(); modelAbort = null;
     if (model) { disposeModel(model); model = null; }
     if (tiles) { scene.remove(tiles.group); tiles.dispose(); tiles = null; }
-    site = null; failed = false; ready = false; ground = null; modelSize = null; alignmentClock = 0;
+    site = null; failed = false; ready = false; ground = null; modelSize = null;
   }
 
   async function mount(nextSite: SiteId) {
     clearSite(); site = nextSite;
     scene.background = new Color(SKY[nextSite]);
-    scene.fog = nextSite === 'fifth-avenue' ? new Fog(SKY[nextSite], 95, 450) : null;
+    scene.fog = nextSite === 'fifth-avenue' ? new Fog(SKY[nextSite], 100, 650) : null;
     const currentRequest = request, coords = SITES[nextSite];
     const nextTiles = new TilesRenderer(ROOT_TILESET);
     nextTiles.lruCache.minBytesSize = 160 * 1024 * 1024;
@@ -176,34 +177,6 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     scene.add(loaded);
   }
 
-  function alignModel(nextSite: SiteId) {
-    if (!tiles || !model) return;
-    const offsets = [[-24, -24], [0, -26], [24, -24], [-28, 0], [28, 0], [-24, 24], [0, 26], [24, 24]];
-    const hits: Vector3[] = [];
-    tiles.group.updateMatrixWorld(true);
-    for (const [x, z] of offsets) {
-      raycaster.set(new Vector3(x, 800, z), new Vector3(0, -1, 0));
-      let gradeHit: Vector3 | undefined;
-      // Loaded tile scenes have the tiles group as their parent for transforms but
-      // are intentionally not inserted into its child list in renderer 0.5.x.
-      tiles.forEachLoadedModel(tileScene => {
-        tileScene.updateWorldMatrix(true, true);
-        for (const hit of raycaster.intersectObject(tileScene, true)) {
-          // The Fifth Avenue source includes malformed triangles kilometres
-          // above and below grade. Only plausible local elevations may anchor
-          // the authored model.
-          if (Number.isFinite(hit.point.y) && hit.point.y > -100 && hit.point.y < 200 &&
-            (!gradeHit || Math.abs(hit.point.y + 16) < Math.abs(gradeHit.y + 16))) gradeHit = hit.point.clone();
-        }
-      });
-      if (gradeHit) hits.push(gradeHit);
-    }
-    const height = medianGroundHeight(hits);
-    if (height !== null) {
-      ground = height; model.position.y = height + MODEL_LIFT[nextSite];
-    }
-  }
-
   return {
     update(frame, elapsed) {
       const plan = tilePlan(frame.state, frame.lat, frame.lng, frame.altitude);
@@ -226,17 +199,18 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
         const failedTiles = (tiles as TilesRenderer & { stats: { failed: number } }).stats.failed;
         ready = !failed && !!model && enoughTiles(tiles.loadProgress, tiles.visibleTiles.size, failedTiles);
         if (ready && ground === null) {
-          // Google has no current 3D coverage over Apple Park itself. Its local
-          // ellipsoid-relative grade was established from the surrounding tiles.
-          if (site === 'apple-park') { ground = 12.5; model!.position.y = ground + MODEL_LIFT[site]; }
-          else if ((alignmentClock += elapsed) >= 180) { alignmentClock = 0; alignModel(site); }
+          // These ellipsoid-relative grades are established from the stable
+          // surrounding tiles. The source is absent over Apple Park and has
+          // malformed vertical geometry at Fifth Avenue, so direct ray hits are
+          // not reliable anchors at every LOD.
+          ground = SITE_GRADE[site]; model!.position.y = ground + MODEL_LIFT[site];
         }
         if (model) model.visible = ready && ground !== null;
         renderer.render(scene, camera);
         if ((attributionClock += elapsed) >= 500) { attributionClock = 0; attributionMarkup(attribution, tiles.getAttributions()); }
       }
       const targetOpacity = ready && ground !== null && !failed ? plan.blend : 0;
-      opacity += (targetOpacity - opacity) * Math.min(1, elapsed / 700);
+      opacity += (targetOpacity - opacity) * (1 - Math.exp(-elapsed / 160));
       if (targetOpacity === 0 && opacity < 0.002) opacity = 0;
       host.style.opacity = opacity.toFixed(4);
       host.style.visibility = opacity > 0 ? 'visible' : 'hidden';

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Vector3 } from 'three';
-import { canUseTiles, enoughTiles, medianGroundHeight, tilePlan } from '../src/globe/tiles-policy.ts';
+import { canUseTiles, enoughTiles, medianGroundHeight, shouldHoldForTiles, tilePlan } from '../src/globe/tiles-policy.ts';
 
 test('local-only gate and failed-request fallback are fail closed', () => {
   assert.equal(canUseTiles(false, 'local-key'), false);
@@ -22,6 +22,15 @@ test('shot crossfades prefetch before display and hold the requested sites', () 
   assert.equal(tilePlan({shot:10,shotElapsed:6.2},0,0,2).blend,1);
   assert.equal(tilePlan({shot:10,shotElapsed:8.3},0,0,2).blend,1);
   assert.equal(tilePlan({shot:10,shotElapsed:9},0,0,2).blend,0);
+});
+
+test('local recordings hold choreography for a complete tile frame but never hold fallback', () => {
+  assert.equal(shouldHoldForTiles({shot:1,shotElapsed:.1,shotRunning:true},false,false,true),false);
+  assert.equal(shouldHoldForTiles({shot:1,shotElapsed:.25,shotRunning:true},false,false,true),true);
+  assert.equal(shouldHoldForTiles({shot:10,shotElapsed:3.5,shotRunning:true},false,false,true),true);
+  assert.equal(shouldHoldForTiles({shot:10,shotElapsed:3.5,shotRunning:true},true,false,true),false);
+  assert.equal(shouldHoldForTiles({shot:10,shotElapsed:3.5,shotRunning:true},false,true,true),false);
+  assert.equal(shouldHoldForTiles({shot:10,shotElapsed:3.5,shotRunning:true},false,false,false),false);
 });
 
 test('free exploration prefetches near a hero and ground alignment rejects outliers', () => {

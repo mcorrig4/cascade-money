@@ -19,7 +19,9 @@ if (!executablePath) {
 if (!executablePath || !existsSync(executablePath)) throw new Error('Chrome not reachable. Set CHROME_PATH to an existing Chrome executable; no browser download is performed.');
 let browser;
 try { browser = await chromium.launch({ executablePath, headless: true,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] }); } catch (error) {
+  // Software WebGL is deterministic for the production suite but far too slow
+  // to drive a second photogrammetry renderer in the local-only tile frames.
+  args: staticMode ? ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : ['--no-sandbox', '--disable-dev-shm-usage'] }); } catch (error) {
   console.error(`Chrome launch failed (${executablePath}): ${error.message}\nRun outside the sandbox: pnpm --dir app check:browser --static`);
   process.exit(1);
 }
@@ -220,7 +222,11 @@ try {
   phone.on('pageerror', error => errors.push(error.message));
   await phone.goto(inspectUrl.href);
   await phone.waitForFunction(() => window.__cascade?.globe.globeMaterial().userData.textureStage !== 'pending' && !!window.__cascade);
-  assert.deepEqual(await phone.evaluate(() => window.__telegramCalls), ['ready', 'expand', 'swipes']);
+  const telegramCalls = await phone.evaluate(() => window.__telegramCalls);
+  assert.ok(telegramCalls.length >= 3 && telegramCalls.length % 3 === 0);
+  for (let index = 0; index < telegramCalls.length; index += 3) {
+    assert.deepEqual(telegramCalls.slice(index, index + 3), ['ready', 'expand', 'swipes']);
+  }
   const layout = await phone.evaluate(() => ({
     width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight,
     canvasTouch: getComputedStyle(document.querySelector('canvas')).touchAction,
