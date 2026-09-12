@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Vector3, Group, Mesh, BoxGeometry, MeshBasicMaterial } from 'three';
-import { EARTH_METERS, ecefToSiteMatrix, geodeticToEcef, globePointToSite, metersToScene, nearSite, SITES, siteFrame, sitePoint, siteCamera, siteLocalCamera, siteSun } from '../src/globe/site-math.ts';
+import { EARTH_METERS, ecefToSiteMatrix, FIFTH_AVENUE_POSES, fifthAvenueShotCamera, geodeticToEcef, globePointToSite, metersToScene, nearSite, SITES, siteFrame, sitePoint, siteCamera, siteLocalCamera, siteSun } from '../src/globe/site-math.ts';
 import { disposeModel } from '../src/globe/load-site-model.ts';
 const near = (a: number, b: number, epsilon = 1e-10) => assert.ok(Math.abs(a-b) < epsilon, `${a} != ${b}`);
 test('meters convert linearly using the actual globe radius', () => {
@@ -59,6 +59,16 @@ test('globe and local hero cameras map into the same metre frame', () => {
     near(globePointToSite(id,100,globe.position).distanceTo(local.position),0,1e-6);
     near(globePointToSite(id,100,globe.target).distanceTo(local.target),0,1e-6);
   }
+});
+
+test('Fifth Avenue shot reaches the underground hall and holds its final pose', () => {
+  const radius = 100;
+  const landed = fifthAvenueShotCamera(radius, 7.2);
+  const held = fifthAvenueShotCamera(radius, 8.2);
+  assert.ok(landed.position.distanceTo(held.position) < 1e-12);
+  assert.equal(landed.fov, FIFTH_AVENUE_POSES.hall.fov);
+  const local = globePointToSite('fifth-avenue', radius, landed.position);
+  assert.ok(Math.abs(local.y - FIFTH_AVENUE_POSES.hall.position.y) < 1e-6);
 });
 test('shared model resources dispose once and the model detaches', () => {
   const scene=new Group(), root=new Group(), geometry=new BoxGeometry(), material=new MeshBasicMaterial();

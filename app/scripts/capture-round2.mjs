@@ -27,28 +27,37 @@ async function openShot(id) {
 
 if (!onlyApple) {
   await openShot(10);
-  await page.waitForFunction(() => window.__cascade.engine.state.shotElapsed >= 1.05);
+  await page.waitForFunction(() => window.__cascade.engine.state.shotElapsed >= 2.35);
   await page.evaluate(() => window.__cascade.engine.update({ shotRunning: false, recording: true }));
-  await page.waitForTimeout(700);
-  await page.screenshot({ path: 'artifacts/round2-final/shot10-fly-in-mid.png' });
-
-  await page.evaluate(() => window.__cascade.engine.update({ shotRunning: true }));
-  await page.waitForFunction(() => window.__cascade.engine.state.shotElapsed >= 6.35);
-  await page.evaluate(() => window.__cascade.engine.update({ shotRunning: false, recording: true }));
-  await page.waitForFunction(() => window.__cascade.tiles().opacity > .985);
   await page.waitForTimeout(700);
   await page.screenshot({ path: 'artifacts/round2-final/shot10-street.png' });
+
+  await page.evaluate(() => window.__cascade.engine.update({ shotElapsed: 5.2, shotRunning: false, recording: true }));
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: 'artifacts/round2-final/shot10-mid-descent.png' });
+
+  await page.evaluate(() => window.__cascade.engine.update({ shotElapsed: 7.45, shotRunning: false, recording: true }));
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: 'artifacts/round2-final/shot10-hall.png' });
 }
 
 if (!onlyFifth) {
   await openShot(1);
   await page.evaluate(nadir => {
     if (nadir) window.__cascade.siteNadir('apple-park', 900);
-    else window.__cascade.engine.update({ shotElapsed: 11.35, shotRunning: false });
+    else window.__cascade.engine.update({ shotElapsed: .85, shotRunning: false });
     window.__cascade.engine.update({ shotRunning: false, recording: true });
   }, nadir);
   await page.waitForTimeout(1800);
-  await page.screenshot({ path: nadir ? `artifacts/round2-final/apple-park-registration-${registration}.png` : 'artifacts/round2-final/shot1-rainbow-approach.png' });
+  await page.screenshot({ path: nadir ? `artifacts/round2-final/apple-park-registration-${registration}.png` : 'artifacts/round2-final/shot1-orbit-start.png' });
+  if (!nadir) {
+    await page.evaluate(() => window.__cascade.engine.update({ shotElapsed: 4.2, shotRunning: false, recording: true }));
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: 'artifacts/round2-final/shot1-orbit-mid.png' });
+    await page.evaluate(() => window.__cascade.engine.update({ shotElapsed: 10.15, shotRunning: false, recording: true }));
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: 'artifacts/round2-final/shot1-arch-approach.png' });
+  }
 }
 
 await browser.close();

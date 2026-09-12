@@ -19,7 +19,7 @@ import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
 import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import { createSiteModels } from './site-models.ts';
-import { appleParkShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
+import { appleParkShotCamera, fifthAvenueShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
 import { shouldHoldForTiles } from './tiles-policy.ts';
 import parkUrl from '../assets/apple-park.svg';
@@ -46,6 +46,11 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false, tileGatePaused = false;
     let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
+    // The descent scene (shot 19) hands off to this hook rather than a bare
+    // shot-id check: the fifth-avenue interior camera engages for whatever
+    // window the director schedules, independent of scene numbering.
+    let interiorDescent: { elapsed: number; duration: number } | undefined;
+    engine.subsurfaceInteriorCameraHook = (durationMs) => { interiorDescent = { elapsed: 0, duration: durationMs }; return true; };
     globe.backgroundColor('#00000000')
       .pointsData(firms).pointLat('lat').pointLng('lng').pointAltitude(0.001)
       .pointRadius((d: object) => (d as Firm).named ? 0.19 : 0.045)
@@ -161,8 +166,14 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (t === 1) flight = undefined;
       }
       const idleDelta = idle.update(elapsed,globe.pointOfView().altitude,(!!flight && moving) || interacting,state.shot === 6);
+      if (interiorDescent) {
+        interiorDescent.elapsed += elapsed;
+        if (interiorDescent.elapsed >= interiorDescent.duration) interiorDescent = undefined;
+      }
       if (!flight && state.camera.site && state.shot !== null && state.camera.primitive?.kind!=='orbit') {
-        const pose = siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
+        const pose = interiorDescent
+          ? fifthAvenueShotCamera(globe.getGlobeRadius(), interiorDescent.elapsed / 1000)
+          : siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
         camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
       }
       if((!flight || !moving) && state.camera.primitive?.kind==='orbit') {
@@ -310,6 +321,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
       globe.controls().removeEventListener('start', interact); globe.controls().removeEventListener('end', interactionEnd); effects.dispose(); fifth.dispose();
       globe._destructor(); root.replaceChildren(); delete window.__cascade;
+      delete engine.subsurfaceInteriorCameraHook;
     };
   }, [engine]);
   return <><div className="globe-scene" ref={host} aria-label="Global payment network" /><div className="site-scene" ref={siteHost} aria-hidden="true" /><div className="site-attribution" ref={siteAttribution} hidden />
