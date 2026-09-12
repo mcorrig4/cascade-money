@@ -95,8 +95,8 @@ for num in "${SCENE_NUMS[@]}"; do
   echo "== Scene $padded ($MODE): frames $range ==" >&2
   npx remotion render CascadeFilm "$raw_out" \
     --frames="$range" \
-    "${SCALE_ARGS[@]}" \
-    "${PROPS_ARGS[@]}"
+    ${SCALE_ARGS[@]+"${SCALE_ARGS[@]}"} \
+    ${PROPS_ARGS[@]+"${PROPS_ARGS[@]}"}
 
   echo "-- Re-encoding scene $padded to $MODE profile --" >&2
   if [[ "$MODE" == "final" ]]; then
