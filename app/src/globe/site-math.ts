@@ -52,19 +52,19 @@ export function appleParkShotCamera(radius: number, elapsed: number) {
   let position: Vector3, target: Vector3, fov: number;
   if (elapsed < 6.5) {
     const t = ease(elapsed / 6.5), bearing = (-48 + 118 * t) * Math.PI / 180;
-    const distance = 430 - 55 * t;
-    position = new Vector3(Math.sin(bearing) * distance, 115 - 32 * t, -Math.cos(bearing) * distance);
+    const distance = 520 - 100 * t;
+    position = new Vector3(Math.sin(bearing) * distance, 225 - 105 * t, -Math.cos(bearing) * distance);
     target = new Vector3(-2, 9, 2); fov = 47;
   } else if (elapsed < 10) {
     const t = ease((elapsed - 6.5) / 3.5), bearing = 70 * Math.PI / 180;
-    const orbitEnd = new Vector3(Math.sin(bearing) * 375, 83, -Math.cos(bearing) * 375);
-    position = orbitEnd.lerp(new Vector3(-4, 7.5, 78), t);
-    target = new Vector3(-2, 9, 2).lerp(new Vector3(-4, 9.2, 4), t);
+    const orbitEnd = new Vector3(Math.sin(bearing) * 420, 120, -Math.cos(bearing) * 420);
+    position = orbitEnd.lerp(new Vector3(-27.34, 7.8, 64.51), t);
+    target = new Vector3(-2, 9, 2).lerp(new Vector3(-6.13, 10.5, 6.24), t);
     fov = 47 + 3 * t;
   } else {
     const t = ease((elapsed - 10) / 3.7);
-    position = new Vector3(-4, 7.5, 78 - 112 * t);
-    target = new Vector3(-4, 8.3, position.z - 52);
+    position = new Vector3(-27.34, 7.8, 64.51).lerp(new Vector3(2.76, 8.0, -18.19), t);
+    target = new Vector3(-6.13, 10.5, 6.24).lerp(new Vector3(20.0, 8.8, -65.0), t);
     fov = 50;
   }
   return {

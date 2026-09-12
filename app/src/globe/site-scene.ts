@@ -18,7 +18,7 @@ const ROOT_TILESET = 'https://tile.googleapis.com/v1/3dtiles/root.json';
 const MODEL_LIFT: Record<SiteId, number> = { 'apple-park': 0.18, 'fifth-avenue': 0.08 };
 const SITE_GRADE: Record<SiteId, number> = { 'apple-park': 12.5, 'fifth-avenue': 2.56 };
 // Both final exports are authored in metres and registered to their ENU origins.
-const SITE_MODEL_SCALE: Record<SiteId, number> = { 'apple-park': 1, 'fifth-avenue': 1 };
+const SITE_MODEL_SCALE: Record<SiteId, number> = { 'apple-park': 587 / 571, 'fifth-avenue': 1 };
 const SKY: Record<SiteId, string> = { 'apple-park': '#a9bbc1', 'fifth-avenue': '#263640' };
 const FIFTH_CLIP_HALF_EXTENT = 6.15;
 
@@ -90,7 +90,7 @@ function tuneModel(root: Object3D, environment: Texture, site: SiteId) {
         if ('color' in physical) physical.color.multiplyScalar(0.68);
         physical.roughness = Math.max(physical.roughness, 0.72);
       }
-      if (site === 'apple-park' && /AppleParkLandscapedCampus|RegisteredGroundColorBlend20/.test(object.name)) {
+      if (site === 'apple-park' && object.name === 'AppleParkLandscapedCampus') {
         // Seven surveyed campus vertices from the final Blender registration.
         // Signed edge distance keeps the authored surface opaque under the site,
         // then feathers inward over 24 metres into Google's surrounding tiles.
@@ -122,7 +122,24 @@ function tuneModel(root: Object3D, environment: Texture, site: SiteId) {
         material.customProgramCacheKey = () => 'cascade-ground-survey-feather-v3';
       }
       if (site === 'apple-park' && object.name === 'RegionalGround') {
-        object.visible = false;
+        physical.emissive.set('#33452b');
+        physical.emissiveIntensity = Math.max(physical.emissiveIntensity, 0.7);
+        material.transparent = true;
+        material.depthWrite = false;
+        material.onBeforeCompile = shader => {
+          shader.vertexShader = shader.vertexShader
+            .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeExtendedGroundPosition;')
+            .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCascadeExtendedGroundPosition = position;');
+          shader.fragmentShader = shader.fragmentShader
+            .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeExtendedGroundPosition;')
+            .replace('#include <dithering_fragment>', `
+              float cascadeOuterEdge=max(abs(vCascadeExtendedGroundPosition.x),abs(vCascadeExtendedGroundPosition.z));
+              gl_FragColor.a*=1.0-smoothstep(900.0,995.0,cascadeOuterEdge);
+              if(gl_FragColor.a<0.015) discard;
+              #include <dithering_fragment>
+            `);
+        };
+        material.customProgramCacheKey = () => 'cascade-extended-ground-2km-v1';
       }
       material.needsUpdate = true;
     }
@@ -156,6 +173,36 @@ function clipGoogleStore(root: Object3D) {
           `);
       };
       material.customProgramCacheKey = () => 'cascade-fifth-tight-clip-v1';
+      material.needsUpdate = true;
+    }
+  });
+}
+
+/** Replace Google terrain beneath the authored 2 km Apple Park context plate. */
+function clipGoogleAppleGround(root: Object3D) {
+  root.traverse(object => {
+    const mesh = object as Mesh;
+    if (!mesh.material) return;
+    const materials = (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) as Material[];
+    for (const material of materials) {
+      const previous = material.onBeforeCompile;
+      material.transparent = true;
+      material.onBeforeCompile = (shader, renderer) => {
+        previous.call(material, shader, renderer);
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeAppleSitePosition;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvCascadeAppleSitePosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeAppleSitePosition;')
+          .replace('#include <clipping_planes_fragment>', `
+            #include <clipping_planes_fragment>
+            float cascadeAppleEdge=max(abs(vCascadeAppleSitePosition.x),abs(vCascadeAppleSitePosition.z));
+            if(cascadeAppleEdge<900.0 && vCascadeAppleSitePosition.y>${(SITE_GRADE['apple-park'] - 2).toFixed(2)}) discard;
+            if(cascadeAppleEdge<995.0 && vCascadeAppleSitePosition.y>${(SITE_GRADE['apple-park'] - 2).toFixed(2)})
+              gl_FragColor.a*=smoothstep(900.0,995.0,cascadeAppleEdge);
+          `);
+      };
+      material.customProgramCacheKey = () => 'cascade-apple-extended-clip-v1';
       material.needsUpdate = true;
     }
   });
@@ -233,9 +280,8 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     }
     nextTiles.setCamera(camera);
     nextTiles.addEventListener('load-error', () => { failed = true; ready = false; });
-    if (nextSite === 'fifth-avenue') {
-      nextTiles.addEventListener('load-model', event => clipGoogleStore(event.scene));
-    }
+    if (nextSite === 'fifth-avenue') nextTiles.addEventListener('load-model', event => clipGoogleStore(event.scene));
+    else if (!registrationMode) nextTiles.addEventListener('load-model', event => clipGoogleAppleGround(event.scene));
     tiles = nextTiles; scene.add(nextTiles.group);
 
     const file = nextSite === 'fifth-avenue' ? 'fifth-avenue-tiles' : nextSite;
