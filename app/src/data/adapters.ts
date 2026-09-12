@@ -38,7 +38,11 @@ export function adaptFirm(raw: unknown, schema: 1 | 2): Firm {
   const located = lat !== undefined && lng !== undefined && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
   return { id, name, role: String(v.role ?? 'supplier'), named: v.named === true || named.has(name) || v.role === 'anchor',
     lat: located ? lat : undefined, lng: located ? lng : undefined,
-    city: text(v.city) ?? fallback?.[2], country: text(v.country) ?? fallback?.[3], region: text(v.region) };
+    city: text(v.city) ?? fallback?.[2], country: text(v.country) ?? fallback?.[3], region: text(v.region),
+    sites: (Array.isArray(v.sites) ? v.sites : []).map(rawSite => {
+      const site = record(rawSite);
+      return { id: String(site.site_id), lat: Number(site.lat), lng: Number(site.lon), city: text(site.city), country: text(site.country) };
+    }).filter(site => Number.isFinite(site.lat) && Math.abs(site.lat) <= 90 && Number.isFinite(site.lng) && Math.abs(site.lng) <= 180) };
 }
 export function adaptInvoice(raw: unknown): Invoice {
   const v = record(raw);
@@ -49,23 +53,25 @@ export function adaptEvent(v: JsonRecord): Event {
   if (v.schema_version !== 1 && v.schema_version !== 2) throw new Error(`Unsupported schema version ${v.schema_version}`);
   if (!Number.isSafeInteger(v.seq) || !Number.isSafeInteger(v.day) || Number(v.day) < 0) throw new Error('Invalid sequence or day');
   const data = record(v.data), checks = record(v.checks), type = String(v.type);
-  const date = text(v.date) ?? dateForDay(Number(v.day));
+  const date = text(v.iso_date ?? v.date) ?? dateForDay(Number(v.day));
   if (date !== dateForDay(Number(v.day))) throw new Error(`Date/day mismatch at sequence ${v.seq}`);
   return { schema: v.schema_version, seq: Number(v.seq), type, day: Number(v.day), date, amount: money(v.amount_cents ?? 0),
     accounts: Array.isArray(v.accounts) ? v.accounts.map(String) : [], data, balanceSheet: record(v.balance_sheet),
     checks: { hard: record(checks.hard) as Record<string, boolean>, breaches: record(checks.breaches) as Record<string, boolean> },
-    invoiceId: text(data.invoice_id), from: text(data.debtor ?? data.sender), to: text(data.creditor ?? data.recipient) };
+    invoiceId: text(data.invoice_id), from: text(data.debtor ?? data.sender ?? data.seller), to: text(data.creditor ?? data.recipient ?? data.buyer),
+    cutoff: { day: Number(record(v.index).day ?? 0), value: String(record(v.index).value ?? '1/1') } };
 }
 export function adaptSummary(e: Event): DaySummary | undefined {
-  // Provisional v2 wire mapping: update here when the core publishes its contract.
-  // Ambiguous counts/amounts are never interpreted as cents.
+  // Published v2 distinguishes daily Issue deposits from committed-to-date.
+  // Keep the earlier explicit-cents aliases readable, but never treat a count as cents.
   const d = e.data;
-  const purchases = d.new_invoice_cents ?? d.new_invoices_cents ?? d.new_purchases_cents;
-  const settled = d.settled_invoice_cents ?? d.settled_invoices_cents ?? d.invoice_settled_cents;
+  const purchases = record(d.new_invoices).cents ?? d.new_invoice_cents ?? d.new_invoices_cents ?? d.new_purchases_cents;
+  const settled = record(d.invoices_settled).cents ?? d.settled_invoice_cents ?? d.settled_invoices_cents ?? d.invoice_settled_cents;
   if (purchases == null || settled == null) return undefined;
   return { day: e.day, purchases: money(purchases), settled: money(settled),
-    committed: d.principal_committed_cents == null ? undefined : money(d.principal_committed_cents),
-    grossSettled: d.gross_invoice_settled_cents == null && d.gross_settled_cents == null ? undefined : money(d.gross_invoice_settled_cents ?? d.gross_settled_cents),
-    ratio: text(d.settled_to_committed_ratio ?? d.reuse_multiple), extensions: d.extensions, sells: d.sells, withdrawals: d.withdrawals,
+    committed: d.principal_committed_to_date_cents != null ? money(d.principal_committed_to_date_cents) : d.new_invoices == null && d.principal_committed_cents != null ? money(d.principal_committed_cents) : undefined,
+    dailyCommitted: d.new_invoices != null && d.principal_committed_cents != null ? money(d.principal_committed_cents) : undefined,
+    grossSettled: d.gross_settled_to_date_cents != null ? money(d.gross_settled_to_date_cents) : d.gross_invoice_settled_cents != null || d.gross_settled_cents != null ? money(d.gross_invoice_settled_cents ?? d.gross_settled_cents) : undefined,
+    ratio: text(d.settled_to_committed ?? d.settled_to_committed_ratio ?? d.reuse_multiple), extensions: d.extensions, sells: d.sells, withdrawals: d.withdrawals,
     balanceSheet: Object.keys(record(d.balance_sheet)).length ? record(d.balance_sheet) : e.balanceSheet };
 }

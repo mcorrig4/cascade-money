@@ -1,94 +1,90 @@
-# Cascade globe implementation decisions
+# Cascade app decisions
 
-## Scope at this checkpoint
+## Completed scope and dependencies
 
-Build order steps 1–4 only: loader/index, globe layers, controls, director shots 1–5.
-Shots 6–12, architecture exports, close-card links, and final static release checks
-remain for the next checkpoint. No commits are made by the agent.
+Steps 1–6 are implemented, including all twelve shots and the static build.
+No commits or installations were made in this continuation. Dependencies and the
+externally supplied lockfile remain unchanged: globe.gl 2.46.2, Three.js 0.183.2,
+React 19.2.4, Vite 7.3.6, TypeScript 5.9.3. Node 24.13.1 and pnpm 10.29.3 are present.
 
-## Dependencies and verification status
+The installed release passes TypeScript and the production build. Source inspection
+shows RGBA vertex attributes and geometry rebuilds only when arc geometry inputs
+change. **Runtime opacity/geometry validation remains unverified**: installed
+Chrome 151 exits in this sandbox with a forbidden socket operation (SIGTRAP).
+Run `pnpm --dir app check:browser --static` outside it. No evidence currently
+justifies changing the pinned release. If the runtime check fails, test adjacent
+releases outside the sandbox and record the nearest passing pin here.
 
-Node 24.13.1 and pnpm 10.29.3 are present. All direct package versions are exact
-in package.json. globe.gl 2.46.2 is the selected candidate; Three.js 0.183.2 is
-also enforced with a pnpm override to avoid competing Three.js instances.
+## Data contracts and metrics
 
-**The candidate has not yet passed the browser opacity/geometry check.** The
-current shell cannot resolve or connect to the npm registry. globe.gl and three
-are absent from the available pnpm cache and local installations. The normal
-pnpm store is read-only in this session. No lockfile can be generated until the
-dependencies can be resolved; no dependency contents or lock entries are faked.
+The worker incrementally parses NDJSON, retains exact integer cents as bigint,
+and indexes immutable event references by day and sequence. V1 uses the five-firm
+presentation lookup; v2 coordinates always take precedence. Sites, line items,
+annotations, ISO dates, story markers and the published nested v2 day summaries
+are adapted without modifying the stream. Daily and cumulative commitments are
+separate and every summary reconciles against operations. Transfers and rejected
+operations cannot increase settled or committed counters.
 
-The check in scripts/check-browser.mjs compares actual geometry UUIDs before
-and after alpha updates and verifies the RGBA vertex attribute. If 2.46.2 fails,
-test adjacent published releases, pin the nearest passing version, and record
-the selected version and browser output here. Do not call the version verified
-based on source inspection alone.
+Root `events.ndjson` is copied without edits. The current ten-event fixture now
+has schema 2 enrichment but retains the legacy five-firm proof. That fallback
+continues to display its actual payments. Shot 3's camera goes to Asan; once
+Samsung Display is present, the proof follows Apple → Samsung Display → Corning
+→ silica → freight using the stream's invoice payments and coordinates. Shots
+3–4 focus their counters on that chain; the year shows aggregate totals.
 
-## Data and time
+Story markers associate with the preceding same-day payment using camera_accounts
+(the core emits the marker after settlement). Curve points use face-weighted
+executed sell prices at exact remaining tenors 7/30/60/90/180, through the selected
+sequence; missing tenors stay empty. No interpolated trades are created.
 
-- events.ndjson is copied byte-for-byte from the root during prepare:data. The
-  simulator is never invoked or overwritten by the app.
-- A worker streams UTF-8 chunks and indexes events by day and authoritative seq.
-- Both schema 1 and 2 are accepted. V2 summary aliases in adapters.ts are
-  provisional until the core publishes the exact wire contract. Only explicit
-  cents fields are accepted, and summaries must reconcile with operations.
-- New fields enrich firm locations, invoice detail, dates and story markers.
-  Missing v2 events are not synthesized. V1 activity stays entirely on day 0.
-- JSON.parse reviver source context preserves unsafe integer tokens as bigint.
-  Browsers without lossless token access reject unsafe values instead of
-  rounding them. Calendar labels use UTC date-only arithmetic to avoid host TZ
-  drift; no wall-clock event times appear in the UI.
-- Settled = successful Issue + Pay. Committed = cumulative Issue deposits.
-  Transfer, registration and rejected operations do not inflate those counters.
-- 1x = one day/second. The year setting advances 365 day buckets in 15 seconds.
-  React updates at about 30 Hz; globe/HTML transforms update independently.
+The dated coin is a narrative diagram (day 30→90 absent an extension). Its numeric
+yield comes only from an actual extension's inclusive interval and the published
+index difference. Missing cutoffs show a dash. Claimable yield is a subset of
+accrued yield, not another liability. Hard-check true means passing; breach true
+means active. Vault states carry forward across days without importing future data.
 
-## Presentation and globe
+## Rendering and presentation
 
-- The five v1 firms use an explicit location lookup. Clearview Glass has a
-  presentation location in Cleveland; v2 coordinates supersede the lookup.
-- Local earth.svg contains authored, simplified continent contours. It is
-  presentation artwork, not a geospatial boundary dataset. No external tiles,
-  geocoding, font service, CDN, or satellite asset is required at runtime.
-- Apple Park uses an authored SVG ring on a tessellated, curved surface patch
-  registered at 37.3349 N, 122.009 W. The close camera has a suitably small near
-  plane; points/labels hide at campus scale. Imagery can replace the same decal.
-- Static points are merged. Named labels are prioritized by activity and anchor
-  role, filtered for horizon/viewport visibility and screen-space collisions.
-- At most 200 live arcs, including retiring arcs. Admission begins retiring old
-  arcs at 160 and evicts oldest at 200. Each day change and scrub clears the pool.
-- RGBA fade updates use stable arc objects and endpoints. The shader/geometry
-  behavior must be checked on the installed release before recording.
-- Amounts use a pooled HTML layer, screen projection, camera/sphere occlusion,
-  overlap filtering, 100 ms fade-in and 30 px/second upward drift. Scripted
-  annotations have priority and also remain in the virtualized daily ledger.
-- Camera flights interpolate geographic coordinates with smoothstep and use
-  pointOfView(..., 0) each frame. The app owns flight time so pause and shot
-  cancellation do not finish an old library tween or jump forward on resume.
-- Counters and story hops always come from the stream. The v1 proof shows the
-  first two settlements; its remaining two payments bring the cascade to 4x.
-  The script's $56 billion figure is a shot-2 narrative card, never a metric.
+NASA day/night textures replace the authored continent SVG. A custom globe
+shader blends night lights using the sun dot product and a soft terminator. A
+fixed presentation sun longitude and seasonal declination are deterministic by
+day, independent of the host clock. There is no added cloud layer. A thin Fresnel
+shell, 320 dim stars and half-resolution selective bloom through globe.gl's
+composer add depth. Only arcs enter the bloom pass; the Earth masks occluded
+arcs. Idle rotation starts after six seconds without interaction and stops for
+shots/playback/recording, except the scripted derivatives pullback.
 
-## Director and ports
+Apple Park is a curved surface SVG decal. Fifth Avenue is a geographically
+registered 12 m glass cube and plaza, with a close camera followed by the shot-10
+zoom-out. Campus scale hides labels, points, atmosphere and bloom. Globe layers
+use at most 200 arcs, with retirement starting at 160, capped HTML amounts,
+horizon/collision filtering, merged points and stable arc geometry inputs.
+Color updates pause with playback. The app owns geographic camera interpolation
+via pointOfView so pausing and cancelling shots also stops camera motion.
 
-Shift+D opens the director, Space pauses, Escape exits a shot, R toggles recording.
-Shots 1–5 can be started independently. ?shot=1 through ?shot=5 are recording
-entry points; ?inspect=1 exposes browser-only diagnostics without surface labels.
-Tesla selection activates when its firms exist. V1 does not invent a Tesla run.
+The architecture SVG shows the verified USDC vault path and external discount
+window. No unverified deployed USYC integration is represented. The close card
+links to the current app origin/base by default, the project repository, and the
+verified Arc testnet contract. Team names and public app URL are build settings.
+The NASA credit appears in the close card and README.
 
-app/.world/ports.yml declares cascade-dev-web. The dev/preview launcher uses
-port-for, initializing the app-local allocation when needed. Port registration
-requires access to the host registry; this restricted session cannot modify it.
+## Validation and release limits
 
-## Checks
+Unit tests cover both schemas, exact money, streaming, daily/cumulative summaries,
+proof counters, Asan, inclusive yield intervals, future-trade exclusion, invariant
+semantics, independent overlays, cancellation and pause, 15-second playback at
+20/30/60/144 fps, and the arc cap/fade. Build emits relative URLs and local assets.
+The large globe chunk produces Vite's standard 500 kB advisory; it is required
+for the full-page 3D scene and has not been hidden by increasing the threshold.
 
-`pnpm test` covers streaming, UTF-8 boundaries, exact integers, unsupported data,
-summary reconciliation, accounting, backward seeks, the 15-second year at multiple
-frame rates, shot endpoints/cancellation, and cap/fade behavior. Synthetic records
-are confined to tests; public/events.ndjson remains the unchanged root sample.
+Dev/preview use the port-for skill and app/.world/ports.yml. The agent sandbox
+cannot write the host port registry. Browser checks support intercepted static
+hosting to avoid a server dependency, but Chrome still needs an unrestricted
+launch environment. GPU performance, label placement and visual acceptance
+require the README rehearsal on a real laptop. No runtime screenshot is claimed.
 
-The requested `pnpm --dir app build` was attempted: prepare:data succeeds with
-10 events; the build stops because project dependencies (including tsc) cannot
-be installed in this session. A supplemental check with cached TypeScript and
-React declarations finds only missing globe.gl/three modules, not other source
-type errors. Full typechecking and rendering remain unverified.
+A read-only adapter check also consumed 198,166 events, 2,004 firms and 315 daily
+summaries from the concurrently generated `artifacts/apple-365.ndjson`, with no
+summary reconciliation errors. The file was still growing; this was a partial
+snapshot check, not validation of a completed year or its browser memory budget.
+The baked root fixture was not replaced.

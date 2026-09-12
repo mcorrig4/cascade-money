@@ -5,6 +5,7 @@ import { GlobeScene } from './globe/GlobeScene.tsx';
 import { DayLedger } from './components/DayLedger.tsx';
 import { Timeline } from './components/Timeline.tsx';
 import { ShotPanel } from './director/ShotPanel.tsx';
+import { ShotOverlays } from './director/ShotOverlays.tsx';
 import { playShot } from './director/shots.ts';
 
 function LoadedApp({ index }: { index: EventIndex }) {
@@ -30,11 +31,11 @@ function LoadedApp({ index }: { index: EventIndex }) {
     };
     window.addEventListener('keydown', keyboard);
     const shot = Number(new URLSearchParams(location.search).get('shot'));
-    if (shot >= 1 && shot <= 5) playShot(engine, shot);
+    if (shot >= 1 && shot <= 12) playShot(engine, shot);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('keydown', keyboard); document.removeEventListener('visibilitychange', visibility); };
   }, [engine]);
   const tesla = [...index.firms.values()].some(f => f.id.toLowerCase().includes('tesla'));
-  return <main className={`app ${state.recording ? 'recording' : ''}`}>
+  return <main className={`app ${state.recording ? 'recording' : ''} ${state.shot && state.shot >= 6 ? 'overlay-active' : ''}`}>
     <GlobeScene engine={engine} />
     <header className="topbar"><a className="brand" href="./" aria-label="Cascade home"><svg width="35" height="35" viewBox="0 0 36 36" aria-hidden="true"><path d="M5 8h26M5 18h19M5 28h12" stroke="currentColor" strokeWidth="4" /></svg><span>cascade<span className="brand-dot">.</span></span></a>
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>
@@ -47,6 +48,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
     {state.shot === 1 && <div className="location-card"><span className="eyebrow">CUPERTINO, CALIFORNIA</span><h2>Apple Park</h2><p>September 9, 2025</p></div>}
     {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
     {state.caption && <p className="year-caption">illustrative global supply chain</p>}
+    <ShotOverlays engine={engine} state={state} />
     {director && !state.recording && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;
 }

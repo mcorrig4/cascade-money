@@ -6,7 +6,7 @@ export interface PlaybackState {
   position: number; day: number; cursor: number; playing: boolean; speed: Speed;
   revision: number; shot: number | null; shotRunning: boolean; story: string;
   recording: boolean; camera: { lat: number; lng: number; altitude: number; duration: number; id: number };
-  showDebt: boolean; caption: boolean;
+  showDebt: boolean; caption: boolean; shotElapsed: number; shotDuration: number; stage: 'main' | 'cube' | 'wide'; focusInvoices: string[] | null;
 }
 export const eventPosition = (index: number, count: number) => 0.08 + (index + 1) / (count + 1) * 0.84;
 export const speedRate = (speed: Speed) => speed === 'year' ? DAYS / 15 : speed;
@@ -22,6 +22,7 @@ export class PlaybackEngine {
     this.index = index;
     this.state = { position: 0.999, day: 0, cursor: index.days[0].events.length, playing: false, speed: 1,
       revision: 0, shot: null, shotRunning: false, story: 'all', recording: false, showDebt: false, caption: false,
+      shotElapsed: 0, shotDuration: 0, stage: 'main', focusInvoices: null,
       camera: { lat: 36, lng: -145, altitude: 2.15, duration: 0, id: 0 } };
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
@@ -48,11 +49,11 @@ export class PlaybackEngine {
   }
   stopShot() {
     this.scheduled = []; this.range = undefined;
-    this.update({ shot: null, shotRunning: false, showDebt: false, caption: false, playing: false });
+    this.update({ shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
-  beginShot(shot: number) {
+  beginShot(shot: number, duration = 0) {
     this.stopShot(); this.shotClock = 0;
-    this.update({ shot, shotRunning: true, revision: this.state.revision + 1 });
+    this.update({ shot, shotElapsed: 0, shotDuration: duration, shotRunning: true, revision: this.state.revision + 1 });
   }
   after(seconds: number, run: () => void) {
     this.scheduled.push({ time: seconds, run }); this.scheduled.sort((a, b) => a.time - b.time);
@@ -67,7 +68,7 @@ export class PlaybackEngine {
   }
   tick(seconds: number) {
     if (this.state.shotRunning) {
-      this.shotClock += seconds;
+      this.shotClock += seconds; this.update({ shotElapsed: this.shotClock });
       while (this.scheduled.length && this.scheduled[0].time <= this.shotClock) this.scheduled.shift()!.run();
     }
     if (!this.state.playing) return;
@@ -85,6 +86,15 @@ export class PlaybackEngine {
   }
   totals(): Totals {
     const bucket = this.index.days[this.state.day];
+    if (this.state.focusInvoices) {
+      const seq = bucket.events[this.state.cursor - 1]?.seq ?? (bucket.events[0]?.seq ?? Infinity) - 1;
+      const result = { settled: 0n, committed: 0n };
+      for (const e of this.index.payments) if (e.seq <= seq && this.state.focusInvoices.includes(e.invoiceId ?? '')) {
+        if (e.type === 'issue' || e.type === 'pay') result.settled += e.amount;
+        if (e.type === 'issue') result.committed += e.amount;
+      }
+      return result;
+    }
     return bucket.prefix[this.state.cursor - 1] ?? bucket.start;
   }
   visibleEvents(): Event[] { return this.index.days[this.state.day].events.slice(0, this.state.cursor); }

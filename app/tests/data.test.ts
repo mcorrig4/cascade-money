@@ -41,9 +41,9 @@ test('v2 geography takes precedence over the v1 presentation lookup', () => {
 });
 test('reject malformed JSON, unsupported schemas, discontinuous sequences, and date mismatches', async () => {
   await assert.rejects(readStream(chunks('{broken}', 3)), /Line 1/);
-  await assert.rejects(readStream(chunks(sample.replace('"schema_version":1', '"schema_version":3'), 500)), /Unsupported schema/);
+  await assert.rejects(readStream(chunks(sample.replace(/"schema_version":[12]/, '"schema_version":3'), 500)), /Unsupported schema/);
   await assert.rejects(readStream(chunks(sample.replace('"seq":2', '"seq":3'), 500)), /Expected sequence/);
-  await assert.rejects(readStream(chunks(sample.replace('"day":0', '"date":"2025-09-10","day":0'), 500)), /Date\/day mismatch/);
+  await assert.rejects(readStream(chunks(sample.replace(/"iso_date":"[^"]+"/, '"iso_date":"2025-09-10"'), 500)), /Date\/day mismatch/);
 });
 test('transfer and rejection cannot inflate invoice settlement', () => {
   const index = createIndex();

@@ -20,7 +20,7 @@ function LedgerRow({ event, index }: { event: Event; index: EventIndex }) {
 }
 export function DayLedger({ index, day, cursor }: { index: EventIndex; day: number; cursor: number }) {
   const [scroll, setScroll] = useState(0), host = useRef<HTMLDivElement>(null);
-  const events = index.days[day].events.slice(0, cursor).filter(e => !['run_started', 'run_completed', 'story', 'day_summary', 'checkpoint'].includes(e.type)).reverse();
+  const events = index.days[day].events.slice(0, cursor).filter(e => !['run_started', 'run_completed', 'story', 'day_summary', 'checkpoint', 'day_opened', 'scenario_result'].includes(e.type)).reverse();
   useEffect(() => { if (host.current) host.current.scrollTop = 0; setScroll(0); }, [day]);
   const rowHeight = 160, start = Math.max(0, Math.floor(scroll / rowHeight) - 2), visible = events.slice(start, start + 12);
   return <aside className="ledger" aria-label="Current day transaction ledger">
