@@ -7,3 +7,6 @@ __pycache__/
 artifacts/
 .venv/
 app/.env.local
+film/public/captures/*.mp4
+film/public/narration/
+film/out/
