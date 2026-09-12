@@ -1,0 +1,9 @@
+{
+  "name": "Arc mainnet - fill verified values before deployment",
+  "testnet": false,
+  "chainId": null,
+  "rpcUrl": null,
+  "usdc": null,
+  "explorer": null,
+  "verifierUrl": null
+}

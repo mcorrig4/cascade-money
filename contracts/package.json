@@ -1,0 +1,12 @@
+{
+  "name": "cascade-contract-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "node scripts/demo.mjs",
+    "render": "node scripts/render-architecture.mjs",
+    "test:scripts": "node --test scripts/*.test.mjs"
+  },
+  "dependencies": { "ethers": "6.17.0" },
+  "devDependencies": { "mermaid": "11.16.1", "playwright-core": "1.61.1" }
+}

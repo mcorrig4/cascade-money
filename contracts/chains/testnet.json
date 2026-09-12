@@ -1,0 +1,9 @@
+{
+  "name": "Arc testnet",
+  "testnet": true,
+  "chainId": 5042002,
+  "rpcUrl": "https://rpc.testnet.arc.io",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "explorer": "https://testnet.arcscan.app",
+  "verifierUrl": "https://testnet.arcscan.app/api/"
+}
