@@ -5,7 +5,9 @@
   "scripts": {
     "demo": "node scripts/demo.mjs",
     "render": "node scripts/render-architecture.mjs",
-    "test:scripts": "node --test scripts/*.test.mjs"
+    "test:scripts": "node --test scripts/*.test.mjs",
+    "test:contracts": "bash scripts/test-fork.sh",
+    "yield-demo": "node scripts/yield-demo.mjs"
   },
   "dependencies": {
     "ethers": "6.17.0"

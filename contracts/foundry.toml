@@ -10,7 +10,7 @@ optimizer = true
 optimizer_runs = 200
 remappings = ["@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/", "forge-std/=lib/forge-std/src/"]
 gas_reports = ["CascadeVault"]
-fs_permissions = [{ access = "read", path = "./chains" }]
+fs_permissions = [{ access = "read", path = "./chains" }, { access = "read", path = "./.local" }]
 
 [profile.default.fuzz]
 runs = 256

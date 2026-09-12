@@ -13,6 +13,7 @@ contract Deploy is Script {
     }
 
     function run() external returns (CascadeVault vault) {
+        require(vm.envOr("CASCADE_ALLOW_LIVE", false), "Use deploy.sh --live for live execution");
         string memory config = vm.readFile(vm.envString("ARC_CHAIN_CONFIG"));
         uint256 chainId = vm.parseJsonUint(config, ".chainId");
         address token = vm.parseJsonAddress(config, ".usdc");

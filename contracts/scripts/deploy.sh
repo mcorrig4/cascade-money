@@ -3,12 +3,25 @@ set +x
 set -euo pipefail
 export PATH="$HOME/.foundry/bin:$PATH"
 cd "$(dirname "$0")/.."
-if [[ $# -lt 1 || $# -gt 2 || "${1:-}" == --help ]]; then
-  echo 'Usage: scripts/deploy.sh chains/testnet.json [--broadcast] (default: RPC simulation only)'
+config=""
+broadcast=false
+live=false
+for argument in "$@"; do
+  case "$argument" in
+    --live) live=true ;;
+    --broadcast) broadcast=true ;;
+    --help) echo 'Usage: scripts/deploy.sh [chains/testnet.json] [--broadcast] [--live]. Default: local fork.'; exit 0 ;;
+    --*) echo "Unknown argument: $argument" >&2; exit 1 ;;
+    *) [[ -z "$config" ]] || exit 1; config="$argument" ;;
+  esac
+done
+if [[ "$live" == false ]]; then
+  [[ "$broadcast" == true ]] || { echo 'Local fork target; add --broadcast to deploy locally.'; exit 0; }
+  node scripts/deploy-local.mjs
   exit 0
 fi
-config="$1"
-if [[ $# == 2 && "$2" != --broadcast ]]; then echo 'Only --broadcast is accepted as the second argument' >&2; exit 1; fi
+config="${config:-chains/testnet.json}"
+export CASCADE_ALLOW_LIVE=true
 : "${ARC_DEPLOYER_KEY:?Set ARC_DEPLOYER_KEY in the environment}"
 node scripts/config.mjs "$config"
 export ARC_CHAIN_CONFIG
@@ -20,9 +33,9 @@ actual="$(cast chain-id --rpc-url "$rpc")"
 fee="$(cast gas-price --rpc-url "$rpc")"
 fee="$(node -e 'const n=BigInt(process.argv[1])*2n; console.log((n<20000000000n?20000000000n:n).toString())' "$fee")"
 args=()
-if [[ "${2:-}" == --broadcast ]]; then args+=(--broadcast); fi
+if [[ "$broadcast" == true ]]; then args+=(--broadcast); fi
 forge script script/Deploy.s.sol:Deploy --rpc-url "$rpc" --chain-id "$chain_id" \
   --with-gas-price "$fee" --slow "${args[@]}"
-if [[ "${2:-}" == --broadcast ]]; then
+if [[ "$broadcast" == true ]]; then
   node scripts/deployment-manifest.mjs "$config"
 fi

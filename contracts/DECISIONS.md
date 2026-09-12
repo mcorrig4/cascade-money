@@ -179,3 +179,40 @@ unmodified under `lib/openzeppelin-contracts` (16 Solidity files, including tran
 `forge-std` **1.16.2** is copied from the host's existing proofline dependency. `DEPENDENCIES.sha256`
 pins the committed source bytes. This replaces the initially proposed OpenZeppelin 5.4.0 download.
 All RPC/token preflight checks run only when deployment or explicit live demo commands are executed.
+
+## Local USYC variant (default vault unchanged)
+
+Exact spec: “Quantity and dollar value are separate fields.”
+
+`CascadeVaultUSYC` holds six-decimal MockUSYC shares and reports their dollar value at the
+mock's 1e18-scaled price. Invoice amounts stay dollar-denominated; deposits round shares up,
+withdrawals round shares down, and residual dust becomes reserve. The mock Teller holds its own
+USDC liquidity and its test owner controls price/mint. None of this represents live USYC integration.
+
+Exact spec: “Deposits and withdrawals are capital flows and never count as income.”
+
+The variant tracks actual marked asset value added/removed between daily checkpoints.
+Income is current backing plus withdrawals minus previous backing minus deposits.
+The notional snapshot reflects the previous checkpoint day's closing principal, including claims
+and deposits that day. Active entitlement notional is a conservative lower bound on the divisor,
+so a maturity-day withdrawal cannot overallocate income. Unassigned income becomes reserve.
+The local variant requires consecutive daily price samples and does not invent missed prices.
+
+Exact spec: “The loss is charged to the reserve.”
+
+Exact spec: “Claim and Withdraw are suspended, Issue, Pay, Transfer, Extend and Sell continue, and all subsequent income is routed to the deficit until it is zero, then to the reserve until the reserve regains its policy floor, and only then does I resume rising.”
+
+The USYC variant implements that continuation regime: deficit is the marked backing shortfall;
+loss days add zero to the index, and positive income first repairs backing through liabilities plus
+the immutable dollar reserve floor. Only excess income can increase I. Claim/withdraw additionally
+require mock Teller cash covering all liabilities, a deliberately conservative local liquidity policy.
+The default USDC-only vault retains its previously accepted stricter solvency gate and funded delta.
+
+## Date wallet views
+
+Exact spec: “All dated dollars with the same date are interchangeable.”
+
+Each date's CREATE2 ERC-20 clone reads and moves the ERC-1155 ledger, with a separate date-scoped
+allowance table and mirrored Transfer events. There is no second principal balance. The ERC-20
+symbol is fixed at clone creation; ERC-1155 JSON metadata computes the remaining days on every call.
+Metadata and SVG rendering live in a separate renderer to preserve the vault's code-size margin.

@@ -1,4 +1,57 @@
-# Local validation
+# Validation: USYC, wallet display and fork additions
+
+`forge build --sizes`: **PASS**, Solidity 0.8.30 / Prague / optimizer 200.
+Shell/JavaScript syntax checks pass. **73 Solidity test/invariant entry points compile**,
+including 13 new cases. They have not been executed successfully in this sandbox.
+The previous revision's 60 passing tests, retained below, do not validate these additions.
+
+| Contract | Runtime bytes | Initcode bytes (before arguments) |
+| --- | ---: | ---: |
+| CascadeVault | 16,807 | 24,171 |
+| CascadeVaultUSYC | 18,539 | 26,120 |
+| DateMetadata | 3,320 | 3,348 |
+| DatedDollarERC20 implementation | 2,860 | 3,047 |
+| MockUSYC | 4,086 | 4,845 |
+
+Each date's CREATE2 view clone has 45 bytes of runtime; its implementation is shared within the vault.
+Both vaults remain below 24,576 bytes. Metadata is rendered outside the vault runtime.
+New tests cover price-derived income excluding flows, extension intervals, losses/recovery/reserve floor,
+liquidity suspension, claimed yield preservation, mock Teller operations, dynamic base64 metadata,
+ISO dates, fixed ERC-20 symbols, CREATE2 addresses, shared balances/supply, date-scoped approvals,
+early-M protection through ERC-20 views, and a real-USDC proxy fork smoke case.
+
+## Execution blocked
+
+The required fork and demo commands were attempted, with these results:
+
+- `scripts/fork.sh`: upstream RPC DNS lookup denied/failed in the sandbox.
+- `forge test --fork-url http://127.0.0.1:8545 -vv`: fork initialization failed with
+  `Operation not permitted (os error 1)` opening the loopback TCP connection.
+- `node scripts/yield-demo.mjs`: `connect EPERM 127.0.0.1:8545` before any transaction
+  or balance-sheet output.
+
+No `SHEET` output is available; no yield-demo success is claimed. No transaction was broadcast.
+The fork-only testing directive was preserved; no isolated execution substitute was run.
+
+There is also an upstream execution-model limitation:
+[Circle's Arc compatibility guide](https://www.arc.io/blog/arc-compatibility-guide-for-existing-evm-apps)
+says ordinary Anvil cannot reproduce Arc's precompiles. Fork funding therefore verifies an actual
+USDC balance slot and fails closed if none works; it does not silently replace USDC code.
+Even after network access is restored, standard Anvil may require an Arc-aware replacement for
+real native-USDC transfers. The ordinary vault unit cases use local mocks on the fork; the
+separate real-proxy smoke test and USYC demo deliberately expose that compatibility boundary.
+
+The default deployment remains USDC-only. `deployments/` was not modified.
+Local fork/deployment state lives in ignored `.local/`; generated wallets are local-only unless
+the live demo is explicitly selected with `--live`.
+
+---
+
+## Historical evidence: revision before USYC and wallet views
+
+The following sizes, gas and passing counts belong to the previous source, not this revision.
+
+### Previous local validation
 
 Standard Foundry 1.5.1, Solidity 0.8.30, Prague EVM, optimizer 200 runs.
 

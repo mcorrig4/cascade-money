@@ -9,3 +9,5 @@ deployments/*.json
 !deployments/.gitkeep
 
 .demo-runs/
+
+.local/

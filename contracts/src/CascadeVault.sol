@@ -5,6 +5,9 @@ import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {DateMetadata} from "./DateMetadata.sol";
+import {DatedDollarERC20} from "./DatedDollarERC20.sol";
 import {AccountDates} from "./libraries/AccountDates.sol";
 
 /// @notice USDC-backed dated dollars. See DECISIONS.md for the funded demo index and time convention.
@@ -17,6 +20,10 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
     IERC20 public immutable usdc;
     address public immutable owner;
     uint256 public immutable deploymentDay;
+
+    DateMetadata public immutable metadata;
+    address public immutable viewImplementation;
+    mapping(uint256 => address) public viewFor;
 
     struct Invoice {
         address creditor;
@@ -44,7 +51,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
     mapping(address => AccountDates.Heap) private accountDates;
 
     uint256 public lastCheckpoint;
-    mapping(uint256 => uint256) private dailyIndex;
+    mapping(uint256 => uint256) internal dailyIndex;
     mapping(uint256 => uint256) public starts;
     mapping(uint256 => uint256) public stops; // Stops on E + 1, after the inclusive earning interval.
     uint256 public activeNotional;
@@ -103,11 +110,53 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         if (token.code.length == 0 || checkpointOwner == address(0)) {
             revert InvalidTerms();
         }
+        metadata = new DateMetadata();
+        viewImplementation = address(new DatedDollarERC20(address(this)));
         usdc = IERC20(token);
         owner = checkpointOwner;
         deploymentDay = today();
         lastCheckpoint = deploymentDay;
         dailyIndex[deploymentDay] = SCALE;
+    }
+
+    function uri(uint256 id) public view override returns (string memory) {
+        return metadata.uri(id, today());
+    }
+
+    function _ensureView(uint256 id) private {
+        if (viewFor[id] != address(0)) {
+            return;
+        }
+        address token = Clones.cloneDeterministic(viewImplementation, bytes32(id));
+        viewFor[id] = token;
+        DatedDollarERC20(token)
+            .initialize(
+                id, string.concat("Cascade USD ", metadata.isoDate(id)), metadata.creationSymbol(id, today())
+            );
+    }
+
+    function transferDate(uint256 id, address from, address to, uint256 amount) external nonReentrant {
+        if (msg.sender != viewFor[id] || from == address(0) || to == address(0)) {
+            revert Unauthorized();
+        }
+        _safeTransferFrom(from, to, id, amount, "");
+        _assertBacked();
+    }
+
+    function _backingValue() internal view virtual returns (uint256) {
+        return usdc.balanceOf(address(this));
+    }
+
+    function _deposit(address from, uint256 amount) internal virtual {
+        _pull(from, amount);
+    }
+
+    function _sendWithdrawal(address to, uint256 amount) internal virtual {
+        usdc.safeTransfer(to, amount);
+    }
+
+    function _assertLiquid() internal view virtual {
+        _assertBacked();
     }
 
     function today() public view returns (uint256) {
@@ -153,7 +202,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
     function issue(bytes32 invoiceId, uint256 amount) external nonReentrant returns (uint256 id) {
         _requireCurrent();
         Invoice storage invoice = _debitInvoice(invoiceId, amount);
-        _pull(msg.sender, amount);
+        _deposit(msg.sender, amount);
         id = _entitle(msg.sender, amount, today() + 1, invoice.acceptedMaturity);
         _mint(invoice.creditor, invoice.acceptedMaturity, amount, "");
         emit Issued(invoiceId, amount, id, today());
@@ -279,9 +328,9 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         if (amount == 0) {
             revert InvalidAmount();
         }
-        _assertBacked();
+        _assertLiquid();
         _burnSelectedSpot(msg.sender, amount, dates);
-        usdc.safeTransfer(msg.sender, amount);
+        _sendWithdrawal(msg.sender, amount);
         emit Withdrawn(msg.sender, amount, today());
         _assertBacked();
     }
@@ -290,9 +339,9 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         if (amount == 0) {
             revert InvalidAmount();
         }
-        _assertBacked();
+        _assertLiquid();
         _burnSpot(msg.sender, amount);
-        usdc.safeTransfer(msg.sender, amount);
+        _sendWithdrawal(msg.sender, amount);
         emit Withdrawn(msg.sender, amount, today());
         _assertBacked();
     }
@@ -305,7 +354,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         if (entitlement.claimed || entitlement.end > lastCheckpoint) {
             revert NotClaimable();
         }
-        _assertBacked();
+        _assertLiquid();
         uint256 scaled = entitlement.amount * (indexAt(entitlement.end) - indexAt(entitlement.start - 1));
         amount = scaled / SCALE;
         entitlement.claimed = true;
@@ -318,7 +367,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
     }
 
     /// @notice Fund and publish the next elapsed UTC day. No oracle, future time, or promised yield.
-    function checkpoint(uint256 indexDelta) external nonReentrant {
+    function checkpoint(uint256 indexDelta) external virtual nonReentrant {
         if (msg.sender != owner) {
             revert Unauthorized();
         }
@@ -355,7 +404,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         view
         returns (uint256 backing, uint256 principal, uint256 accrued, uint256 reserve, uint256 deficit)
     {
-        backing = usdc.balanceOf(address(this));
+        backing = _backingValue();
         principal = totalSupply;
         accrued = _ceil(accruedScaled);
         uint256 liability = principal + accrued;
@@ -412,17 +461,22 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
 
     function _update(address from, address to, uint256[] memory ids, uint256[] memory values)
         internal
+        virtual
         override
     {
         super._update(from, to, ids, values);
         for (uint256 i; i < ids.length; ++i) {
             if (from == address(0)) {
+                _ensureView(ids[i]);
                 totalSupply += values[i];
                 supplyByDate[ids[i]] += values[i];
             }
             if (to == address(0)) {
                 totalSupply -= values[i];
                 supplyByDate[ids[i]] -= values[i];
+            }
+            if (viewFor[ids[i]] != address(0)) {
+                DatedDollarERC20(viewFor[ids[i]]).emitTransfer(from, to, values[i]);
             }
             if (from == to) {
                 continue;
@@ -520,17 +574,17 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         }
     }
 
-    function _ceil(uint256 scaled) private pure returns (uint256) {
+    function _ceil(uint256 scaled) internal pure returns (uint256) {
         return scaled / SCALE + (scaled % SCALE == 0 ? 0 : 1);
     }
 
-    function _assertBacked() private view {
-        if (usdc.balanceOf(address(this)) < totalSupply + _ceil(accruedScaled)) {
+    function _assertBacked() internal view virtual {
+        if (_backingValue() < totalSupply + _ceil(accruedScaled)) {
             revert Underbacked();
         }
     }
 
-    function _pull(address from, uint256 amount) private {
+    function _pull(address from, uint256 amount) internal {
         uint256 beforeBalance = usdc.balanceOf(address(this));
         usdc.safeTransferFrom(from, address(this), amount);
         if (usdc.balanceOf(address(this)) != beforeBalance + amount) {
