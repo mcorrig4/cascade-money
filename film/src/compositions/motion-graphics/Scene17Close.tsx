@@ -1,11 +1,11 @@
 /**
- * Scene 17 — Close. Script-v6-liam.md spoken line: "Cascade. Dated dollars
- * on Arc. Money with a date." The close card itself carries the retained
- * locked tagline text (Stage-12 brief item 3): white -> "global supply
- * chains. settled." -> the Cascade Money wordmark -> "money with a date."
- * Any older tagline text (v5's separate two-scene ending) is retired; this
- * is the one close card now. Beats sized as fractions of the scene's own
- * duration.
+ * Scene 17 — Close. The spoken close dropped "Dated dollars on Arc." (now
+ * silent) but the product owner wants it on screen. The close card carries
+ * four beats now: white -> "global supply chains. settled." -> the Cascade
+ * Money wordmark -> "Dated dollars on Arc." (same font family, medium size,
+ * subtle) -> "money with a date." Any older tagline text (v5's separate
+ * two-scene ending) is retired; this is the one close card now. Beats sized
+ * as fractions of the scene's own duration.
  */
 import React from 'react';
 import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
@@ -22,7 +22,9 @@ export const Scene17Close: React.FC<{durationInFrames: number}> = ({durationInFr
 
   const wordmarkAt = dur * 0.5;
   const mark = enter(frame, 30, wordmarkAt, 'settle');
-  const tag = enter(frame, 30, wordmarkAt + Math.round(dur * 0.22), 'fade');
+  const arcAt = wordmarkAt + Math.round(dur * 0.16);
+  const arc = enter(frame, 30, arcAt, 'fade');
+  const tag = enter(frame, 30, arcAt + Math.round(dur * 0.16), 'fade');
 
   return (
     <AbsoluteFill style={{background: color.bgOuter}}>
@@ -62,7 +64,20 @@ export const Scene17Close: React.FC<{durationInFrames: number}> = ({durationInFr
             <div
               style={{
                 fontFamily: font.family,
-                marginTop: 30,
+                marginTop: 26,
+                fontSize: 34,
+                fontWeight: 450,
+                letterSpacing: 0.2,
+                color: color.bgInner,
+                opacity: arc.opacity * 0.6,
+              }}
+            >
+              Dated dollars on Arc.
+            </div>
+            <div
+              style={{
+                fontFamily: font.family,
+                marginTop: 16,
                 fontSize: 28,
                 letterSpacing: 0.4,
                 color: color.bgInner,
