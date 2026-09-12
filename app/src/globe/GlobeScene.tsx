@@ -1,3 +1,5 @@
+import { SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
+import { easeAt, sampleCamera, splineAt } from '../camera/primitives.ts';
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 import type { GlobeInstance } from 'globe.gl';
@@ -37,13 +39,19 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const firms = [...engine.index.firms.values()].flatMap(f => [f, ...(f.named ? (f.sites ?? []).filter(site => site.lat !== f.lat || site.lng !== f.lng).map(site => ({ ...f, id: `${f.id}:${site.id}`, name: `${f.name} · ${site.city ?? site.id}`, lat: site.lat, lng: site.lng })) : [])]).filter(f => f.lat != null && f.lng != null);
     const named = firms.filter(f => f.named), pool = new ArcPool(), layer = new AmountLayer(amounts.current);
     const companyLayer = new CompanyLayer(companies.current, named);
-    let arcIds = '';
+    let arcIds = '', cinematic=false, campusFraming=0;
     let time = 250, last = performance.now(), lastColor = 0, raf = 0;
-    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false;
+    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false, previousShot: number | null = null;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
-    let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false, tileGatePaused = false;
+    let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
+    let tileGatePaused = false, tileGateWallMs = 0, tileGateShot: number | null = null, tileFallbackShot: number | null = null;
     let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
+    // The descent scene (shot 19) hands off to this hook rather than a bare
+    // shot-id check: the fifth-avenue interior camera engages for whatever
+    // window the director schedules, independent of scene numbering.
+    let interiorDescent: { start: number; shot: number | null; duration: number; eye: Vector3; target: Vector3; fov:number } | undefined;
+    engine.subsurfaceInteriorCameraHook = (durationMs) => { interiorDescent = { start: engine.state.shotElapsed, shot: engine.state.shot, duration: durationMs, eye: camera.position.clone(), target: controls.target.clone(), fov:camera.fov }; return true; };
     globe.backgroundColor('#00000000')
       .pointsData(firms).pointLat('lat').pointLng('lng').pointAltitude(0.001)
       .pointRadius((d: object) => (d as Firm).named ? 0.19 : 0.045)
@@ -108,6 +116,17 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const elapsed = now - last; last = now;
       if (document.hidden) { raf = requestAnimationFrame(frame); return; }
       const state = engine.state, moving = state.playing || state.shotRunning;
+      if(state.shot!==previousShot){
+        previousShot=state.shot;
+        tileGatePaused=false;tileGateWallMs=0;tileGateShot=null;tileFallbackShot=null;
+        // A URL/director entry has no preceding scene to provide its camera.
+        // Start from the authored pose; continuous film transitions still inherit.
+        if(state.shot!==null&&!state.film&&state.shotElapsed<.1){
+          const authored=SHOTS.find(shot=>shot.id===state.shot);
+          if(authored){flight=undefined;globe.pointOfView(authored.start,0);cameraId=-1;}
+        }
+      }
+      if(cinematic!==(state.shot!==null)){cinematic=state.shot!==null;if(cinematic)globe.globeOffset([0,0]);else resize();}
       const desiredPixelRatio = state.recording ? 1 : Math.min(window.devicePixelRatio, 1.5);
       if (globe.renderer().getPixelRatio() !== desiredPixelRatio) globe.renderer().setPixelRatio(desiredPixelRatio);
       if (moving) time += elapsed;
@@ -118,13 +137,31 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           fromFov: camera.fov, targetFov: state.camera.site ? siteCamera(state.camera.site, globe.getGlobeRadius()).fov : globeFov,
           local: !!state.camera.site || controls.target.lengthSq() > 0 };
       }
-      // Local hero flights must reach their site camera while the shot clock is
-      // held for tile refinement; otherwise only coarse planet parents preload.
-      if (flight && (moving || flight.local || state.shot === null || flight.to.duration === 0)) {
-        flight.elapsed += elapsed;
-        const t = flight.to.duration === 0 ? 1 : Math.min(1, flight.elapsed / flight.to.duration), eased = t * t * (3 - 2 * t);
-        const deltaLng = ((flight.to.lng - flight.from.lng + 540) % 360) - 180;
-        if (flight.local) {
+      if (flight) {
+        flight.elapsed = state.shot === null ? flight.elapsed + elapsed : state.cameraElapsed;
+        const t = flight.to.duration === 0 ? 1 : Math.min(1, flight.elapsed / flight.to.duration), eased = easeAt(t,flight.to.ease);
+        const sampled=sampleCamera({...flight.to,from:flight.to.from??flight.from},flight.elapsed);
+        const primitive=flight.to.primitive;
+        if(primitive?.kind==='orbit') {
+          const base=appleParkShotCamera(globe.getGlobeRadius(),0);
+          camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
+          controls.target.copy(globe.getCoords(primitive.center.lat,primitive.center.lng,0));
+          camera.up.copy(base.up);camera.fov=base.fov;camera.updateProjectionMatrix();camera.lookAt(controls.target);
+        } else if(primitive?.kind==='spline' && flight.to.landmarkPath==='apple-park-arch') {
+          // Resolve the landmark against the other lane's calibrated camera
+          // functions, not the script's approximate kilometre-scale altitudes.
+          const radius=globe.getGlobeRadius();
+          const entry=appleParkShotCamera(radius,10),exit=appleParkShotCamera(radius,13.7);
+          const geo=(v:Vector3,t:number)=>({lat:Math.asin(v.y/v.length())*180/Math.PI,lng:Math.atan2(v.x,v.z)*180/Math.PI,altitude:v.length()/radius-1,t});
+          const frame=splineAt([geo(flight.eye,0),geo(entry.position,.5),geo(exit.position,1.2)],t*1.2);
+          camera.position.copy(globe.getCoords(frame.lat,frame.lng,frame.altitude));
+          const look=appleParkShotCamera(radius,6.5+t*7.2);
+          controls.target.lerpVectors(flight.target,look.target,eased);camera.up.copy(look.up);camera.fov=look.fov;camera.updateProjectionMatrix();camera.lookAt(controls.target);
+        } else if(primitive?.kind==='spline') {
+          camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
+          controls.target.copy(flight.target).multiplyScalar(1-eased);
+          camera.up.lerpVectors(flight.up,new Vector3(0,1,0),eased).normalize();camera.lookAt(controls.target);
+        } else if (flight.local) {
           const pose = flight.to.site ? siteCamera(flight.to.site, globe.getGlobeRadius()) : {
             position: new Vector3().copy(globe.getCoords(flight.to.lat, flight.to.lng, flight.to.altitude)), target: new Vector3(), up: new Vector3(0, 1, 0) };
           controls.minDistance = 0.000005;
@@ -134,20 +171,37 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           camera.fov = flight.fromFov + (flight.targetFov - flight.fromFov) * eased; camera.updateProjectionMatrix();
           camera.lookAt(controls.target);
         } else {
-          globe.pointOfView({ lat: flight.from.lat + (flight.to.lat - flight.from.lat) * eased,
-            lng: flight.from.lng + deltaLng * eased, altitude: flight.from.altitude + (flight.to.altitude - flight.from.altitude) * eased }, 0);
+          globe.pointOfView(sampled,0);
           camera.fov = flight.fromFov + (flight.targetFov - flight.fromFov) * eased; camera.updateProjectionMatrix();
         }
         if (t === 1) flight = undefined;
       }
-      const idleDelta = idle.update(elapsed,globe.pointOfView().altitude,!!flight || interacting,state.shot === 6);
-      if (!flight && state.camera.site && state.shot !== null) {
-        const pose = state.shot === 1
-          ? appleParkShotCamera(globe.getGlobeRadius(), state.shotElapsed)
-          : state.shot === 10
-            ? fifthAvenueShotCamera(globe.getGlobeRadius(), state.shotElapsed)
-            : siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
+      // Ring center at 60% of the frame, easing back to center for the arch.
+      const framingTarget=state.camera.primitive?.kind==='orbit'?.1:0;
+      campusFraming+=(framingTarget-campusFraming)*Math.min(1,elapsed/350);
+      if(campusFraming>.00001)camera.setViewOffset(root.clientWidth,root.clientHeight,-root.clientWidth*campusFraming,0,root.clientWidth,root.clientHeight);
+      else if(camera.view?.enabled)camera.clearViewOffset();
+      const idleDelta = idle.update(elapsed,globe.pointOfView().altitude,(!!flight && moving) || interacting,state.shot === 6);
+      if(interiorDescent && (state.shot===null || state.camera.site!=='fifth-avenue'))interiorDescent=undefined;
+      if (!flight && state.camera.site && state.shot !== null && state.camera.primitive?.kind!=='orbit') {
+        const progress=interiorDescent?(state.shot===interiorDescent.shot
+          ?Math.min(1,Math.max(0,(state.shotElapsed-interiorDescent.start)*1000/interiorDescent.duration)):1):0;
+        const pose = interiorDescent
+          ? fifthAvenueShotCamera(globe.getGlobeRadius(), progress*7.8)
+          : siteCamera(state.camera.site, globe.getGlobeRadius(), idleDelta.orbit);
+        if(interiorDescent){
+          // Blend the live fly-in endpoint into the calibrated street pose.
+          // Keep the final hall pose across scene boundaries; no reset to street.
+          const blend=easeAt(Math.min(1,progress/.12));
+          pose.position.lerpVectors(interiorDescent.eye,pose.position,blend);
+          pose.target.lerpVectors(interiorDescent.target,pose.target,blend);
+          pose.fov=interiorDescent.fov+(pose.fov-interiorDescent.fov)*blend;
+          pose.position.sub(pose.target).applyAxisAngle(pose.up,idleDelta.orbit*Math.PI/180).add(pose.target);
+        }
         camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
+      }
+      if((!flight || !moving) && state.camera.primitive?.kind==='orbit') {
+        const normal=controls.target.clone().normalize();camera.position.sub(controls.target).applyAxisAngle(normal,idleDelta.lng*Math.PI/180).add(controls.target);camera.lookAt(controls.target);
       }
       controls.minDistance = controls.target.lengthSq() > 0 ? 0.000005 : globe.getGlobeRadius() * (1 + 0.0000002);
       globe.controls().enabled = true;
@@ -159,16 +213,22 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         globe.pointOfView({lat:Math.max(-85,Math.min(85,view.lat+idleDelta.lat*scale)),lng:view.lng+idleDelta.lng*scale,
           altitude:Math.max(.0000002,Math.min(4,view.altitude+idleDelta.altitude))},0);
       }
+      if(flight && !moving && state.shot!==null && !interacting){
+        const offset=Math.sin(idle.seconds/15)*.001;
+        camera.position.applyAxisAngle(camera.up,offset);camera.lookAt(controls.target);
+      }
       const isClose = globe.pointOfView().altitude < 0.02;
       if (close !== isClose) { close = isClose; globe.pointsData(close ? [] : firms); }
       const pov = globe.pointOfView();
+      if(!flight)engine.observeCamera(pov);
       models.update(pov.lat, pov.lng, pov.altitude, elapsed);
       const nearHero = (['apple-park', 'fifth-avenue'] as const).some(id => nearSite(id, pov.lat, pov.lng, Math.min(pov.altitude, 0.001)));
-      const wantsSite = (state.shot === 1 && state.shotElapsed <= 15.5) || (state.shot === 10 && state.shotElapsed <= 9.4) || (state.shot === null && pov.altitude < 0.008 && nearHero);
+      const wantsSite = shotSite(state.shot)!==null || (state.shot === null && pov.altitude < 0.008 && nearHero);
       if (LOCAL_TILES && import.meta.env.VITE_GOOGLE_TILES_KEY && wantsSite && !siteScene && !siteScenePromise) {
         siteScenePromise = import('./site-scene.ts').then(module => {
           if (disposed || !siteHost.current || !siteAttribution.current) return;
           siteScene = module.createSiteScene(siteHost.current, siteAttribution.current, import.meta.env.VITE_GOOGLE_TILES_KEY!);
+          if(tileFallbackShot===engine.state.shot)siteScene.releaseFallback();
         }).catch(() => { siteStatus = { ...siteStatus, failed: true }; }).finally(() => { siteScenePromise = undefined; });
       }
       if (siteScene) {
@@ -180,20 +240,29 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const tileFrameReady = siteStatus.ready && siteStatus.ground !== null;
       const tilesConfigured = LOCAL_TILES && !!import.meta.env.VITE_GOOGLE_TILES_KEY;
       if (!tileGatePaused && shouldHoldForTiles(state, tileFrameReady, siteStatus.failed, tilesConfigured)) {
-        tileGatePaused = true;
+        tileGatePaused = true;tileGateWallMs=0;tileGateShot=state.shot;
         engine.update({ shotRunning: false });
-      } else if (tileGatePaused && (tileFrameReady || siteStatus.failed || state.shot !== 1 && state.shot !== 10)) {
-        tileGatePaused = false;
-        if (state.shot === 1 || state.shot === 10) engine.update({ shotRunning: true });
+      } else if(tileGatePaused){
+        tileGateWallMs+=elapsed;
+        const changed=state.shot!==tileGateShot,expired=tileGateWallMs>=12_000;
+        if(expired&&!changed&&tileFallbackShot!==state.shot){
+          tileFallbackShot=state.shot;siteScene?.releaseFallback();
+          console.warn(`[Cascade tiles] scene ${state.shot} exceeded the 12s readiness budget; continuing with the local GLB fallback.`);
+        }
+        if(tileFrameReady||siteStatus.failed||expired||changed){
+          tileGatePaused=false;
+          if(!changed&&state.shot!==null)engine.update({shotRunning:true});
+        }
       }
-      const fullSiteShot = state.shot !== null && siteStatus.opacity > 0.985 && !((state.shot === 1 && state.shotElapsed >= 14) || (state.shot === 10 && state.shotElapsed >= 8.3));
+      const fullSiteShot = shotSite(state.shot)!==null && siteStatus.opacity > 0.985;
       if (fullSiteShot !== globePaused) {
         globePaused = fullSiteShot;
         if (globePaused) globe.pauseAnimation(); else globe.resumeAnimation();
       }
+      globe.renderer().toneMappingExposure=1+state.exposure*5;
       effects.update(state.position, elapsed, isClose, !moving || state.shot === 1 || (state.shot === 10 && state.stage === 'cube') || (state.shot !== null && isClose),
         isClose && (state.shot === 1 || state.shot === 2) ? siteSun('apple-park', globe.getGlobeRadius()) :
-          state.shot === 10 && state.stage === 'cube' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.shot === 10 && state.stage === 'cube');
+          state.camera.site === 'fifth-avenue' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.camera.site === 'fifth-avenue',state.timelapse);
       const incoming = [] as typeof engine.index.days[number]['events'];
       if (revision !== state.revision || state.day < day) {
         pool.clear(); arcIds = '\0'; pulseRings = []; globe.ringsData([]); cursor = 0; day = state.day;
@@ -210,12 +279,15 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           }
         }
       }
-      if (engine.storyEvents !== null) incoming.splice(0, incoming.length, ...engine.drainStoryEvents());
+      const scripted=engine.drainStoryEvents();
+      if (engine.storyEvents !== null) incoming.splice(0,incoming.length,...scripted);
+      else incoming.push(...scripted);
+      if(state.shot===16 && !pulseRings.length)pulseRings.push({lat:37.3349,lng:-122.009,color:MONEY,born:time});
       revision = state.revision; day = state.day;
       // Admission is bounded even for a scrub directly into an extremely dense day.
       for (const event of incoming.filter(isPayment).slice(-200)) {
         const life = arcLifetime(moving ? speedRate(state.speed) : 1, state.shot === 3 || state.shot === 4);
-        pool.add(event, engine.index, time - (moving ? 0 : 750), life);
+        pool.add(event, engine.index, time - (moving ? 0 : 750), life, state.paymentMaturity??undefined,state.paymentAmount??undefined);
       }
       for (const event of incoming.slice(-40)) {
         if (!isPayment(event) && event.type !== 'extend') continue;
@@ -223,7 +295,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (firm?.lat != null && firm.lng != null) pulseRings.push({ lat: firm.lat, lng: firm.lng, born: time, color: event.type === 'extend' ? 'extension' : 'money' });
       }
       cursor = state.cursor;
-      pool.tick(time);
+      pool.tick(time,state.paymentPresentation==='waiting');
       const nextArcIds = pool.arcs.map(arc => arc.id).join(',');
       if (nextArcIds !== arcIds) { arcIds = nextArcIds; globe.arcsData(pool.arcs); }
       updateArcMaterials(pool.arcs, globe.getGlobeRadius());
@@ -241,7 +313,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     };
     raf = requestAnimationFrame(frame);
     if (new URLSearchParams(location.search).has('inspect')) {
-      window.__cascade = { engine, globe, pool, models: models.status, cameraFlightActive: () => !!flight,
+      window.__cascade = { engine, globe, pool, shots:SHOTS,playScene:(id)=>playShot(engine,id),playFilm:()=>playFilm(engine), models: models.status, cameraFlightActive: () => !!flight,
         tiles: () => siteStatus,
         siteView: (site, orbit = 0) => {
           engine.stopShot(); flight = undefined;
@@ -265,7 +337,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
             const hit = earth && new Raycaster(origin, origin.clone().negate().normalize()).intersectObject(earth)[0];
             return { ...site, expected: atlasUv(site.lat, site.lng), uv: hit?.uv ? { u: hit.uv.x, v: hit.uv.y } : null };
           });
-        }, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time); updateArcMaterials(pool.arcs, globe.getGlobeRadius()); },
+        }, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time,engine.state.paymentPresentation==='waiting'); updateArcMaterials(pool.arcs, globe.getGlobeRadius()); },
         geometry: () => pool.arcs.map(a => {
           const group = (a as LiveArc & { __threeObjArc?: Group }).__threeObjArc;
           const mesh = group?.children[0] as Mesh | undefined;
@@ -282,6 +354,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
       globe.controls().removeEventListener('start', interact); globe.controls().removeEventListener('end', interactionEnd); effects.dispose(); fifth.dispose();
       globe._destructor(); root.replaceChildren(); delete window.__cascade;
+      delete engine.subsurfaceInteriorCameraHook;
     };
   }, [engine]);
   return <><div className="globe-scene" ref={host} aria-label="Global payment network" /><div className="site-scene" ref={siteHost} aria-hidden="true" /><div className="site-attribution" ref={siteAttribution} hidden />

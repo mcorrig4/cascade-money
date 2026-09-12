@@ -17,17 +17,20 @@ test('local-only gate and failed-request fallback are fail closed', () => {
 
 test('shot crossfades prefetch before display and hold the requested sites', () => {
   assert.deepEqual(tilePlan({shot:1,shotElapsed:0},0,0,2),{site:'apple-park',prefetch:true,blend:1});
+  assert.deepEqual(tilePlan({shot:2,shotElapsed:0},0,0,2),{site:'apple-park',prefetch:true,blend:1});
   assert.ok(tilePlan({shot:1,shotElapsed:14.35},0,0,2).blend > 0 && tilePlan({shot:1,shotElapsed:14.35},0,0,2).blend < 1);
   assert.deepEqual(tilePlan({shot:10,shotElapsed:0},0,0,2),{site:'fifth-avenue',prefetch:true,blend:0});
   assert.equal(tilePlan({shot:10,shotElapsed:1.6},0,0,2).blend,1);
   assert.equal(tilePlan({shot:10,shotElapsed:8.3},0,0,2).blend,1);
   assert.equal(tilePlan({shot:10,shotElapsed:9},0,0,2).blend,0);
+  assert.deepEqual(tilePlan({shot:19,shotElapsed:0},0,0,2),{site:'fifth-avenue',prefetch:true,blend:1});
 });
 
 test('local recordings hold choreography for a complete tile frame but never hold fallback', () => {
   assert.equal(shouldHoldForTiles({shot:1,shotElapsed:.1,shotRunning:true},false,false,true),false);
   assert.equal(shouldHoldForTiles({shot:1,shotElapsed:.25,shotRunning:true},false,false,true),true);
-  assert.equal(shouldHoldForTiles({shot:10,shotElapsed:.25,shotRunning:true},false,false,true),true);
+  assert.equal(shouldHoldForTiles({shot:10,shotElapsed:.25,shotRunning:true},false,false,true),false);
+  assert.equal(shouldHoldForTiles({shot:10,shotElapsed:3.2,shotRunning:true},false,false,true),true);
   assert.equal(shouldHoldForTiles({shot:10,shotElapsed:.25,shotRunning:true},true,false,true),false);
   assert.equal(shouldHoldForTiles({shot:10,shotElapsed:.25,shotRunning:true},false,true,true),false);
   assert.equal(shouldHoldForTiles({shot:10,shotElapsed:.25,shotRunning:true},false,false,false),false);
