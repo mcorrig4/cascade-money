@@ -1,4 +1,4 @@
-"""Cascade reference simulation (Phase A)."""
+"""Cascade reference protocol and supply-chain simulation."""
 
 from .core import PaymentLeg, ProtocolError, Vault, VaultPolicy
 from .invariants import InvariantViolation

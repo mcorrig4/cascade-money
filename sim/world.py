@@ -1,4 +1,4 @@
-"""The deterministic Phase A Apple fixture, not the Phase B world generator."""
+"""Deterministic geographic supply-chain world and retained Apple fixture."""
 
 from fractions import Fraction
 
@@ -283,6 +283,25 @@ def paired_runs(*, output_dir=None, **kwargs):
         else:
             with (Path(output_dir)/f"{policy}.ndjson").open("w",encoding="utf-8") as stream:
                 reports[policy] = run_world(date_policy=policy,destination=stream,**kwargs).metrics
-    fields = ("gross_invoice_settled_cents","principal_committed_cents","funding_deficit_cents","yield_paid_cents","payments_with_extension","principal_cent_days")
-    reports["delta_bucketed_minus_exact"] = {key:reports["bucketed"][key]-reports["exact"][key] for key in fields}
-    return reports
+    return compare_reports(reports["exact"], reports["bucketed"])
+
+
+def compare_reports(exact, bucketed):
+    """Compare completed paired outputs without rerunning or netting metrics."""
+    fields = ("gross_invoice_settled_cents", "principal_committed_cents",
+              "funding_deficit_cents", "future_funding_deficit_cents",
+              "cash_need_shortfall_cents", "yield_paid_cents",
+              "payments_with_extension", "principal_cent_days")
+    delta = {key: bucketed[key] - exact[key] for key in fields}
+    for key in ("reuse_multiple", "circulation_efficiency_per_day",
+                "yield_cost_per_settled_dollar", "extension_share"):
+        delta[key] = (rational(Fraction(bucketed[key]) - Fraction(exact[key]))
+                      if exact[key] is not None and bucketed[key] is not None else None)
+    window_delta = {}
+    for date in sorted(set(exact["discount_window"]) | set(bucketed["discount_window"]), key=int):
+        a, b = exact["discount_window"].get(date), bucketed["discount_window"].get(date)
+        window_delta[date] = {key: (b[key] if b else 0) - (a[key] if a else 0)
+                              for key in ("face_cents", "spot_cents", "trades")}
+        window_delta[date]["clearing_discount"] = rational(Fraction(b["clearing_discount"]) - Fraction(a["clearing_discount"])) if a and b else None
+    return {"exact": exact, "bucketed": bucketed,
+            "delta_bucketed_minus_exact": delta, "delta_discount_window": window_delta}

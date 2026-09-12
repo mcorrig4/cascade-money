@@ -196,7 +196,7 @@ def yield_conservation(before, after, tx):
         for key, a in after.accounts.items():
             require(len(a.entitlement_ids) == len(set(a.entitlement_ids)) and set(a.entitlement_ids) == owned[key], "entitlement owner index differs")
         require(accrued == after.accrued_total and claimable == after.claimable_total, "accrual aggregate differs from interval formula")
-    elif tx.kind in {"issue", "extend", "claim"}:
+    else:
         for key in tx.changed_accounts:
             previous = before.accounts[key].entitlement_ids
             expected = previous + tuple(e.entitlement_id for e in added if e.account_id == key)
