@@ -34,22 +34,24 @@ ETHOnline 2026. Video three minutes thirty-five. Human narration. Apple leads. T
 
 "Cascade. Dated dollars on Arc. Money that pays bills before it becomes cash." Logo, the public app link, the repository, the Arc explorer link, team.
 
-## Shot list, the build spec
+## Shot list, the build spec (globe version)
 
-1. iPhone Duo hero, folded, on black. Three seconds.
-2. Dissolve to the network: two thousand nodes, force-directed, dark, with the fifty-six billion counter.
-3. The proof: Apple commits, Foxconn fills, Foxconn pays TSMC, with the two counters live. Must land by 0:30.
-4. The cascade: TSMC to Corning to glass supplier, counters to four hundred on one hundred.
-5. The year scrubber: January to December, the whole graph settling, named nodes flickering, aggregate counters climbing, the ratio displayed.
-6. The dated coin with the sliding date and the yield meter.
+The app is a 3D globe (globe.gl on three.js). Every payment is an animated dashed arc from payer to payee with a floating dollar amount that fades in fast and drifts up slowly. Right side: the day's transaction ledger. Bottom: a January-to-December timeline scrubber, a daily volume chart (new purchases, invoices settled), and a speed control. Named suppliers carry scripted annotations on their arcs: what was bought, how many, delivered where.
+
+1. Apple Park from above, September ninth, 2025. Narration: the iPhone 17 keynote just ended; the Duo program is already in motion. Three seconds.
+2. Camera pulls back from Cupertino to the full globe. A few days tick by on the scrubber; the network is alive with arcs. The fifty-six billion counter appears.
+3. The proof: the first arc fires Cupertino to Hsinchu, Apple commits one hundred million, TSMC's node fills with dated dollars, TSMC pays its wafer-materials supplier the same day. Two counters live: invoices settled, principal committed. Lands by 0:30.
+4. The cascade: three more hops across the globe, counters to four hundred on one hundred, floating amounts rising off each arc.
+5. The year: the scrubber runs January to December at speed, thousands of arcs, annotations flickering for Samsung Display panels, Panasonic cells, Corning glass, Exxon and Shell feedstock, Quebec and Congo mining, Chennai and Zhengzhou assembly, retail deliveries. Aggregate counters climb; the ratio of gross commerce to committed principal holds on screen.
+6. The dated coin with the sliding date and the yield meter, over a dimmed globe.
 7. The yield curve, five points, drawn live from discount-window trades.
 8. The conservation laws card.
 9. The vault stress shot: live balance sheet, reserve, accrued yield, backing, invariant lights, through one maturity date.
-10. The zoom-out with the derivatives number.
-11. The architecture diagram: Arc, USDC in and out, USYC backing, the vault, date mints, extend, the entitlement ledger, the discount window, the simulation core feeding the app. Five seconds on screen and shipped as a file.
+10. The zoom-out with the derivatives number, globe spinning slowly.
+11. The architecture diagram. Five seconds on screen and shipped as a file.
 12. Close card with the live links.
 
-The Tesla story is shot in the app for judges who click through, not in the video: Tesla to Panasonic to a cell-materials supplier to Glencore, with extensions at each hop.
+The Tesla story is in the app for judges who click through: Fremont and Austin to Osaka, to a cell-materials supplier, to Glencore, with extensions at each hop.
 
 ## Named nodes in the graph
 
@@ -57,7 +59,7 @@ Apple, Tesla. Foxconn, TSMC, Samsung, Corning, Sony, LG, Pegatron, Luxshare, Mur
 
 ## What the product must do to make the shots real
 
-- Simulation core on spec three point one, three hundred sixty-five days, ten thousand plus invoices, two thousand suppliers, the named nodes above, the Apple and Tesla stories scripted, every invariant asserted after every operation, emitting the event stream the app plays.
-- The public web app: the network, the year scrubber, the counters, the coin, the curve, the balance sheet, a control panel that plays each shot on demand, and a link to the Arc contract.
+- Simulation core on spec three point one, three hundred sixty-five days from September ninth, 2025, ten thousand plus invoices, two thousand suppliers with coordinates and regions, every invoice carrying a line item (what, how many, delivered where), the named nodes above with scripted annotations, the Apple and Tesla stories scripted, every invariant asserted after every operation, emitting the event stream the app plays.
+- The public web app: the 3D globe with animated arcs and floating amounts, the ledger, the year scrubber, the daily volume chart, the speed control, the counters, the coin, the curve, the balance sheet, a control panel that plays each shot on demand, and a link to the Arc contract.
 - The vault contract on Arc testnet holding USDC with one mint per date, issue, pay with the creditor's accepted maturity, extend, claim and withdraw, verified on the explorer, with the Apple story executed on chain and every transaction linked. Mainnet after the sixteenth for the bonus.
 - The architecture diagram as an image.
