@@ -222,7 +222,7 @@ contract CascadeVaultTest is Test {
         vm.expectRevert(CascadeVault.InvalidDates.selector);
         vault.pay(id, U, ds);
         ds[0] = DAY + 2;
-        vm.expectRevert(CascadeVault.InvalidDates.selector);
+        vm.expectRevert(CascadeVault.InsufficientPayment.selector);
         vault.pay(id, U, ds);
         vm.expectRevert(CascadeVault.InsufficientPayment.selector);
         vault.pay(id, U, dates(DAY + 1));
@@ -517,7 +517,7 @@ contract CascadeVaultTest is Test {
         vm.prank(bob);
         vm.expectRevert(CascadeVault.Underbacked.selector);
         vault.withdraw(1);
-        token.transfer(address(vault), 1);
+        assertTrue(token.transfer(address(vault), 1));
         vm.prank(alice);
         vault.claim(eid);
     }
@@ -622,5 +622,123 @@ contract CascadeVaultTest is Test {
         receiver.execute(address(vault), abi.encodeCall(vault.extend, (U / 200, DAY + 1, DAY + 2)));
         assertFalse(receiver.reentered());
         assertEq(vault.balanceOf(address(receiver), DAY + 1), U / 200);
+    }
+
+    function testPayCallerOrderSurvivesMidnight() public {
+        issueTo(bob, 2 * U, DAY);
+        issueTo(bob, 2 * U, DAY + 1);
+        bytes32 id = invoice(carol, bob, 4 * U, DAY + 1);
+        uint256[] memory ds = new uint256[](2);
+        ds[0] = DAY + 1;
+        ds[1] = DAY;
+        vm.prank(bob);
+        vault.pay(id, U, ds, 4 * U);
+        vm.warp(uint256(DAY + 1) * 1 days);
+        vm.prank(bob);
+        vault.pay(id, 3 * U, ds, 3 * U);
+        assertEq(outstanding(id), 0);
+        assertEq(vault.balanceOf(carol, DAY), 2 * U);
+    }
+
+    function testSelectedSpotSkipsDustAndExtends() public {
+        for (uint32 i = 1; i <= 40; ++i) issueTo(bob, 1, DAY - i);
+        issueTo(bob, 10 * U, DAY);
+        vm.startPrank(bob);
+        vm.expectRevert(CascadeVault.TooManyBuckets.selector);
+        vault.withdraw(U);
+        vault.withdraw(2 * U, dates(DAY));
+        uint256 eid = vault.extendSpot(3 * U, DAY + 10, dates(DAY));
+        vm.stopPrank();
+        (address account, uint256 amount, uint32 start, uint32 end,) = vault.entitlements(eid);
+        assertEq(account, bob);
+        assertEq(amount, 3 * U);
+        assertEq(start, DAY + 1);
+        assertEq(end, DAY + 10);
+        assertEq(vault.balanceOf(bob, DAY), 5 * U);
+        assertEq(vault.earliestDate(bob), DAY - 40);
+        assertEq(token.balanceOf(bob), 2 * U);
+    }
+
+    function testSelectedSpotValidationAndAtomicity() public {
+        issueTo(bob, 3 * U, DAY);
+        uint256[] memory ds = new uint256[](2);
+        ds[0] = DAY; ds[1] = DAY;
+        vm.startPrank(bob);
+        vm.expectRevert(CascadeVault.InvalidDates.selector);
+        vault.withdraw(U, ds);
+        vm.expectRevert(CascadeVault.InvalidDates.selector);
+        vault.extendSpot(U, DAY + 1, ds);
+        ds[1] = DAY + 1;
+        vm.expectRevert(CascadeVault.InvalidDate.selector);
+        vault.withdraw(U, ds); // Unused trailing future ID must still fail.
+        vm.expectRevert(CascadeVault.InvalidDate.selector);
+        vault.extendSpot(U, DAY + 2, ds);
+        vm.expectRevert(CascadeVault.InvalidDates.selector);
+        vault.withdraw(U, new uint256[](0));
+        vm.expectRevert(CascadeVault.TooManyBuckets.selector);
+        vault.extendSpot(U, DAY + 1, new uint256[](33));
+        vm.expectRevert(CascadeVault.InsufficientSpot.selector);
+        vault.withdraw(4 * U, dates(DAY));
+        vm.expectRevert(CascadeVault.InvalidAmount.selector);
+        vault.withdraw(0, dates(DAY));
+        vm.expectRevert(CascadeVault.InvalidDate.selector);
+        vault.extendSpot(U, DAY, dates(DAY));
+        vm.stopPrank();
+        assertEq(vault.balanceOf(bob, DAY), 3 * U);
+        assertEq(vault.totalSupply(), 3 * U);
+    }
+
+    function testExplicitSpotExtensionAcrossMidnight() public {
+        issueTo(bob, 3 * U, DAY);
+        advance(1, 0);
+        vm.prank(bob);
+        vault.extendSpot(U, DAY + 10);
+        vm.prank(bob);
+        vault.extendSpot(U, DAY + 10, dates(DAY));
+        assertEq(vault.balanceOf(bob, DAY + 10), 2 * U);
+    }
+
+    function testSelectedThirtyTwoBucketsAndThirtyThreeRejected() public {
+        uint256[] memory ds = new uint256[](32);
+        for (uint32 i; i < 32; ++i) {
+            issueTo(bob, 2 * U, DAY - i);
+            ds[i] = DAY - i;
+        }
+        vm.startPrank(bob);
+        vm.expectRevert(CascadeVault.TooManyBuckets.selector);
+        vault.withdraw(U, new uint256[](33));
+        vault.withdraw(32 * U, ds);
+        vault.extendSpot(32 * U, DAY + 1, ds);
+        vm.stopPrank();
+        assertEq(token.balanceOf(bob), 32 * U);
+        assertEq(vault.balanceOf(bob, DAY + 1), 32 * U);
+    }
+
+    function testFuzzPersistentInvoiceMixedSettlement(uint96 seed) public {
+        issueTo(bob, 30 * U, DAY);
+        token.mint(bob, 30 * U);
+        vm.prank(bob);
+        token.approve(address(vault), type(uint256).max);
+        bytes32 id = invoice(carol, bob, 30 * U, DAY + 5);
+        uint256 left = 30 * U;
+        for (uint256 i; i < 12 && left != 0; ++i) {
+            uint256 amount = 1 + uint256(keccak256(abi.encode(seed, i))) % left;
+            vm.startPrank(bob);
+            if (i % 2 == 0) vault.issue(id, amount);
+            else {
+                vault.pay(id, amount, dates(DAY), left);
+                vm.expectRevert(CascadeVault.InvoiceBalanceChanged.selector);
+                vault.pay(id, amount, dates(DAY), left);
+            }
+            vm.stopPrank();
+            left -= amount;
+            assertEq(outstanding(id), left);
+        }
+        if (left != 0) {
+            vm.prank(bob);
+            vault.pay(id, left, dates(DAY), left);
+        }
+        assertEq(outstanding(id), 0);
+        assertEq(vault.balanceOf(carol, DAY) + vault.balanceOf(carol, DAY + 5), 30 * U);
     }
 }

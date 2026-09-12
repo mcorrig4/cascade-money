@@ -53,6 +53,41 @@ contract VaultHandler is Test {
         _record(eid, debtor, amount, vault.today() + 1, maturity);
     }
 
+    function settleExisting(uint256 seed, uint256 amountSeed, bool deposit) external {
+        if (invoiceIds.length == 0) return;
+        bytes32 id = invoiceIds[seed % invoiceIds.length];
+        uint256 left = remaining[id];
+        if (left == 0) return;
+        (, address debtor,,, , uint32 maturity) = vault.invoices(id);
+        uint256 amount = bound(amountSeed, 1, left);
+        if (deposit) {
+            vm.prank(debtor);
+            uint256 eid = vault.issue(id, amount);
+            principal += amount;
+            _record(eid, debtor, amount, vault.today() + 1, maturity);
+        } else {
+            uint256[] memory all = vault.datesOf(debtor, 0, 32);
+            uint256 count;
+            uint256 available;
+            for (uint256 i; i < all.length; ++i) {
+                if (all[i] <= vault.today() || all[i] <= maturity) {
+                    all[count++] = all[i];
+                    available += vault.balanceOf(debtor, all[i]);
+                }
+            }
+            if (available == 0) return;
+            if (amount > available) amount = available;
+            uint256[] memory selected = new uint256[](count);
+            for (uint256 i; i < count; ++i) selected[i] = all[i];
+            vm.prank(debtor);
+            vault.pay(id, amount, selected, left);
+            vm.prank(debtor);
+            vm.expectRevert(CascadeVault.InvoiceBalanceChanged.selector);
+            vault.pay(id, amount, selected, left);
+        }
+        remaining[id] -= amount;
+    }
+
     function transfer(uint256 actorSeed, uint256 dateSeed, uint256 amountSeed) external {
         address from = actors[actorSeed % 4];
         address to = actors[(actorSeed % 4 + 1) % 4];
@@ -172,7 +207,7 @@ contract CascadeVaultInvariantTest is Test {
         handler = new VaultHandler(vault, token);
         assertEq(address(handler), vault.owner());
         handler.issue(0, 10e6, 3);
-        bytes4[] memory selectors = new bytes4[](7);
+        bytes4[] memory selectors = new bytes4[](8);
         selectors[0] = handler.issue.selector;
         selectors[1] = handler.transfer.selector;
         selectors[2] = handler.pay.selector;
@@ -180,6 +215,7 @@ contract CascadeVaultInvariantTest is Test {
         selectors[4] = handler.checkpoint.selector;
         selectors[5] = handler.claim.selector;
         selectors[6] = handler.withdraw.selector;
+        selectors[7] = handler.settleExisting.selector;
         targetContract(address(handler));
         targetSelector(FuzzSelector(address(handler), selectors));
     }

@@ -262,7 +262,7 @@ def test_liquidity_includes_claimable_yield(vault):
     fund(vault)
     # Direct indicator fixture; no Phase B checkpoint operation is implemented.
     entitlement = Entitlement("e", "A", 100, 1, 1)
-    state = replace(vault.state, day=1, cutoff=1, indices={0: Fraction(1), 1: Fraction(2)}, entitlements={"e": entitlement}, backing_asset_units=Fraction(3, 2))
+    state = replace(vault.state, day=1, cutoff=1, indices={0: Fraction(1), 1: Fraction(2)}, entitlements={"e": entitlement}, backing_asset_units=Fraction(3, 2), accrued_total=Fraction(100), claimable_total=Fraction(100))
     assert invariants.liquidity_standard(state, VaultPolicy(immediately_realizable_fraction=Fraction(1, 2)))
 
 
@@ -329,12 +329,12 @@ def test_every_check_runs_on_each_success_and_rejection(vault, monkeypatch):
         calls.clear()
         operation()
         assert set(calls) == expected
-        assert all(calls.count(name) == 2 for name in expected)  # Preflight and post-transition.
+        assert all(calls.count(name) == 1 for name in expected)  # Every post-transition check; immutable pre-state was already checked.
     calls.clear()
     with pytest.raises(ProtocolError):
         vault.transfer(request_id="bad", actor="B", recipient="C", amount_cents=1, date=90)
     assert set(calls) == expected
-    assert all(calls.count(name) == 2 for name in expected)
+    assert all(calls.count(name) == 1 for name in expected)
 
 
 def test_policy_is_fixed_for_the_run(vault):

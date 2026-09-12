@@ -1,15 +1,11 @@
-"""Phase A: immutable ledger records and atomic Issue, Transfer and Pay.
-
-Day zero is the bootstrap boundary with I(0)=1. Daily advancement, investment
-checkpoints and all Phase B operations are intentionally absent.
-"""
+"""Exact dated-dollar ledger, atomic operations and daily investment checkpoints."""
 
 from dataclasses import dataclass, field, replace
 from fractions import Fraction
 from types import MappingProxyType
 from typing import Callable, Mapping
 
-from .events import EventStream, rational
+from .events import EventStream, rational, iso_date
 from . import invariants
 
 
@@ -55,6 +51,10 @@ class Invoice:
     outstanding_cents: int
     issued_cents: int = 0
     paid_cents: int = 0
+    item: str = "goods"
+    quantity: int = 1
+    unit: str = "lot"
+    deliver_to: str = "creditor site"
 
     def as_dict(self) -> dict:
         return dict(vars(self))
@@ -125,10 +125,22 @@ class State:
     withdrawals_today_cents: int = 0
     previous_checkpoint_principal_cents: int = 0
     applied_requests: frozenset[str] = frozenset()
+    closed: bool = False
+    previous_backing_value_cents: int = 0
+    accrued_total: Fraction = Fraction(0)
+    claimable_total: Fraction = Fraction(0)
+    date_totals: Mapping[int, int] = field(default_factory=dict)
+    explicit_spot_cents: int = 0
+    opening_principal_cents: int = 0
+    claimed_paid_cents: int = 0
+    withdrawn_cents: int = 0
+    previous_locked_cents: int = 0
+    linked_extensions: frozenset[str] = frozenset()
 
     def __post_init__(self):
-        for name in ("accounts", "invoices", "entitlements", "indices"):
-            object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
+        for name in ("accounts", "invoices", "entitlements", "indices", "date_totals"):
+            if not isinstance(getattr(self, name), MappingProxyType):
+                object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
 
     @property
     def backing_value_cents(self) -> Fraction:
@@ -136,14 +148,14 @@ class State:
 
     @property
     def accrued_cents(self) -> Fraction:
-        return sum((e.accrued(self.indices, self.cutoff) for e in self.entitlements.values() if not e.claimed), Fraction(0))
+        return self.accrued_total
 
     @property
     def claimable_cents(self) -> Fraction:
-        return sum((e.accrued(self.indices, self.cutoff) for e in self.entitlements.values() if not e.claimed and e.end_day <= self.cutoff), Fraction(0))
+        return self.claimable_total
 
     def balance_sheet(self) -> dict:
-        spot = sum(a.effective_spot(self.cutoff) for a in self.accounts.values())
+        spot = self.explicit_spot_cents + sum(v for d, v in self.date_totals.items() if d <= self.cutoff)
         return {
             "backing_asset_units": rational(self.backing_asset_units),
             "backing_value_cents": int(self.backing_value_cents),
@@ -166,10 +178,13 @@ class Transition:
     amount_cents: int
     dates: tuple[int, ...]
     data: dict
+    changed_accounts: tuple[str, ...] = ()
+    changed_invoices: tuple[str, ...] = ()
+    changed_entitlements: tuple[str, ...] = ()
 
 
 class Vault:
-    def __init__(self, accounts: list[str] | tuple[str, ...], *, asset_price_cents: Fraction | int = 100, policy: VaultPolicy | None = None):
+    def __init__(self, accounts: list[str] | tuple[str, ...], *, asset_price_cents: Fraction | int = 100, policy: VaultPolicy | None = None, opening_spot: Mapping[str, int] | None = None, opening_reserve_cents: int = 0, window_participants: tuple[str, ...] = (), event_stream: EventStream | None = None):
         for account in accounts:
             _identifier(account, "account")
         if len(set(accounts)) != len(accounts):
@@ -178,8 +193,20 @@ class Vault:
             raise ProtocolError("invalid_argument", "asset price must be an exact positive value")
         self._policy = policy or VaultPolicy()
         self._state = State(accounts={a: Account(a) for a in sorted(accounts)}, asset_price_cents=Fraction(asset_price_cents))
-        self.events = EventStream()
-        self.audit()
+        opening_spot = dict(opening_spot or {})
+        _integer(opening_reserve_cents, "opening_reserve_cents")
+        for account, amount in opening_spot.items():
+            if account not in self.state.accounts:
+                raise ProtocolError("unknown_account", "unknown opening spot account")
+            _integer(amount, "opening spot")
+        if not set(window_participants) <= set(self.state.accounts):
+            raise ProtocolError("unknown_account", "unknown window participant")
+        self.window_participants = frozenset(window_participants)
+        principal = sum(opening_spot.values())
+        backing = principal + opening_reserve_cents
+        self._state = replace(self.state, accounts={key: replace(a, spot_cents=opening_spot.get(key, 0)) for key, a in self.state.accounts.items()}, principal_cents=principal, explicit_spot_cents=principal, opening_principal_cents=principal, backing_asset_units=Fraction(backing)/self.state.asset_price_cents, reserve_cents=Fraction(opening_reserve_cents), previous_backing_value_cents=backing)
+        self.events = event_stream or EventStream()
+        self._last_checks = self.audit()
 
     @property
     def state(self) -> State:
@@ -202,28 +229,49 @@ class Vault:
 
     def _envelope(self, state: State, checks: dict, *, kind: str, request_id: str | None, actor: str | None, accounts: tuple[str, ...], amount_cents: int, dates: tuple[int, ...], data: dict) -> dict:
         return {
-            "type": kind, "day": state.day, "request_id": request_id, "actor": actor,
+            "type": kind, "day": state.day, "iso_date": iso_date(state.day), "request_id": request_id, "actor": actor,
             "accounts": list(dict.fromkeys(accounts)), "amount_cents": amount_cents,
             "dates": list(sorted(set(dates))), "index": {"day": state.cutoff, "value": rational(state.indices[state.cutoff])},
             "balance_sheet": state.balance_sheet(), "checks": checks, "data": data,
         }
 
     def emit_run_event(self, kind: str, data: dict) -> dict:
-        if kind not in ("run_started", "run_completed"):
+        if kind not in ("run_started", "run_completed", "story", "day_summary", "funding_shortfall", "scenario_result"):
             raise ValueError("only run metadata can be emitted without a transition")
-        return self.events.append(self._envelope(self.state, self.audit(), kind=kind, request_id=None, actor=None, accounts=(), amount_cents=0, dates=(), data=data))
+        return self.events.append(self._envelope(self.state, self._last_checks, kind=kind, request_id=None, actor=None, accounts=(), amount_cents=0, dates=(), data=data))
 
     def _execute(self, kind: str, request_id: str, actor: str, prepare: Callable[[State], tuple[State, Transition]]) -> dict:
         before = self.state
-        self.audit()
         try:
             _identifier(request_id, "request_id")
-            _identifier(actor, "actor")
-            if actor not in before.accounts:
+            system = kind in {"day_opened", "checkpoint"}
+            if not system:
+                _identifier(actor, "actor")
+            if not system and actor not in before.accounts:
                 raise ProtocolError("unknown_account", "actor is not a vault account")
             if request_id in before.applied_requests:
                 raise ProtocolError("replay", "request_id has already been applied")
+            if before.closed and kind not in {"day_opened"}:
+                raise ProtocolError("day_closed", "open the next day before operating")
             candidate, transition = prepare(before)
+            changes = {}
+            for field_name in ("accounts", "invoices", "entitlements"):
+                old, new = getattr(before, field_name), getattr(candidate, field_name)
+                keys = () if old is new else tuple(k for k in new if new[k] is not old.get(k))
+                if len(new) < len(old) or (len(new) != len(old) and any(k not in new for k in old)):
+                    raise invariants.InvariantViolation({"state_integrity": "ledger records removed"})
+                changes["changed_" + field_name] = keys
+            transition = replace(transition, **changes)
+            dates = dict(before.date_totals)
+            explicit = before.explicit_spot_cents
+            for key in transition.changed_accounts:
+                old, new = before.accounts[key], candidate.accounts[key]
+                explicit += new.spot_cents - old.spot_cents
+                for date in set(old.units) | set(new.units):
+                    dates[date] = dates.get(date, 0) + new.units.get(date, 0) - old.units.get(date, 0)
+                    if not dates[date]:
+                        del dates[date]
+            candidate = replace(candidate, date_totals=dates, explicit_spot_cents=explicit)
             candidate = replace(candidate, applied_requests=before.applied_requests | {request_id})
             checks = invariants.check_all(before, candidate, transition, self.policy)
             # All validation and JSON encoding happen before publishing the state.
@@ -232,9 +280,10 @@ class Vault:
             self.events.append(self._envelope(before, self.audit(), kind="operation_rejected", request_id=request_id if isinstance(request_id, str) else None, actor=actor if isinstance(actor, str) else None, accounts=(actor,) if isinstance(actor, str) else (), amount_cents=0, dates=(), data={"operation": kind, "error_code": error.code, "message": str(error)}))
             raise
         self._state = candidate
+        self._last_checks = checks
         return event
 
-    def register_invoice(self, *, request_id: str, actor: str, invoice_id: str, debtor: str, amount_cents: int, due_day: int, maturity_bound: int | None = None) -> dict:
+    def register_invoice(self, *, request_id: str, actor: str, invoice_id: str, debtor: str, amount_cents: int, due_day: int, maturity_bound: int | None = None, item: str = "goods", quantity: int = 1, unit: str = "lot", deliver_to: str = "creditor site") -> dict:
         def prepare(state):
             _identifier(invoice_id, "invoice_id")
             _identifier(debtor, "debtor")
@@ -248,7 +297,10 @@ class Vault:
                 raise ProtocolError("unknown_account", "debtor is not a vault account")
             if invoice_id in state.invoices:
                 raise ProtocolError("duplicate_invoice", "invoice identifier already exists")
-            invoice = Invoice(invoice_id, actor, debtor, amount_cents, due_day, bound, state.day, amount_cents)
+            for name, value in (("item", item), ("unit", unit), ("deliver_to", deliver_to)):
+                _identifier(value, name)
+            _integer(quantity, "quantity", 1)
+            invoice = Invoice(invoice_id, actor, debtor, amount_cents, due_day, bound, state.day, amount_cents, item=item, quantity=quantity, unit=unit, deliver_to=deliver_to)
             candidate = replace(state, invoices={**state.invoices, invoice_id: invoice})
             return candidate, Transition("invoice_registered", request_id, actor, (debtor, actor), amount_cents, (bound, due_day), {"invoice": invoice.as_dict()})
         return self._execute("invoice_registered", request_id, actor, prepare)
@@ -278,6 +330,8 @@ class Vault:
             debtor = accounts[actor]
             accounts[actor] = replace(debtor, entitlement_ids=debtor.entitlement_ids + (entitlement.entitlement_id,))
             invoice = replace(invoice, outstanding_cents=invoice.outstanding_cents - amount_cents, issued_cents=invoice.issued_cents + amount_cents)
+            if not state.asset_price_cents:
+                raise ProtocolError("zero_asset_price", "worthless backing cannot fund an Issue")
             asset_units = Fraction(amount_cents) / state.asset_price_cents
             candidate = replace(state, accounts=accounts, invoices={**state.invoices, invoice_id: invoice}, entitlements={**state.entitlements, entitlement.entitlement_id: entitlement}, backing_asset_units=state.backing_asset_units + asset_units, principal_cents=state.principal_cents + amount_cents, deposits_today_cents=state.deposits_today_cents + amount_cents)
             data = {"invoice_id": invoice_id, "debtor": actor, "creditor": invoice.creditor, "outstanding_cents": invoice.outstanding_cents, "asset_units": rational(asset_units), "mint_date": invoice.maturity_bound, "entitlement": entitlement.as_dict()}
@@ -339,7 +393,7 @@ class Vault:
             return candidate, Transition("transfer", request_id, actor, (actor, recipient), amount_cents, () if date is None else (date,), data)
         return self._execute("transfer", request_id, actor, prepare)
 
-    def pay(self, *, request_id: str, actor: str, invoice_id: str, amount_cents: int, legs: tuple[PaymentLeg, ...] | list[PaymentLeg] | None = None) -> dict:
+    def pay(self, *, request_id: str, actor: str, invoice_id: str, amount_cents: int, legs: tuple[PaymentLeg, ...] | list[PaymentLeg] | None = None, extension_request_ids: tuple[str, ...] = ()) -> dict:
         def prepare(state):
             invoice = self._payable(state, invoice_id, actor, amount_cents)
             selected = []
@@ -367,9 +421,171 @@ class Vault:
                         raise ProtocolError("maturity_bound", "delivered date exceeds invoice D or M")
             if sum(leg.amount_cents for leg in selected) != amount_cents:
                 raise ProtocolError("payment_total", "payment legs must sum to amount_cents")
+            if not isinstance(extension_request_ids, tuple) or len(set(extension_request_ids)) != len(extension_request_ids):
+                raise ProtocolError("invalid_extension_link", "extension links must be unique IDs")
+            linked_amounts = {}
+            for identifier in extension_request_ids:
+                entitlement = state.entitlements.get(f"entitlement:{identifier}")
+                if identifier not in state.applied_requests or identifier in state.linked_extensions or entitlement is None or entitlement.account_id != actor:
+                    raise ProtocolError("invalid_extension_link", "extension link is unknown, used or belongs to another account")
+                linked_amounts[entitlement.end_day] = linked_amounts.get(entitlement.end_day, 0) + entitlement.amount_cents
+            for date, amount in linked_amounts.items():
+                if amount > sum(l.amount_cents for l in selected if l.date == date):
+                    raise ProtocolError("invalid_extension_link", "payment does not deliver the linked extended amount")
             candidate = self._move(state, actor, invoice.creditor, tuple(selected))
+            candidate = replace(candidate, linked_extensions=state.linked_extensions | set(extension_request_ids))
             invoice = replace(invoice, outstanding_cents=invoice.outstanding_cents - amount_cents, paid_cents=invoice.paid_cents + amount_cents)
             candidate = replace(candidate, invoices={**state.invoices, invoice_id: invoice})
-            data = {"invoice_id": invoice_id, "debtor": actor, "creditor": invoice.creditor, "outstanding_cents": invoice.outstanding_cents, "legs": [leg.as_dict() for leg in selected]}
+            data = {"invoice_id": invoice_id, "debtor": actor, "creditor": invoice.creditor, "outstanding_cents": invoice.outstanding_cents, "legs": [leg.as_dict() for leg in selected], "extension_request_ids": list(extension_request_ids)}
             return candidate, Transition("pay", request_id, actor, (actor, invoice.creditor), amount_cents, tuple(leg.date for leg in selected if leg.date is not None), data)
         return self._execute("pay", request_id, actor, prepare)
+
+    @staticmethod
+    def _debit(account: Account, amount: int, date: int | None, cutoff: int) -> Account:
+        _integer(amount, "amount_cents", 1)
+        units, spot = dict(account.units), account.spot_cents
+        if date is not None:
+            _integer(date, "date")
+            if date <= cutoff:
+                raise ProtocolError("matured_is_spot", "select matured balances as spot")
+            if units.get(date, 0) < amount:
+                raise ProtocolError("insufficient_balance", "insufficient dated balance")
+            units[date] -= amount
+            if not units[date]:
+                del units[date]
+        else:
+            remainder = amount - min(spot, amount)
+            spot -= min(spot, amount)
+            for maturity in sorted(d for d in units if d <= cutoff):
+                take = min(remainder, units[maturity])
+                remainder -= take
+                units[maturity] -= take
+                if not units[maturity]:
+                    del units[maturity]
+                if not remainder:
+                    break
+            if remainder:
+                raise ProtocolError("insufficient_balance", "insufficient effective spot")
+        return replace(account, units=units, spot_cents=spot)
+
+    def extend(self, *, request_id: str, actor: str, amount_cents: int, to_date: int, from_date: int | None = None) -> dict:
+        def prepare(state):
+            _integer(to_date, "to_date")
+            old_date = state.day if from_date is None else from_date
+            _integer(old_date, "from_date")
+            if to_date <= old_date or to_date < state.day + 1:
+                raise ProtocolError("invalid_extension", "new date must be later and at least tomorrow")
+            account = self._debit(state.accounts[actor], amount_cents, from_date, state.cutoff)
+            units = dict(account.units)
+            units[to_date] = units.get(to_date, 0) + amount_cents
+            entitlement = Entitlement(f"entitlement:{request_id}", actor, amount_cents, max(state.day + 1, old_date + 1), to_date)
+            account = replace(account, units=units, entitlement_ids=account.entitlement_ids + (entitlement.entitlement_id,))
+            candidate = replace(state, accounts={**state.accounts, actor: account}, entitlements={**state.entitlements, entitlement.entitlement_id: entitlement})
+            data = {"from_date": from_date, "effective_from_date": old_date, "to_date": to_date, "entitlement": entitlement.as_dict()}
+            return candidate, Transition("extend", request_id, actor, (actor,), amount_cents, (old_date, to_date), data)
+        return self._execute("extend", request_id, actor, prepare)
+
+    def claim(self, *, request_id: str, actor: str, entitlement_id: str) -> dict:
+        def prepare(state):
+            if self.claim_withdraw_suspended:
+                raise ProtocolError("suspended", "Claim suspended by deficit or liquidity breach")
+            if entitlement_id not in state.entitlements:
+                raise ProtocolError("unknown_entitlement", "entitlement does not exist")
+            entitlement = state.entitlements[entitlement_id]
+            if entitlement.account_id != actor:
+                raise ProtocolError("unauthorized", "entitlement belongs to another account")
+            if entitlement.claimed:
+                raise ProtocolError("already_claimed", "entitlement already claimed")
+            if entitlement.end_day > state.cutoff:
+                raise ProtocolError("not_claimable", "end index is not published")
+            value = entitlement.accrued(state.indices, state.cutoff)
+            paid = value.numerator // value.denominator
+            residual = value - paid
+            account = replace(state.accounts[actor], spot_cents=state.accounts[actor].spot_cents + paid)
+            candidate = replace(state, accounts={**state.accounts, actor: account}, entitlements={**state.entitlements, entitlement_id: replace(entitlement, claimed=True)}, principal_cents=state.principal_cents + paid, claimed_paid_cents=state.claimed_paid_cents + paid, accrued_total=state.accrued_total - value, claimable_total=state.claimable_total - value, reserve_cents=state.reserve_cents + residual)
+            data = {"entitlement_id": entitlement_id, "value_cents": rational(value), "residual_cents": rational(residual)}
+            return candidate, Transition("claim", request_id, actor, (actor,), paid, (entitlement.start_day, entitlement.end_day), data)
+        return self._execute("claim", request_id, actor, prepare)
+
+    def withdraw(self, *, request_id: str, actor: str, amount_cents: int) -> dict:
+        def prepare(state):
+            if self.claim_withdraw_suspended:
+                raise ProtocolError("suspended", "Withdraw suspended by deficit or liquidity breach")
+            account = self._debit(state.accounts[actor], amount_cents, None, state.cutoff)
+            quantity = Fraction(amount_cents) / state.asset_price_cents
+            candidate = replace(state, accounts={**state.accounts, actor: account}, backing_asset_units=state.backing_asset_units - quantity, principal_cents=state.principal_cents - amount_cents, withdrawals_today_cents=state.withdrawals_today_cents + amount_cents, withdrawn_cents=state.withdrawn_cents + amount_cents)
+            return candidate, Transition("withdraw", request_id, actor, (actor,), amount_cents, (), {"asset_units": rational(quantity)})
+        return self._execute("withdraw", request_id, actor, prepare)
+
+    def sell(self, *, request_id: str, actor: str, buyer: str, amount_cents: int, date: int, discount_bps: int) -> dict:
+        def prepare(state):
+            _integer(discount_bps, "discount_bps")
+            if discount_bps >= 10000:
+                raise ProtocolError("invalid_discount", "discount must be below 100 percent")
+            if buyer not in self.window_participants or buyer == actor:
+                raise ProtocolError("window_gate", "buyer must be a distinct funded window participant")
+            _integer(amount_cents, "amount_cents", 1)
+            consideration = amount_cents * (10000 - discount_bps) // 10000
+            if not consideration:
+                raise ProtocolError("invalid_discount", "consideration must be at least one cent")
+            candidate = self._move(state, actor, buyer, (PaymentLeg(amount_cents, date),))
+            candidate = self._move(candidate, buyer, actor, (PaymentLeg(consideration),))
+            data = {"seller": actor, "buyer": buyer, "date": date, "spot_cents": consideration, "discount_bps": discount_bps, "clearing_discount": rational(Fraction(amount_cents - consideration, amount_cents))}
+            return candidate, Transition("sell", request_id, actor, (actor, buyer), amount_cents, (date,), data)
+        return self._execute("sell", request_id, actor, prepare)
+
+    def begin_day(self, day: int) -> dict:
+        def prepare(state):
+            _integer(day, "day", 1)
+            if not state.closed or day != state.day + 1:
+                raise ProtocolError("invalid_day", "days must follow completed checkpoints consecutively")
+            candidate = replace(state, day=day, closed=False, deposits_today_cents=0, withdrawals_today_cents=0)
+            return candidate, Transition("day_opened", f"day:{day}", None, (), 0, (), {"previous_cutoff": state.cutoff})
+        return self._execute("day_opened", f"day:{day}", None, prepare)
+
+    def checkpoint(self, *, backing_value_cents: int | None = None, fee_cents: int | None = None) -> dict:
+        """Publish a gross pre-fee mark. None means no investment result that day."""
+        def prepare(state):
+            gross = int(state.backing_value_cents) if backing_value_cents is None else backing_value_cents
+            fee = self.policy.daily_fee_cents if fee_cents is None else fee_cents
+            _integer(gross, "backing_value_cents")
+            _integer(fee, "fee_cents")
+            if fee > gross:
+                raise ProtocolError("invalid_mark", "fees cannot exceed backing")
+            bootstrap = state.day == 0
+            if bootstrap and (gross != state.backing_value_cents or fee):
+                raise ProtocolError("bootstrap_income", "bootstrap checkpoint publishes I(0)=1 without income")
+            result = 0 if bootstrap else gross - state.previous_backing_value_cents - state.deposits_today_cents + state.withdrawals_today_cents - fee
+            closing = gross - fee
+            if not state.backing_asset_units and closing:
+                raise ProtocolError("invalid_mark", "cannot mark nonexistent assets")
+            reserve, deficit = state.reserve_cents, state.deficit_cents
+            repair = floor_topup = policy_share = Fraction(0)
+            income = Fraction(0)
+            if result < 0:
+                absorbed = min(reserve, -result)
+                reserve -= absorbed
+                deficit += -result - absorbed
+            else:
+                repair = min(deficit, result)
+                deficit -= repair
+                remainder = result - repair
+                floor_topup = min(remainder, max(Fraction(0), self.policy.reserve_floor_cents - reserve))
+                reserve += floor_topup
+                remainder -= floor_topup
+                policy_share = remainder * self.policy.reserve_share
+                reserve += policy_share
+                income = remainder - policy_share
+            principal = state.previous_checkpoint_principal_cents
+            active = sum(e.amount_cents for e in state.entitlements.values() if not e.claimed and e.start_day <= state.day <= e.end_day)
+            increment = income / principal if principal else Fraction(0)
+            allocated = active * increment
+            unallocated = income - allocated
+            reserve += unallocated
+            index = state.indices[state.cutoff] + increment
+            indices = {**state.indices, state.day: index}
+            newly_claimable = sum((e.accrued(indices, state.day) for e in state.entitlements.values() if not e.claimed and e.end_day == state.day and e.end_day > state.cutoff), Fraction(0))
+            candidate = replace(state, indices=indices, cutoff=state.day, closed=True, asset_price_cents=Fraction(gross)/state.backing_asset_units if state.backing_asset_units else state.asset_price_cents, backing_asset_units=state.backing_asset_units * Fraction(closing, gross) if gross else state.backing_asset_units, previous_locked_cents=sum(v for d,v in state.date_totals.items() if d > state.day), accrued_total=state.accrued_total + allocated, claimable_total=state.claimable_total + newly_claimable, reserve_cents=reserve, deficit_cents=deficit, previous_checkpoint_principal_cents=state.principal_cents, previous_backing_value_cents=closing)
+            data = {"gross_backing_value_cents": gross, "previous_backing_value_cents": state.previous_backing_value_cents, "deposits_cents": state.deposits_today_cents, "withdrawals_cents": state.withdrawals_today_cents, "fees_cents": fee, "investment_result_cents": result, "previous_principal_cents": principal, "active_entitlement_cents": active, "distributable_cents": rational(income), "entitlement_accrual_cents": rational(allocated), "unallocated_to_reserve_cents": rational(unallocated), "deficit_repair_cents": rational(repair), "reserve_floor_topup_cents": rational(floor_topup), "policy_reserve_cents": rational(policy_share), "index_increment": rational(increment), "matured_cents": sum(v for d,v in state.date_totals.items() if state.cutoff < d <= state.day), "locked_principal_cent_days": state.previous_locked_cents if not bootstrap else 0, "bootstrap": bootstrap}
+            return candidate, Transition("checkpoint", f"checkpoint:{state.day}", None, (), 0, (state.day,), data)
+        return self._execute("checkpoint", f"checkpoint:{self.state.day}", None, prepare)

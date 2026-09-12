@@ -184,8 +184,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         }
         Invoice storage invoice = _debitInvoice(invoiceId, amount);
         uint256 day = today();
-        uint256 previousKey;
-        // Validate ALL IDs, including unused trailing buckets. Future dates first, then spot; each ascending.
+        // Validate every ID, including unused trailing buckets; consume in caller order.
         for (uint256 i; i < dates.length; ++i) {
             uint256 date = dates[i];
             if (date > type(uint32).max) {
@@ -195,11 +194,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
             if (!spot && date > invoice.acceptedMaturity) {
                 revert InvalidDate();
             }
-            uint256 key = date + (spot ? uint256(1) << 255 : 0);
-            if (i != 0 && key <= previousKey) {
-                revert InvalidDates();
-            }
-            previousKey = key;
+            _checkDuplicate(dates, i);
         }
         uint256 remaining = amount;
         uint256[] memory amounts = new uint256[](dates.length);
@@ -217,6 +212,7 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         _assertBacked();
     }
 
+    /// @notice fromDate == today consumes aggregate spot; every other fromDate selects that exact ID.
     function extend(uint256 amount, uint32 fromDate, uint32 toDate)
         external
         nonReentrant
@@ -242,6 +238,43 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         id = _entitle(msg.sender, amount, start, toDate);
         _mint(msg.sender, toDate, amount, "");
         emit Extended(msg.sender, amount, fromDate, toDate, id, day);
+        _assertBacked();
+    }
+
+    function extendSpot(uint256 amount, uint32 toDate) external nonReentrant returns (uint256) {
+        _checkSpotExtension(amount, toDate);
+        _burnSpot(msg.sender, amount);
+        return _mintSpotExtension(amount, toDate);
+    }
+
+    function extendSpot(uint256 amount, uint32 toDate, uint256[] calldata dates)
+        external nonReentrant returns (uint256)
+    {
+        _checkSpotExtension(amount, toDate);
+        _burnSelectedSpot(msg.sender, amount, dates);
+        return _mintSpotExtension(amount, toDate);
+    }
+
+    function _checkSpotExtension(uint256 amount, uint32 toDate) private view {
+        _requireCurrent();
+        if (amount == 0) revert InvalidAmount();
+        if (toDate <= today()) revert InvalidDate();
+    }
+
+    function _mintSpotExtension(uint256 amount, uint32 toDate) private returns (uint256 id) {
+        uint256 day = today();
+        id = _entitle(msg.sender, amount, day + 1, toDate);
+        _mint(msg.sender, toDate, amount, "");
+        emit Extended(msg.sender, amount, uint32(day), toDate, id, day);
+        _assertBacked();
+    }
+
+    function withdraw(uint256 amount, uint256[] calldata dates) external nonReentrant {
+        if (amount == 0) revert InvalidAmount();
+        _assertBacked();
+        _burnSelectedSpot(msg.sender, amount, dates);
+        usdc.safeTransfer(msg.sender, amount);
+        emit Withdrawn(msg.sender, amount, today());
         _assertBacked();
     }
 
@@ -409,6 +442,28 @@ contract CascadeVault is ERC1155, ReentrancyGuard {
         if (amount != 0) {
             revert TooManyBuckets();
         }
+    }
+
+    function _checkDuplicate(uint256[] calldata dates, uint256 i) private pure {
+        for (uint256 j; j < i; ++j) {
+            if (dates[j] == dates[i]) revert InvalidDates();
+        }
+    }
+
+    function _burnSelectedSpot(address account, uint256 amount, uint256[] calldata dates) private {
+        if (dates.length == 0) revert InvalidDates();
+        if (dates.length > MAX_BUCKETS) revert TooManyBuckets();
+        for (uint256 i; i < dates.length; ++i) {
+            if (dates[i] > today()) revert InvalidDate();
+            _checkDuplicate(dates, i);
+        }
+        for (uint256 i; i < dates.length && amount != 0; ++i) {
+            uint256 available = balanceOf(account, dates[i]);
+            uint256 take = available < amount ? available : amount;
+            if (take != 0) _burn(account, dates[i], take);
+            amount -= take;
+        }
+        if (amount != 0) revert InsufficientSpot();
     }
 
     function _debitInvoice(bytes32 invoiceId, uint256 amount) private returns (Invoice storage invoice) {
