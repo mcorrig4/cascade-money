@@ -19,14 +19,28 @@ for the real asset. The vault is deployed and verified on Arc testnet at
 `0x57838A35f05a43aD519204D7A6Ce63F52d7C1987`, where a four-invoice chain
 (Apple to Foxconn to TSMC to Corning to a glass supplier, with a thirty-day
 extension from day ninety to day one hundred twenty) has already been executed
-and linked on chain, demonstrating the mechanism end to end. A Python
-reference implementation runs the same protocol, asserting every invariant
-after every operation, and generates a separate, larger illustrative run — a
-full year of the display chain (Apple to Samsung Display to Corning to a
-silica supplier to a freight carrier) — that the public app plays on a live 3D
-globe at [cascade.vellum.network](https://cascade.vellum.network). Two
-illustrative runs, clearly named: the on-chain run proves the mechanism, the
-globe plays the year.
+and linked on chain, demonstrating the mechanism end to end across sixteen
+transactions. The app's Verify on Arc panel reads that chain live from the
+testnet — actors, transactions, and explorer links — rather than embedding a
+static copy of it. A Python reference implementation runs the same protocol,
+asserting every invariant after every operation, and generates a separate,
+larger illustrative run — a full year of the display chain (Apple to Samsung
+Display to Corning to a silica supplier to a freight carrier) — served to the
+app as a 32 MB filtered event stream and played on a live 3D globe at
+[cascade.vellum.network](https://cascade.vellum.network), with each company
+rendered under its own logo, a ledger that stays compact during playback and
+expands on pause, and scene labels naming each location. Two illustrative
+runs, clearly named: the on-chain run proves the mechanism, the globe plays
+the year.
+
+Apple Park and the Fifth Avenue store appear on the globe as modeled 3D
+landmarks at the shots that visit them. A separate, local-only photorealistic
+tiles scene exists purely as a recording environment for the submission
+film: it requires a local Google Maps Tiles API key, is gated behind the
+`VITE_ENABLE_TILES` build flag, and is off — and absent from the built
+bundle — in production. The film itself lives under [`film/`](film/): a
+Remotion package that composites captured app footage inside an animated
+browser-frame treatment alongside motion-graphic title and data scenes.
 
 **Built during ETHOnline 2026.** The Tier One protocol specification, the
 Solidity vault and its Arc testnet deployment, the Python reference simulator
@@ -36,12 +50,16 @@ and its invariant test suite, and the globe app were all built for this event:
 - [`sim/`](sim/) — the Python reference implementation of the protocol
 - [`contracts/`](contracts/) — the Solidity vault on Arc, built and tested with Foundry
 - [`app/`](app/) — the globe app, live at [cascade.vellum.network](https://cascade.vellum.network)
+- [`film/`](film/) — the Remotion film package used to produce the submission video
 
 ## Verify it
 
 - **Vault contract (verified on Arc testnet):** `0x57838A35f05a43aD519204D7A6Ce63F52d7C1987`
   — [view on Arcscan](https://testnet.arcscan.app/address/0x57838a35f05a43ad519204d7a6ce63f52d7c1987#code)
 - **On-chain run report:** [`contracts/deployments/testnet-demo-run.md`](contracts/deployments/testnet-demo-run.md)
+- **Verify on Arc panel:** open the app and use its Verify on Arc panel — it reads the
+  four-invoice chain's actors, transactions, and explorer links live from Arc testnet,
+  not from a bundled copy.
 
 **Run the reference implementation:**
 
@@ -68,4 +86,14 @@ cd contracts && forge test
 
 ```sh
 pnpm --dir app install && pnpm --dir app dev
+```
+
+The local-only photorealistic tiles scene needs a Google Maps Tiles API key in
+`app/.env.local` and `VITE_ENABLE_TILES=1`; without them the build gate keeps
+it out entirely, which is how the production build ships.
+
+**Run the film (Remotion Studio):**
+
+```sh
+pnpm --dir film start
 ```
