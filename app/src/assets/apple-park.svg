@@ -1,14 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <defs><pattern id="panels" width="16" height="16" patternUnits="userSpaceOnUse"><path d="M0 0h16v16H0Z" fill="#9caeb0" stroke="#60777a" stroke-width="2"/></pattern><radialGradient id="lawn"><stop stop-color="#203d36"/><stop offset="1" stop-color="#142a29"/></radialGradient></defs>
-  <rect width="1024" height="1024" rx="120" fill="#13252a"/>
-  <path d="M30 210L190 50H840L994 210V840L830 990H200L30 820Z" fill="none" stroke="#40504e" stroke-width="15"/>
-  <path d="M78 225L225 85H803L946 225V803L807 939H228L78 795Z" fill="none" stroke="#83928b" stroke-width="2"/>
-  <circle cx="512" cy="500" r="355" fill="#0a171b"/>
-  <circle cx="512" cy="493" r="334" fill="url(#panels)" stroke="#d1ddd4" stroke-width="8"/>
-  <circle cx="512" cy="493" r="262" fill="url(#lawn)" stroke="#a5b3ab" stroke-width="5"/>
-  <circle cx="512" cy="493" r="296" fill="none" stroke="#d0d9cf" stroke-opacity=".5" stroke-width="2"/>
-  <path d="M359 620Q400 420 630 336M318 405Q500 547 686 566" fill="none" stroke="#657260" stroke-width="9"/>
-  <g fill="#426651"><circle cx="391" cy="365" r="29"/><circle cx="438" cy="329" r="21"/><circle cx="599" cy="610" r="34"/><circle cx="657" cy="483" r="23"/><circle cx="506" cy="612" r="20"/><circle cx="456" cy="450" r="16"/><circle cx="365" cy="530" r="28"/></g>
-  <ellipse cx="545" cy="411" rx="43" ry="27" fill="#254e58"/>
-  <rect x="733" y="860" width="100" height="40" rx="20" fill="#a2b0ab"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="2048" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="ground"><stop stop-color="#173e35"/><stop offset="1" stop-color="#071c24"/></radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
+    <pattern id="panels" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#b9d2d0"/><path d="M0 0h12v12" fill="none" stroke="#6c9497" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#ground)"/>
+  <rect x="40" y="40" width="944" height="944" rx="170" fill="none" stroke="#4b7274" stroke-width="9"/>
+  <circle cx="512" cy="512" r="338" fill="none" stroke="#9cffe0" stroke-width="110" opacity=".2" filter="url(#glow)"/>
+  <circle cx="512" cy="512" r="382" fill="#041416" stroke="#dbfff3" stroke-width="7"/>
+  <circle cx="512" cy="512" r="328" fill="none" stroke="url(#panels)" stroke-width="92"/>
+  <circle cx="512" cy="512" r="375" fill="none" stroke="#effff9" stroke-width="6"/>
+  <circle cx="512" cy="512" r="280" fill="#214f3f" stroke="#d9fff0" stroke-width="8"/>
+  <circle cx="512" cy="512" r="326" fill="none" stroke="#eefdf8" stroke-width="3"/>
+  <path d="M300 525Q480 470 679 319M375 704Q524 497 743 580" fill="none" stroke="#b5ccad" stroke-width="8"/>
+  <g fill="#39795a" stroke="#63926b" stroke-width="3"><circle cx="399" cy="357" r="32"/><circle cx="480" cy="330" r="20"/><circle cx="634" cy="433" r="35"/><circle cx="580" cy="658" r="32"/><circle cx="398" cy="612" r="33"/><circle cx="326" cy="455" r="20"/></g>
+  <ellipse cx="515" cy="460" rx="48" ry="28" fill="#2b7880" stroke="#70ada6" stroke-width="3"/>
 </svg>

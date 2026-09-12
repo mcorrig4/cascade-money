@@ -87,7 +87,7 @@ pnpm --dir app check:browser --static
 ```
 
 This uses installed Chrome and Playwright route interception to serve `dist/`
-under a directory mount **without a listening server**. If discovery needs help:
+at the production root **without a listening server**. If discovery needs help:
 
 ```sh
 CHROME_PATH=/usr/bin/google-chrome pnpm --dir app check:browser --static
@@ -158,3 +158,42 @@ Night lights use a deferred 4096×2048 derivative of the bundled 13500×6750 NAS
 original, avoiding its large decode and GPU upload on phones. Both 4K assets are
 geographically unchanged resizes made with the installed ffmpeg; no dependencies
 were added. The source originals remain bundled.
+
+## Payment animation and crisp company marks
+
+Payment tubes now grow from payer to payee for the first 32% of their lifetime,
+flow until 65%, then collapse into the payee while fading. The shader clips a
+stable tube geometry; dashes use 90 km of ground distance and 60 km gaps, measured
+along the curve's projection onto Earth. The pattern advances toward the payee.
+At high speeds the complete lifecycle lasts at least 320 ms, so it spans several
+frames and may finish across forward day boundaries. Scrubs clear the arc pool;
+the 200-arc cap still includes retiring arcs.
+
+Amounts and their annotations pop from 0.65× to 1.22×, settle, rise, then grow
+slightly as they fade. All motion uses the pausable animation clock. Named firms
+now use crisp HTML text beneath inline SVG monograms on dark haze discs. All 23
+requested brands have an embedded palette; no Simple Icons package was available
+locally, and no network lookup or new dependency was added. Labels are horizon-
+and collision-filtered, capped at 32 on desktop and 10 on a phone. Canvas labels
+are disabled. Sumco and Wacker are included when the stream supplies them.
+
+Earth, atmosphere and arcs use consistent logarithmic depth. The transparent
+atmosphere has a fixed render order and never writes depth; it is excluded from
+bloom. Arc shaders also discard Earth-occluded fragments in both the normal and
+bloom passes. This addresses the precision problems caused by the close camera's
+very small near plane. Visual confirmation on the target GPU is still required.
+
+The sun advances one revolution per 30 simulated days, continuously between UI
+clock updates. Its maximum angular speed is the year preset's monthly rate,
+with frame catch-up capped to avoid flashes after a stalled frame. Pausing and
+director close-ups hold the sun; resuming does not jump to make up held time.
+Night lights remain blended only onto the dark side.
+
+Apple Park now has a 2048-pixel SVG with a bright double ring outline, contrasting
+roof and green courtyard, and a baked subtle glow. The material preserves those
+colors and uses the shared logarithmic depth path. The browser check asserts the
+exact shot-1 pose (37.3349, -122.009, altitude 0.00022), waits for the decal, and
+saves `apple-park-1920x1080.png`. It also saves grow/collapse frames and checks
+clip uniforms, retained geometry and depth settings. Run outside the restricted
+sandbox with `pnpm --dir app check:browser --static`; Chrome's socket initialization
+continues to be blocked inside it. No new screenshot pass is claimed here.

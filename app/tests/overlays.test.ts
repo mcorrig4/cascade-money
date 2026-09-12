@@ -6,7 +6,7 @@ import { appendEvent, createIndex, finishIndex } from '../src/data/index.ts';
 import { activeChecks, curveQuotes, extensionAccrual, latestEvent, rational } from '../src/data/overlay-selectors.ts';
 import { PlaybackEngine } from '../src/playback/engine.ts';
 import { playShot, proofPayments, SHOTS } from '../src/director/shots.ts';
-const records = (await readFile(new URL('../../events.ndjson', import.meta.url), 'utf8')).trim().split('\n').map(parseLine);
+const records = (await readFile(new URL('./fixtures/events-v1.ndjson', import.meta.url), 'utf8')).trim().split('\n').map(parseLine);
 const makeIndex = () => { const i = createIndex(); records.forEach(r => appendEvent(i, r)); return finishIndex(i); };
 const event = (seq: number, type: string, data: object = {}, day = 0) => adaptEvent({ schema_version: 2, seq, type, day, amount_cents: 10000, data });
 

@@ -6,7 +6,7 @@ import { chromium } from 'playwright-core';
 
 // Start `pnpm preview` separately. Pass its port-for URL explicitly; no hardcoded port.
 const staticMode = process.argv.includes('--static');
-const url = staticMode ? 'http://cascade.test/rehearsal/' : process.argv[2];
+const url = staticMode ? 'http://cascade.test/' : process.argv[2];
 if (!url) throw new Error('Usage: pnpm check:browser --static OR pnpm check:browser <preview-url>');
 await mkdir('artifacts', { recursive: true });
 let executablePath = process.env.CHROME_PATH;
@@ -29,7 +29,7 @@ async function routeStatic(context) {
     const root = resolve('dist');
     const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png', '.ndjson': 'application/x-ndjson' };
     await context.route('http://cascade.test/**', async route => {
-      const pathname = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\/rehearsal\//, '');
+      const pathname = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\//, '');
       const file = resolve(root, pathname || 'index.html');
       if (!file.startsWith(root + sep)) return route.fulfill({ status: 403 });
       try { await route.fulfill({ status: 200, body: await readFile(file), contentType: mime[extname(file)] ?? 'application/octet-stream' }); }
@@ -56,16 +56,27 @@ try {
   assert.ok((await page.getByTestId('committed').innerText()).startsWith('$'));
   assert.ok((await page.getByTestId('ratio').innerText()).endsWith('×'));
   await page.screenshot({ path: 'artifacts/globe-1920x1080.png' });
+  await page.evaluate(() => window.__cascade.ageArcs(-600));
+  await page.waitForTimeout(150);
+  const growing = await page.evaluate(() => window.__cascade.geometry());
+  assert.ok(growing.every(arc => arc.clipStart === 0 && arc.clipEnd > 0 && arc.clipEnd < 1), 'Arcs grow from the payer');
+  await page.screenshot({ path: 'artifacts/arcs-grow-1920x1080.png' });
+  await page.evaluate(() => window.__cascade.ageArcs(600));
   const before = await page.evaluate(() => window.__cascade.geometry());
-  await page.evaluate(() => window.__cascade.ageArcs(1400));
+  assert.ok(before.every(arc => arc.clipStart === 0 && arc.clipEnd === 1), 'Flow uses the full curve');
+  await page.evaluate(() => window.__cascade.ageArcs(800));
   await page.waitForTimeout(150);
   const after = await page.evaluate(() => window.__cascade.geometry());
   assert.equal(before.length, after.length);
   for (let i = 0; i < before.length; i++) {
     assert.equal(before[i].geometry, after[i].geometry, 'Fading must retain arc geometry');
-    assert.ok(after[i].alpha > 0 && after[i].alpha < before[i].alpha, 'RGBA alpha must reach the shader');
+    assert.ok(after[i].alpha > 0 && after[i].alpha < before[i].alpha, 'Fade alpha must reach the shader');
   }
+  assert.ok(after.every(arc => arc.clipStart > 0 && arc.clipEnd === 1 && arc.depthTest), 'Collapse moves into the payee with depth testing');
+  await page.screenshot({ path: 'artifacts/arcs-collapse-1920x1080.png' });
   await page.waitForFunction(() => window.__cascade.globe.globeMaterial().userData.textureStage !== 'pending');
+  assert.equal(await page.evaluate(() => window.__cascade.globe.renderer().capabilities.logarithmicDepthBuffer), true);
+  assert.equal(await page.locator('.company-label svg').count() > 0, true, 'Named firms use vector marks');
   const alignment = await page.evaluate(() => window.__cascade.geography());
   for (const point of alignment) {
     assert.ok(point.uv, `${point.name}: ray intersects the Earth`);
@@ -91,6 +102,13 @@ try {
   await page.locator('.shot-list button').nth(0).click();
   await page.keyboard.press('Shift+D');
   await page.waitForTimeout(500);
+  await page.waitForFunction(() => window.__cascade.globe.scene().getObjectByName('Apple Park ring decal')?.material.map.image?.complete);
+  const parkPose = await page.evaluate(() => {
+    const { globe } = window.__cascade, park = globe.scene().getObjectByName('Apple Park ring decal');
+    return { camera: globe.pointOfView(), visible: park?.visible, loaded: !!park?.material.map.image?.complete };
+  });
+  assert.ok(Math.abs(parkPose.camera.lat - 37.3349) < 0.00001 && Math.abs(parkPose.camera.lng + 122.009) < 0.00001);
+  assert.ok(Math.abs(parkPose.camera.altitude - 0.00022) < 0.000001 && parkPose.visible && parkPose.loaded, 'Exact shot-1 pose with the ring texture loaded');
   await page.screenshot({ path: 'artifacts/apple-park-1920x1080.png' });
   await page.keyboard.press('Escape');
   const totals = await page.evaluate(() => {
@@ -112,7 +130,8 @@ try {
     await page.screenshot({ path: `artifacts/shot-${shot}-1920x1080.png` });
   }
   await page.getByText('Earth imagery: NASA', { exact: true }).waitFor();
-  assert.equal(await page.locator('.close-card a').count(), 3);
+  assert.equal(await page.locator('.close-card a').count(), 4);
+  assert.equal(await page.locator('.close-card a[href="/architecture"]').count(), 1);
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await routeStatic(mobile);
   await mobile.addInitScript(() => {
@@ -166,6 +185,6 @@ try {
   assert.equal(textureRequests[0], 'earth-blue-marble-4k.jpg', '4K loads before the night map and high-resolution upgrade');
   await mobile.close();
   assert.deepEqual(errors, []);
-  await writeFile('artifacts/browser-check.json', JSON.stringify({ viewports: ['1920x1080', '390x844'], alignment, layout, textureRequests, renderer: 'Chrome / SwiftShader', opacity: 'passed', retainedGeometry: 'passed', before, after, errors }, null, 2));
+  await writeFile('artifacts/browser-check.json', JSON.stringify({ viewports: ['1920x1080', '390x844'], alignment, layout, textureRequests, growing, parkPose, renderer: 'Chrome / SwiftShader', opacity: 'passed', retainedGeometry: 'passed', before, after, errors }, null, 2));
   console.log('Passed: desktop/mobile gestures and layout, Telegram bridge, geography, texture order, arc opacity/geometry, director, and year endpoint. Screenshots: app/artifacts/');
 } finally { await browser.close(); }

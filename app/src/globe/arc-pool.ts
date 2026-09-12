@@ -1,10 +1,11 @@
+import { arcLifecycle, GROUND_RADIUS_KM } from './animation.ts';
 import { isPayment } from '../data/types.ts';
 import type { Event, EventIndex } from '../data/types.ts';
 export const ARC_CAP = 200;
 export interface LiveArc {
   id: number; event: Event; startLat: number; startLng: number; endLat: number; endLng: number;
   altitude: number; midLat: number; midLng: number; born: number; life: number; alpha: number;
-  annotation?: string;
+  groundKm: number; clipStart: number; clipEnd: number; phaseKm: number; annotation?: string;
 }
 export function midpoint(lat1: number, lng1: number, lat2: number, lng2: number) {
   const r = Math.PI / 180, a = lat1 * r, b = lat2 * r, delta = (lng2 - lng1) * r;
@@ -29,13 +30,12 @@ export class ArcPool {
     if (this.arcs.length >= ARC_CAP) this.arcs.shift();
     this.arcs.push({ id: event.seq, event, startLat: from.lat, startLng: from.lng, endLat: to.lat, endLng: to.lng,
       altitude: Math.max(0.008, Math.min(0.4, mid.distance * 0.18)), midLat: mid.lat, midLng: mid.lng,
-      born: time, life, alpha: 0, annotation: index.invoices.get(event.invoiceId ?? '')?.annotation });
+      born: time, life, alpha: 0, groundKm: mid.distance * GROUND_RADIUS_KM, clipStart: 0, clipEnd: 0, phaseKm: 0, annotation: index.invoices.get(event.invoiceId ?? '')?.annotation });
   }
   tick(time: number) {
     this.arcs = this.arcs.filter(a => time - a.born < a.life);
     for (const a of this.arcs) {
-      const age = time - a.born;
-      a.alpha = Math.max(0, Math.min(1, age / Math.min(100, a.life * 0.15), (a.life - age) / Math.min(450, a.life * 0.3)));
+      Object.assign(a, arcLifecycle(time - a.born, a.life));
     }
   }
 }

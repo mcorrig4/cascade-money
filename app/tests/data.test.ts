@@ -6,7 +6,7 @@ import { adaptFirm, parseLine } from '../src/data/adapters.ts';
 import { appendEvent, createIndex, finishIndex } from '../src/data/index.ts';
 import { dollars } from '../src/data/format.ts';
 import { dateForDay } from '../src/data/types.ts';
-const sample = await readFile(new URL('../../events.ndjson', import.meta.url), 'utf8');
+const sample = await readFile(new URL('./fixtures/events-v1.ndjson', import.meta.url), 'utf8');
 function chunks(text: string, size: number) {
   const bytes = new TextEncoder().encode(text);
   return new ReadableStream<Uint8Array>({ start(controller) {
@@ -43,7 +43,7 @@ test('reject malformed JSON, unsupported schemas, discontinuous sequences, and d
   await assert.rejects(readStream(chunks('{broken}', 3)), /Line 1/);
   await assert.rejects(readStream(chunks(sample.replace(/"schema_version":[12]/, '"schema_version":3'), 500)), /Unsupported schema/);
   await assert.rejects(readStream(chunks(sample.replace('"seq":2', '"seq":3'), 500)), /Expected sequence/);
-  await assert.rejects(readStream(chunks(sample.replace(/"iso_date":"[^"]+"/, '"iso_date":"2025-09-10"'), 500)), /Date\/day mismatch/);
+  await assert.rejects(readStream(chunks(sample.replace('"day":0', '"date":"2025-09-10","day":0'), 500)), /Date\/day mismatch/);
 });
 test('transfer and rejection cannot inflate invoice settlement', () => {
   const index = createIndex();

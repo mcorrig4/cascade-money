@@ -112,3 +112,44 @@ upgrades after another paint/idle period if maxTextureSize permits 5400. Night
 imagery is a deferred 4K derivative: the original is 13500×6750, too expensive to
 upload routinely on a phone. Old fallback textures and pending callbacks are
 released on upgrade/unmount. No dependency or lockfile changes.
+
+## Directional arc lifecycle and depth repair
+
+Globe.gl still creates and owns each tube geometry. A per-tube ShaderMaterial
+provides independent clipStart/clipEnd, alpha and kilometre phase uniforms. The
+installed library's reversed relDistance attribute is converted to payer=0,
+payee=1. Ground distances are calculated once from normalized tube-ring centers,
+so dash spacing is physical ground distance, independent of route length and
+arc elevation. Only uniforms change during animation; material/geometry identity
+is retained. Lifetimes are 1.8 s normally, 3.5 s for proof shots, minimum 320 ms
+at high speed. Forward day boundaries no longer prematurely destroy animations;
+explicit seeks reset them. The pool remains capped at 200, including retirees.
+
+The tiny near plane needed by the Apple Park and Fifth Avenue cameras made
+conventional depth imprecise at globe scale. Logarithmic depth is now explicit
+on the renderer and included in Earth, atmosphere and arc shaders. Arc fragments
+also perform analytic sphere occlusion, including in the bloom pass. The planet
+writes depth, the transparent atmosphere/arcs do not, and their render ordering
+is explicit. Atmosphere/park are excluded from selective bloom. These changes
+address identified causes; GPU flicker/depth acceptance is not claimed without
+an outside-sandbox browser run.
+
+Sun motion follows fractional simulation time, 360 degrees per 30 days, with
+smooth catch-up bounded by the maximum preset rate and a 50 ms frame budget.
+Close-up holds and backward seeks reset pending catch-up rather than flashing
+through skipped time. No fixed -150-degree sun remains except its starting phase.
+
+All 23 requested companies use embedded SVG monograms and brand-color tables;
+Simple Icons was absent from installed modules and local pnpm store indexes.
+HTML labels replace canvas label textures and preserve display-resolution text.
+Apple Park's brighter 2048 SVG and non-tonemapped decal use the exact existing
+shot-1 camera. The first-paint lazy boundary, progressive textures, phone layout,
+Telegram initialization and gesture capture remain intact.
+
+Legacy accounting tests now use a frozen v1 test fixture instead of depending on
+the parallel core lane's changing root sample (which now has the display chain).
+Synthetic legacy fixture data stays under tests; the app still bakes the root
+stream byte-for-byte. Unit checks cover clip direction, fixed ground distances,
+amount bursts, stable shader geometry, sun rate/holds, all monogram entries, and
+existing accounting/playback/mobile behavior. Browser checks have been extended
+but remain blocked by Chrome's forbidden socket operation in this sandbox.

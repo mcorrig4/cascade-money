@@ -7,7 +7,7 @@ import { PlaybackEngine } from '../src/playback/engine.ts';
 import { playShot } from '../src/director/shots.ts';
 import { ArcPool } from '../src/globe/arc-pool.ts';
 const index = createIndex();
-(await readFile(new URL('../../events.ndjson', import.meta.url), 'utf8')).trim().split('\n').forEach(line => appendEvent(index, parseLine(line)));
+(await readFile(new URL('./fixtures/events-v1.ndjson', import.meta.url), 'utf8')).trim().split('\n').forEach(line => appendEvent(index, parseLine(line)));
 finishIndex(index);
 test('backward seek restores exact totals without replay or duplication', () => {
   const engine = new PlaybackEngine(index);

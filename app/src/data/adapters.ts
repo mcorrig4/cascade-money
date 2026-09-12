@@ -29,7 +29,7 @@ const locations: Record<string, [number, number, string, string]> = {
   Corning: [42.1429, -77.0547, 'Corning', 'United States'],
   'Clearview Glass': [41.4993, -81.6944, 'Cleveland', 'United States'],
 };
-const named = new Set(['Apple', 'Tesla', 'Foxconn', 'TSMC', 'Samsung', 'Samsung Display', 'Corning', 'Sony', 'LG', 'Pegatron', 'Luxshare', 'Murata', 'Qualcomm', 'Broadcom', 'SK Hynix', 'Panasonic', 'CATL', 'LG Energy', 'LG Energy Solution', 'Glencore', 'Exxon', 'Shell', 'Dow', 'BASF', 'Clearview Glass']);
+const named = new Set(['Apple', 'Tesla', 'Foxconn', 'TSMC', 'Samsung', 'Samsung Display', 'Corning', 'Sony', 'LG', 'Pegatron', 'Luxshare', 'Murata', 'Qualcomm', 'Broadcom', 'SK Hynix', 'Panasonic', 'CATL', 'LG Energy', 'LG Energy Solution', 'Glencore', 'Exxon', 'Shell', 'Dow', 'BASF', 'Sumco', 'SUMCO', 'Wacker', 'WACKER', 'Clearview Glass']);
 export function adaptFirm(raw: unknown, schema: 1 | 2): Firm {
   const v = record(raw), id = String(v.id), name = text(v.name) ?? id;
   const fallback = schema === 1 ? locations[id] : undefined;

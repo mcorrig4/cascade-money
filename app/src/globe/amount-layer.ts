@@ -1,5 +1,6 @@
 import type { GlobeInstance } from 'globe.gl';
 import { Vector3 } from 'three';
+import { pickup } from './animation.ts';
 import { dollars } from '../data/format.ts';
 import type { LiveArc } from './arc-pool.ts';
 
@@ -36,14 +37,15 @@ export class AmountLayer {
         this.active.set(arc.id, element);
       }
       const { x, y: projectedY } = globe.getScreenCoords(arc.midLat, arc.midLng, arc.altitude);
-      const y = projectedY - Math.max(0, now - arc.born) * 0.03;
+      const motion = pickup(now - arc.born, arc.life);
+      const y = projectedY - motion.rise;
       const width = arc.annotation ? 280 : 115, height = arc.annotation ? 95 : 44;
       const collision = boxes.some(b => Math.abs(b.x - x) < (b.width + width) / 2 && Math.abs(b.y - y) < (b.height + height) / 2);
       element.hidden = collision || x < width / 2 + 24 || x + width / 2 > ledgerLeft - 24 || y < 110 || y + height > footerTop || !visibleFromCamera(globe, arc.midLat, arc.midLng, arc.altitude);
       if (!element.hidden) {
         boxes.push({ x, y, width, height });
-        element.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-100%)`;
-        element.style.opacity = String(arc.alpha);
+        element.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-100%) scale(${motion.scale})`;
+        element.style.opacity = String(motion.alpha);
       }
     }
   }

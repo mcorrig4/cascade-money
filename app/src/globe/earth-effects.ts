@@ -5,9 +5,12 @@ import {
 } from 'three';
 import type { GlobeInstance } from 'globe.gl';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { SunClock } from './animation.ts';
 import { ArcBloomPass } from './selective-bloom.ts';
 
 const vertexShader = /* glsl */ `
+  #include <common>
+  #include <logdepthbuf_pars_vertex>
   varying vec2 vEarthUv;
   varying vec3 vWorldNormal;
   varying vec3 vWorldPosition;
@@ -17,6 +20,7 @@ const vertexShader = /* glsl */ `
     vec4 world = modelMatrix * vec4(position, 1.0);
     vWorldPosition = world.xyz;
     gl_Position = projectionMatrix * viewMatrix * world;
+    #include <logdepthbuf_vertex>
   }
 `;
 export function createEarthEffects(globe: GlobeInstance) {
@@ -47,6 +51,7 @@ export function createEarthEffects(globe: GlobeInstance) {
     uniforms: { dayMap: { value: black }, nightMap: { value: black }, sunDirection: { value: sunDirection } },
     vertexShader,
     fragmentShader: /* glsl */ `
+      #include <logdepthbuf_pars_fragment>
       uniform sampler2D dayMap;
       uniform sampler2D nightMap;
       uniform vec3 sunDirection;
@@ -61,11 +66,13 @@ export function createEarthEffects(globe: GlobeInstance) {
         vec3 dayColor = surface * (0.16 + 0.65 * max(sunDot, 0.0));
         vec3 nightColor = surface * 0.025 + lights * 0.8;
         gl_FragColor = vec4(mix(nightColor, dayColor, daylight), 1.0);
+        #include <logdepthbuf_fragment>
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
     `,
   });
+  earth.depthTest = true; earth.depthWrite = true;
   globe.globeMaterial(earth).showAtmosphere(false);
   earth.userData.textureStage = 'pending';
   afterPaint(() => load('earth-blue-marble-4k.jpg', low => {
@@ -87,6 +94,7 @@ export function createEarthEffects(globe: GlobeInstance) {
   const atmosphereMaterial = new ShaderMaterial({
     uniforms: { sunDirection: { value: sunDirection } }, vertexShader,
     fragmentShader: /* glsl */ `
+      #include <logdepthbuf_pars_fragment>
       uniform vec3 sunDirection;
       varying vec3 vWorldNormal;
       varying vec3 vWorldPosition;
@@ -96,12 +104,14 @@ export function createEarthEffects(globe: GlobeInstance) {
         float fresnel = pow(1.0 - max(dot(normal, viewDirection), 0.0), 5.0);
         float light = 0.25 + 0.75 * smoothstep(-0.4, 0.8, dot(normal, sunDirection));
         gl_FragColor = vec4(vec3(0.12, 0.38, 0.55), fresnel * light * 0.38);
+        #include <logdepthbuf_fragment>
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }
-    `, transparent: true, depthWrite: false, blending: AdditiveBlending,
+    `, transparent: true, depthTest: true, depthWrite: false, blending: AdditiveBlending,
   });
   const atmosphere = new Mesh(new SphereGeometry(globe.getGlobeRadius() * 1.007, 128, 64), atmosphereMaterial);
+  atmosphere.renderOrder = 1;
   atmosphere.userData.skipBloom = true;
   atmosphere.name = 'Cascade Fresnel atmosphere';
   globe.scene().add(atmosphere);
@@ -118,11 +128,12 @@ export function createEarthEffects(globe: GlobeInstance) {
   const bloom = new ArcBloomPass(renderer, globe.scene(), globe.camera());
   const output = new OutputPass(), composer = globe.postProcessingComposer();
   composer.addPass(bloom); composer.addPass(output);
+  const sunClock = new SunClock();
   return {
-    update(dayNumber: number, campusScale: boolean) {
-      // A fixed UTC noon per calendar day; not tied to the host clock or playback speed.
-      const declination = 23.44 * Math.sin(2 * Math.PI * (dayNumber + 172) / 365);
-      const direction = globe.getCoords(declination, -150, 0);
+    update(position: number, elapsed: number, campusScale: boolean, holdSun: boolean) {
+      const sun = sunClock.update(position, elapsed, holdSun);
+      const direction = globe.getCoords(sun.lat, sun.lng, 0);
+      earth.userData.sunLongitude = sun.lng;
       sunDirection.set(direction.x, direction.y, direction.z).normalize();
       atmosphere.visible = !campusScale; bloom.enabled = !campusScale;
     },
