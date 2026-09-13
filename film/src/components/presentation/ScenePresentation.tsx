@@ -1,5 +1,5 @@
 import React from 'react';
-import {useCurrentFrame, useVideoConfig} from 'remotion';
+import {interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {DatedDollar} from '@cascade-app/components/DatedDollar.ts';
 import {AppSurface, PresentationPane} from '../AppSurface';
 import {type WindowGeometry} from '../windowGeometry';
@@ -52,12 +52,54 @@ const QuestionPresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('quest
 const ExamplePresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('example-labels') ? null :
   <section className="overlay-card film-inset-card" aria-label="The supply chain's timing gap"><p>FROM APPLE · LATER</p><p>PAYMENT NEEDED · TODAY</p></section>;
 
-const TotalsPresentation: React.FC<{shown: Beat}> = ({shown}) =>
-  <section className="overlay-card cascade-totals film-totals" aria-label="The branched cascade">
-    <div className="cascade-stat"><strong style={visibility(shown('deposited-value'))}>$100M</strong><span style={visibility(shown('committed-counter'))}>deposited</span></div>
-    <div className="cascade-stat"><strong style={visibility(shown('transacted-value'))}>$450M</strong><span style={visibility(shown('settled-counter'))}>transacted</span></div>
-    <div className="cascade-stat"><strong style={visibility(shown('invoice-value'))}>9</strong><span><span style={visibility(shown('companies-counter'))}>invoices</span>{' '}<span style={visibility(shown('invoices-settled'))}>settled</span></span></div>
+const TotalsPresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const unit = geometry.width / 1920;
+  const reserveValue = at('deposited-value'), reserveDraw = at('committed-counter');
+  const settlementValue = at('transacted-value'), settlementDraw = at('settled-counter');
+  const segmentStart = at('invoices-settled');
+  // These spoken words no longer reveal separate counters, but remain required cues.
+  at('invoice-value'); at('companies-counter');
+  const riseFrames = 6 * fps / 30, drawFrames = .45 * fps, tickFrames = .7 * fps / 9;
+  const progress = (start: number, duration: number) => interpolate(frame, [start, start + duration], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  const rise = (start: number): React.CSSProperties => {
+    const p = progress(start, riseFrames);
+    return {opacity: p, transform: `translateY(${12 * unit * (1 - p)}px)`};
+  };
+  const reveal = (start: number): React.CSSProperties => ({
+    clipPath: `inset(0 ${(1 - progress(start, riseFrames)) * 100}% 0 0)`,
+  });
+  const multiplier = progress(segmentStart, riseFrames);
+  return <section className="film-totals" aria-label="Backing and flow: $450 million settled against $100 million in reserve"
+    style={{marginBottom: geometry.height * (252 / 1080)}}>
+    <div className="film-totals-eyebrow" style={reveal(reserveValue)}>BACKING AND FLOW</div>
+    <div className="film-totals-row">
+      <strong className="film-totals-figure" style={rise(reserveValue)}>$100M</strong>
+      <div className="film-totals-bar film-totals-reserve" style={{transform: `scaleX(${progress(reserveDraw, drawFrames)})`}}/>
+      <span className="film-totals-label" style={reveal(reserveDraw + drawFrames)}>deposited · the reserve</span>
+    </div>
+    <div className="film-totals-row">
+      <strong className="film-totals-figure" style={rise(settlementValue)}>$450M</strong>
+      <div className="film-totals-bar film-totals-settlement" style={{transform: `scaleX(${progress(settlementDraw, drawFrames)})`}}
+        role="img" aria-label="Nine settlements total 4.5 times the reserve">
+        {Array.from({length: 9}, (_, i) => <div className="film-totals-segment" key={i}>
+          {/* Retract each mint bridge to expose the hairline gap beneath it. */}
+          {i > 0 && <i className="film-totals-divider" style={{transform: `scaleY(${1 - progress(segmentStart + i * tickFrames, tickFrames)})`}}/>}
+        </div>)}
+      </div>
+      <div className="film-totals-caption">
+        <span className="film-totals-label" style={reveal(settlementDraw + drawFrames)}>transacted</span>
+        <span className="film-totals-multiplier" style={{
+          visibility: frame < segmentStart ? 'hidden' : 'visible',
+          transform: `translateY(${12 * unit * (1 - multiplier)}px)`,
+        }}>4.5x the reserve</span>
+      </div>
+    </div>
   </section>;
+};
 
 const CoinPresentation: React.FC<{shown: Beat; at: (name: string) => number; frame: number; fps: number; geometry: WindowGeometry}> = ({shown, at, frame, fps, geometry}) => {
   const unit = geometry.width / 1920;
@@ -114,12 +156,12 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
   const unit = geometry.width / 1920;
   if (![2, 3, 4, 6, 7, 8, 9, 10].includes(scene)) return null;
   const inset = scene === 3 || scene === 4 || scene === 9;
-  const content = scene === 3 ? <ExamplePresentation shown={shown}/> : scene === 4 ? <QuestionPresentation shown={shown}/> : scene === 6 ? <TotalsPresentation shown={shown}/>
+  const content = scene === 3 ? <ExamplePresentation shown={shown}/> : scene === 4 ? <QuestionPresentation shown={shown}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
     : scene === 7 ? <CoinPresentation shown={shown} at={at} frame={frame} fps={fps} geometry={geometry}/>
     : scene === 8 ? <BackingPresentation shown={shown}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
     {scene === 2 ? <HookPresentation shown={shown} geometry={geometry}/>
       : inset ? <div className="film-presentation-inset" style={{position: 'absolute', left: geometry.rect.left + 84 * unit, top: geometry.rect.top + 403 * unit, width: 980 * unit, height: 380 * unit}}>{content}</div>
-      : <PresentationPane side="left" geometry={geometry} verticalAlign={scene === 7 ? 'start' : 'center'}>{content}</PresentationPane>}
+      : <PresentationPane side="left" geometry={geometry} verticalAlign={scene === 6 ? 'end' : scene === 7 ? 'start' : 'center'}>{content}</PresentationPane>}
   </AppSurface>;
 };

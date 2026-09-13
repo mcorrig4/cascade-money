@@ -27,11 +27,49 @@
 .app.film-app-surface.film-presentation .film-hook-close {display: flex; align-items: baseline; justify-content: center; gap: calc(32 * var(--film-unit));}
 .app.film-app-surface.film-presentation .wordmark-icon {width: .7em; height: .7em; margin-right: .2em; color: #69e6c0;}
 .app.film-app-surface.film-presentation .film-totals {
-  grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(3, calc(220 * var(--film-unit)));
-  gap: calc(24 * var(--film-unit)); padding: calc(20 * var(--film-unit)) calc(30 * var(--film-unit));
-  border-left: calc(2 * var(--film-unit)) solid #436658; background: rgba(7, 25, 29, .6);
+  /* The pane supplies 32 logical pixels; the remaining 16 match the app's 48px gutter. */
+  margin-left: calc(16 * var(--film-unit)); width: calc(495 * var(--film-unit));
+  display: grid; gap: calc(32 * var(--film-unit)); text-align: left;
 }
-.app.film-app-surface.film-presentation .film-totals .cascade-stat {align-content: center;}
+.app.film-app-surface.film-presentation .film-totals-eyebrow {
+  font-size: calc(11 * var(--film-unit)); letter-spacing: calc(2.2 * var(--film-unit));
+  font-weight: 500; color: #8297a5; text-transform: uppercase;
+}
+.app.film-app-surface.film-presentation .film-totals-row {
+  display: grid; justify-items: start; gap: calc(12 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-totals-figure {
+  font-size: calc(47 * var(--film-unit)); letter-spacing: calc(-2 * var(--film-unit));
+  line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums;
+}
+.app.film-app-surface.film-presentation .film-totals-bar {
+  height: calc(14 * var(--film-unit)); border-radius: calc(2 * var(--film-unit));
+  transform-origin: left center; overflow: hidden;
+}
+.app.film-app-surface.film-presentation .film-totals-reserve {
+  width: calc(110 * var(--film-unit)); background: #8297a5; opacity: .45;
+}
+.app.film-app-surface.film-presentation .film-totals-settlement {
+  width: calc(495 * var(--film-unit)); display: grid; grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: calc(1 * var(--film-unit)); background: var(--line);
+}
+.app.film-app-surface.film-presentation .film-totals-segment {
+  position: relative; background: var(--money, #69e6c0);
+}
+.app.film-app-surface.film-presentation .film-totals-divider {
+  position: absolute; left: calc(-1 * var(--film-unit)); top: 0; bottom: 0; width: calc(1 * var(--film-unit));
+  background: var(--money, #69e6c0); transform-origin: center bottom;
+}
+.app.film-app-surface.film-presentation .film-totals-label {
+  font-size: calc(18 * var(--film-unit)); color: #8ba0ad; line-height: 1.55;
+}
+.app.film-app-surface.film-presentation .film-totals-caption {
+  width: 100%; display: flex; justify-content: space-between; align-items: baseline;
+}
+.app.film-app-surface.film-presentation .film-totals-multiplier {
+  font-size: calc(30 * var(--film-unit)); font-weight: 400; line-height: 1;
+  color: var(--money, #69e6c0); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
 /* Cards at centerLarge are screen-resolution siblings, with a local scrim that
    stops before the native ledger and above the app's full footer (Stage 2). */
 .app.film-app-surface.film-presentation .film-inset-card {

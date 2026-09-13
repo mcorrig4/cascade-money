@@ -103,16 +103,26 @@ test('scene 2 cumulative facts remain mounted until promises takes over, with co
   assert.equal(nodes(hook, node => ts.isCallExpression(node) && /exit|fade|interpolate/.test(node.expression.getText(source))).length, 0);
 });
 
-test('scene 6 numbers and captions have separate onset guards and no count-up or tagline', () => {
+test('scene 6 draws the reserve-to-settlement proportion, cue-gated, with no counter stack', () => {
   const totals = component('TotalsPresentation');
-  for (const [text, cue] of [['$100M', 'deposited-value'], ['$450M', 'transacted-value'], ['9', 'invoice-value']]) {
-    const number = jsxWithText(totals, 'strong', text);
-    assert.ok(number); assert.ok(number.openingElement.getText(source).includes(`visibility(shown('${cue}'))`));
+  const text = totals.getText(source);
+  // The three app-footer counters must NOT be restated as a stack of captions.
+  for (const gone of ['invoices settled', 'cascade-stat', 'cascade-totals']) assert.ok(!text.includes(gone));
+  // Both figures stay, but as labels on the bars rather than a column of stats.
+  for (const figure of ['$100M', '$450M']) assert.ok(jsxWithText(totals, 'strong', figure));
+  // Every reveal is keyed to a scene-6 cue and nothing is a fixed frame offset.
+  for (const cue of ['deposited-value', 'committed-counter', 'transacted-value', 'settled-counter',
+    'invoice-value', 'companies-counter', 'invoices-settled']) {
+    assert.ok(text.includes(`at('${cue}')`), `scene 6 must consume cue ${cue}`);
   }
-  for (const [text, cue] of [['deposited', 'committed-counter'], ['transacted', 'settled-counter'], ['invoices', 'companies-counter'], ['settled', 'invoices-settled']]) {
-    const caption = jsxWithText(totals, 'span', text);
-    assert.ok(caption); assert.ok(caption.openingElement.getText(source).includes(`visibility(shown('${cue}'))`));
-  }
+  // The settlement bar is nine segments; the reserve bar never changes length.
+  assert.match(text, /length: 9/);
+  assert.ok(text.includes('film-totals-reserve') && text.includes('film-totals-settlement'));
+  // Motion comes from Remotion interpolate, clamped at both ends.
+  const clamped = nodes(totals, node => ts.isCallExpression(node)
+    && node.expression.getText(source) === 'interpolate');
+  assert.ok(clamped.length > 0);
+  for (const call of clamped) assert.match(call.getText(source), /extrapolateLeft: 'clamp'/);
   assert.equal(nodes(totals, node => ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === 'h2').length, 0);
 });
 
