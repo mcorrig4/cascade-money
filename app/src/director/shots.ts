@@ -54,8 +54,12 @@ const table:ShotDefinition[]=[
  {id:18,title:"Underneath it",words:49,end:p(30,145,2),motion:'east drift',overlay:'backing'},
  {id:5,title:"Run the year",words:43,end:p(34,-118,2.35),motion:'global sweep',overlay:'none'},
  {id:11,title:"Zoom out",words:42,end:p(37.3349,-122.009,2.6),motion:'pull-out + east sweep',overlay:'composable'},
- {id:10,title:"New York",words:26,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + stair descent',overlay:'none',site:'fifth-avenue' as const},
- {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift',overlay:'none',site:'fifth-avenue' as const},
+ // Scene-11-delete pass (2026-09-13, Liam 04:15 EDT): shot 10 ("New York" —
+ // the store flight + stair descent) is CUT, the store visit dropped. Shot
+ // 19 (Beneath it) now opens the fifth-avenue site itself instead of
+ // continuing New York's descent — see its now-unconditional fly-in in
+ // playShot below.
+ {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + hall drift',overlay:'none',site:'fifth-avenue' as const},
  {id:12,title:"Close",words:9,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift + exposure',overlay:'wordmark',site:'fifth-avenue' as const},
 ];
 export type NarrationDurations=Record<string,number>;
@@ -66,8 +70,8 @@ export function parseNarrationDurations(value:unknown):NarrationDurations {
  if(!source||typeof source!=='object'||Array.isArray(source))throw new Error('Expected durations keyed by scene');
  const result:NarrationDurations={};
  for(const [key,seconds] of Object.entries(source)){
-  if(!/^(?:[1-9]|1[0-3])$/.test(key)||typeof seconds!=='number'||!Number.isFinite(seconds)||seconds<=0)
-   throw new Error('Narration durations require scenes 1–13 and positive seconds');
+  if(!/^(?:[1-9]|1[0-2])$/.test(key)||typeof seconds!=='number'||!Number.isFinite(seconds)||seconds<=0)
+   throw new Error('Narration durations require scenes 1–12 and positive seconds');
   result[key]=seconds;
  }
  return result;
@@ -138,7 +142,7 @@ export const beatIndex=(times:readonly {at:number}[],elapsed:number)=>Math.max(0
 export const SCENE_LOCATIONS=[
  {shot:1,name:'Apple Park',place:'Cupertino, California'},
  {shot:2,name:'Apple Park',place:'Cupertino, California'},
- {shot:10,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
+ {shot:19,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
 ];
 // Shot 13 (Rewind)'s date-card/stat-line beats were already dead (Rewind
 // was cut before this pass); removed here rather than left pointing at a
@@ -310,14 +314,14 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
   });
   engine.playRange(day,Math.min(365,day+.999),shot.seconds);
  }else if(id===8||id===11){fly(shot.end,ms,'east');}
- else if(id===10){
+ else if(id===19){
+  // Scene-11-delete pass (2026-09-13): shot 10 ("New York", the store
+  // flight + stair descent) is cut, so this shot now opens the
+  // fifth-avenue site itself (the store-flight fly-in shot 10 used to do)
+  // instead of continuing a descent already in progress.
   engine.update({stage:'cube'});
   engine.fly(STORE.lat,STORE.lng,8/EARTH_METERS,ms*.28,'fifth-avenue');
   engine.after(shot.seconds*.28,()=>!shot.path&&engine.subsurfaceInteriorCameraHook?.(ms*.72));
- }else if(id===19){
-  // Continue the landed hall pose; the camera layer retains the descent end
-  // and adds the same quiet idle motion as the rest of the continuous take.
-  if(!continuous){engine.update({stage:'cube'});engine.fly(STORE.lat,STORE.lng,8/EARTH_METERS,Math.min(ms*.15,1000),'fifth-avenue');engine.after(shot.seconds*.15,()=>!shot.path&&engine.subsurfaceInteriorCameraHook?.(ms*.25));}
  }else if(id===12){engine.flashToWhite(ms*.2);}
  engine.after(duration,()=>{const next=SHOTS[shot.scene];if(continuous&&next)playShot(engine,next.id,true);else engine.update({playing:false,shotRunning:false,film:false});});
 }

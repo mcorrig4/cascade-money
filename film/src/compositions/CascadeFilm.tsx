@@ -15,10 +15,12 @@
  *     for that scene (else the scene falls back to schedule.ts's named old
  *     shot file, or a pure motion graphic if none matches the new beat).
  */
-import React from 'react';
+import React, {Suspense} from 'react';
 import {
   AbsoluteFill,
   Audio,
+  continueRender,
+  delayRender,
   Easing,
   Img,
   OffthreadVideo,
@@ -33,7 +35,6 @@ import {ensureFontsLoaded} from '../brand/fonts';
 import {color, font} from '../brand/tokens';
 import {CaptureScene} from '../components/CaptureScene';
 import {BrowserFrame, FrameMode} from '../components/BrowserFrame';
-import {PhoneHero} from '../components/PhoneHero';
 import {resolveSceneDurations, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
@@ -47,9 +48,48 @@ import {Scene08Counters} from './motion-graphics/Scene08Counters';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
 import {Scene17Close} from './motion-graphics/Scene17Close';
 import {Hook} from './motion-graphics/Hook';
-import {AppFrame} from '../live/AppFrame';
+import type {AppFrameProps} from '../live/AppFrame';
 
 ensureFontsLoaded();
+
+/**
+ * The live app (`@cascade-app/*`, aliased to app/src — see film/tsconfig.json)
+ * is only ever needed on the `source==='live'` path; `--source captures`
+ * renders (draft parts, most of render-scenes.sh) never touch it. A STATIC
+ * `import {AppFrame} from '../live/AppFrame'` used to pull the whole app
+ * module graph into every bundle regardless of source, which breaks a
+ * captures-only render on any checkout where app/ is stale or missing (a
+ * dev-mac render dir has hit "Can't resolve '@cascade-app/styles.css'" this
+ * way — RENDER DIR UPDATE note, scene-owner-brief-template.md). `React.lazy`
+ * defers the import() to first use (i.e. only when source==='live' actually
+ * renders <LiveAppFrame>), so a captures-only bundle never resolves it.
+ *
+ * Suspense alone doesn't make Remotion's headless-Chrome render WAIT for the
+ * lazy chunk before capturing a frame — that needs its own delayRender/
+ * continueRender handle (same pattern as brand/fonts.ts's FontFace loading).
+ * The handle is tied to the SAME import() promise React.lazy resolves
+ * (dynamic import() is cached per specifier, so calling it again here is a
+ * cache hit, not a second fetch) so "the module has loaded" means the same
+ * thing to both Remotion and React.
+ */
+const importAppFrame = () => import('../live/AppFrame');
+const LazyAppFrame = React.lazy(() =>
+  importAppFrame().then((m) => ({default: m.AppFrame})),
+);
+
+const LiveAppFrame: React.FC<AppFrameProps> = (props) => {
+  const [handle] = React.useState(() => delayRender('Loading live AppFrame module'));
+  React.useEffect(() => {
+    importAppFrame()
+      .then(() => continueRender(handle))
+      .catch(() => continueRender(handle));
+  }, [handle]);
+  return (
+    <Suspense fallback={null}>
+      <LazyAppFrame {...props} />
+    </Suspense>
+  );
+};
 
 export interface CascadeFilmProps extends Record<string, unknown> {
   narration: NarrationMap;
@@ -535,7 +575,7 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   if(sceneIndex===2) filmOverlay=<Hook durationInFrames={duration} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />;
   else if(sceneIndex===4) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[4]} />;
   else if(sceneIndex===9) filmOverlay=<StressResultFlash durationInFrames={duration} />;
-  else if(sceneIndex===13) filmOverlay=<Scene17Close durationInFrames={duration} />;
+  else if(sceneIndex===12) filmOverlay=<Scene17Close durationInFrames={duration} />;
   // Scene 3 (renumbered from old scene 4) has NO live-path film overlay:
   // Scene4DateCornerLabel/ExampleGlobeLabels are screen-space overlays that
   // collide with the live app's own top-left HUD text there (e2cb199) —
@@ -580,21 +620,13 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
 
   if(source==='live')return <AbsoluteFill style={{background:color.bgOuter}}><Series>{SCENES.map((sc,index)=><Series.Sequence key={sc.id} name={`Scene ${sc.num} — ${sc.title}`} durationInFrames={durations[index]}><CascadeLiveScene sceneIndex={sc.num} source="live" narration={narration} captureOverrides={captureOverrides} narrationControls={narrationControls}/></Series.Sequence>)}</Series>{reviewLabels?<ReviewLabelOverlay durations={durations}/>:null}</AbsoluteFill>;
 
+  // Scene 11 ("New York" in the old 13-scene numbering) is CUT
+  // (scene-11-delete pass, Liam 04:15 EDT) — the store beat is dropped, so
+  // there is no more phone-photo-then-descent handoff into Beneath it: it
+  // now plays its own capture in full, like any other simple scene.
   const sc11 = sceneByNum(11);
-  const sc12 = sceneByNum(12);
   const dur11 = durationFor(durations, 11);
-  const dur12 = durationFor(durations, 12);
   const cap11 = captureFor(sc11, captureOverrides, dur11);
-  const cap12 = captureFor(sc12, captureOverrides, dur12);
-  // Scene 11 (New York) opens on the finished-phone photo, then cuts to the
-  // descent capture; scene 12 (Beneath it) continues that SAME capture from
-  // where 11 left off (one continuous take across the two scenes, per the
-  // shooting doctrine) — unless a scene-11/12.mp4 recapture exists, in
-  // which case each plays its own file in full.
-  const photoFrames11 = captureOverrides[11] ? 0 : Math.min(100, Math.round(dur11 * 0.33));
-  const descentStart11 = cap11?.startFrom ?? 0;
-  const descentFrames11 = dur11 - photoFrames11;
-  const descentStart12 = captureOverrides[12] ? cap12?.startFrom ?? 0 : descentStart11 + descentFrames11;
 
   return (
     <AbsoluteFill style={{background: color.bgOuter}}>
@@ -780,50 +812,14 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           <SceneVO num={10} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 11 — New York" durationInFrames={dur11}>
-          {captureOverrides[11] && cap11 ? (
-            <CaptureBeat sc={sc11} duration={dur11} cap={cap11} />
-          ) : (
-            <>
-              <Sequence from={0} durationInFrames={photoFrames11} layout="none">
-                <PhoneHeroScene durationInFrames={photoFrames11} finished />
-              </Sequence>
-              <Sequence from={photoFrames11} durationInFrames={descentFrames11} layout="none">
-                <CaptureBeat
-                  sc={sc11}
-                  duration={descentFrames11}
-                  cap={{
-                    src: sc11.fallbackCapture!,
-                    captureDurationInFrames: sc11.fallbackCaptureDurationInFrames!,
-                    startFrom: descentStart11,
-                  }}
-                />
-              </Sequence>
-            </>
-          )}
+        <Series.Sequence name="Scene 11 — Beneath it" durationInFrames={dur11}>
+          {cap11 ? <CaptureBeat sc={sc11} duration={dur11} cap={cap11} /> : null}
           <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 12 — Beneath it" durationInFrames={dur12}>
-          <CaptureBeat
-            sc={sc12}
-            duration={dur12}
-            cap={
-              captureOverrides[12] && cap12
-                ? cap12
-                : {
-                    src: sc12.fallbackCapture!,
-                    captureDurationInFrames: sc12.fallbackCaptureDurationInFrames!,
-                    startFrom: descentStart12,
-                  }
-            }
-          />
+        <Series.Sequence name="Scene 12 — Close" durationInFrames={durationFor(durations, 12)}>
+          <Scene17Close durationInFrames={durationFor(durations, 12)} />
           <SceneVO num={12} narration={narration} narrationControls={narrationControls} />
-        </Series.Sequence>
-
-        <Series.Sequence name="Scene 13 — Close" durationInFrames={durationFor(durations, 13)}>
-          <Scene17Close durationInFrames={durationFor(durations, 13)} />
-          <SceneVO num={13} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
       </Series>
       {reviewLabels ? <ReviewLabelOverlay durations={durations} /> : null}
@@ -851,12 +847,6 @@ const scene1PhoneRevealFrame = (scene1DurationInFrames: number): number =>
     (scene1DurationInFrames * SCENE1_PRE_MENTION_WORDS) /
       (SCENE1_PRE_MENTION_WORDS + SCENE1_MENTION_WORDS),
   );
-
-/** Scene 15's held-photo beat — settled, no tilt gesture (scene 1 no longer uses PhoneHero; see PhoneRevealOverlay below). */
-const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> = ({durationInFrames}) => {
-  const frame = useCurrentFrame();
-  return <PhoneHero frame={frame} durationInFrames={durationInFrames} tilt={1} />;
-};
 
 /**
  * Scene 1's opening beat — full-bleed app capture (which itself now opens on

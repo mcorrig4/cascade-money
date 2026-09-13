@@ -1,20 +1,17 @@
 /**
  * CascadeFilm schedule — one entry per surviving scene of
- * docs/script-v6-liam.md, REORDERED to the final 13-scene play order
- * (reorder-to-13 pass, 2026-09-13, product owner + Director/wingman 03:33
- * ET — supersedes the earlier 15-scene renumber so we never renumber
- * twice). Old scenes 3 (Rewind), 5 (The contradiction), 12 (Stress test)
- * and 13 (The rules survive) are CUT entirely. Every entry's `num`/`id`
- * below is the NEW (1-13) numbering; array ORDER is also the new play
- * order, which is NOT the old script order — old scene 9 ("Run the year")
- * now plays after old 10/11 ("A dollar with a date" / "Underneath it"),
- * not before. Every consumer looks scenes up by `num` (Record keys,
- * `.find`) or by array position for adjacency (framingRamp), never by
- * `num - 1` as an index.
+ * docs/script-v6-liam.md, now at the final 12-scene play order
+ * (scene-11-delete pass, 2026-09-13, Liam 04:15 EDT — supersedes the
+ * reorder-to-13 pass of earlier the same night). Scene 11 ("New York") is
+ * CUT entirely — the store beat is dropped; scene 8 ("Underneath it")
+ * STAYS (an earlier scene-8-delete pass this same night was reversed by
+ * the product owner before it landed). Every entry's `num`/`id` below is
+ * the NEW (1-12) numbering; array ORDER is also the play order. Every
+ * consumer looks scenes up by `num` (Record keys, `.find`) or by array
+ * position for adjacency (framingRamp), never by `num - 1` as an index.
  *
- * Old -> new mapping applied here: 1->1, 2->2, 4->3, 6->4, 7->5, 8->6,
- * 10->7, 11->8, 9->9 (+ closing beat, see SCENE9_CLOSE_FLASH_SECONDS),
- * 14->10, 15->11, 16->12, 17->13. (3, 5, 12, 13 removed.)
+ * 13-scene -> 12-scene mapping applied here: 1-10 unchanged, 12->11
+ * (Beneath it), 13->12 (Close). (11 removed.)
  *
  * `estimateFrames` is a FALLBACK duration, used only when
  * public/narration/narration.json has no entry for that scene yet (see
@@ -42,8 +39,8 @@
 export type SceneFrameMode = 'tilt' | 'bleed' | 'framed';
 
 export interface SceneDef {
-  num: number; // 1-13 (new numbering, reorder-to-13 pass 2026-09-13)
-  id: string; // 'scene01'..'scene13'
+  num: number; // 1-12 (new numbering, scene-11-delete pass 2026-09-13)
+  id: string; // 'scene01'..'scene12'
   title: string; // verbatim from script-v6-liam.md's "Scene N — Title" (old numbering)
   estimateFrames: number;
   fallbackCapture: string | null;
@@ -66,9 +63,13 @@ export const SCENES: SceneDef[] = [
   // stress-test-result beat folded in from the cut scenes 12/13.
   {num: 9, id: 'scene09', title: 'Run the year', estimateFrames: 574, fallbackCapture: 'shot-05-one-year.mp4', fallbackCaptureDurationInFrames: 450, frame: 'bleed', motionGraphic: false},
   {num: 10, id: 'scene10', title: 'Zoom out', estimateFrames: 488, fallbackCapture: 'shot-11-architecture.mp4', fallbackCaptureDurationInFrames: 150, frame: 'framed', motionGraphic: true},
-  {num: 11, id: 'scene11', title: 'New York', estimateFrames: 302, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
-  {num: 12, id: 'scene12', title: 'Beneath it', estimateFrames: 267, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
-  {num: 13, id: 'scene13', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
+  // Old scene 11 ("New York") is CUT (scene-11-delete pass, Liam 04:15
+  // EDT) — the store beat is dropped. Scene 12 (Beneath it) now follows
+  // scene 10 (Zoom out) directly and continues the SAME descent capture
+  // that scene 11 used to start (see the capture-continuation logic in
+  // CascadeFilm.tsx, unchanged other than the renumbering).
+  {num: 11, id: 'scene11', title: 'Beneath it', estimateFrames: 267, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
+  {num: 12, id: 'scene12', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
 ];
 
 /**

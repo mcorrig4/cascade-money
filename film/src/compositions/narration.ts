@@ -2,7 +2,7 @@
  * narration.ts — optional real-narration overlay for the v6 schedule.
  *
  * When film/public/narration/narration.json exists, it is a JSON array of
- * {scene, file, duration} objects (scene = 1..13 matching SCENES[].num,
+ * {scene, file, duration} objects (scene = 1..12 matching SCENES[].num,
  * file = filename inside public/narration/, duration = seconds of the
  * rendered VO clip). Each such scene's Sequence duration becomes
  * `duration + 0.4s` (a small settle pad after the line finishes) instead of

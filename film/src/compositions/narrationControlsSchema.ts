@@ -1,7 +1,7 @@
 /**
  * Per-scene narration/audio controls, editable in Remotion Studio's props
  * sidebar via the `schema` passed to the CascadeFilm <Composition> in
- * Root.tsx. One entry per scene (1..13, same numbering as schedule.ts's
+ * Root.tsx. One entry per scene (1..12, same numbering as schedule.ts's
  * SCENES) so the product owner can nudge a single line's timing/level
  * without touching code:
  *
@@ -24,7 +24,7 @@
 import {z} from 'zod';
 
 export const sceneNarrationControlSchema = z.object({
-  scene: z.number().int().min(1).max(13),
+  scene: z.number().int().min(1).max(12),
   offsetSec: z.number().default(0),
   trimStartSec: z.number().min(0).default(0),
   trimEndSec: z.number().min(0).default(0),
@@ -33,12 +33,12 @@ export const sceneNarrationControlSchema = z.object({
 
 export type SceneNarrationControl = z.infer<typeof sceneNarrationControlSchema>;
 
-/** Exactly 13 entries, one per scene — the Studio sidebar renders this as an editable array of scene objects. */
-export const narrationControlsSchema = z.array(sceneNarrationControlSchema).length(13);
+/** Exactly 12 entries, one per scene — the Studio sidebar renders this as an editable array of scene objects. */
+export const narrationControlsSchema = z.array(sceneNarrationControlSchema).length(12);
 
 export type NarrationControls = z.infer<typeof narrationControlsSchema>;
 
-export const DEFAULT_NARRATION_CONTROLS: NarrationControls = Array.from({length: 13}, (_, i) => ({
+export const DEFAULT_NARRATION_CONTROLS: NarrationControls = Array.from({length: 12}, (_, i) => ({
   scene: i + 1,
   offsetSec: 0,
   trimStartSec: 0,

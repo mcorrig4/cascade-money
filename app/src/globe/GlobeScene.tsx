@@ -329,7 +329,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (globePaused) globe.pauseAnimation(); else globe.resumeAnimation();
       }
       globe.renderer().toneMappingExposure=1+state.exposure*5;
-      effects.update(state.position, elapsed, isClose, !moving || state.shot === 1 || (state.shot === 10 && state.stage === 'cube') || (state.shot !== null && isClose),
+      effects.update(state.position, elapsed, isClose, !moving || state.shot === 1 || (state.shot === 19 && state.stage === 'cube') || (state.shot !== null && isClose),
         isClose && (state.shot === 1 || state.shot === 2) ? siteSun('apple-park', globe.getGlobeRadius()) :
           state.camera.site === 'fifth-avenue' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.camera.site === 'fifth-avenue',state.timelapse,state.shot !== null);
       const reversing = state.timelapse?.direction===-1 && state.timelapse.elapsed<2000;

@@ -44,10 +44,11 @@ export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'> & Pa
   const jumpSite=state.shot===null?state.camera?.site:null;
   if(jumpSite && jumpSite in SITES)return {site:jumpSite,prefetch:true,blend:1-smoothstep(0.0012,0.0035,altitude)};
   if(state.shot===1)return {site:'apple-park',prefetch:true,blend:1-smoothstep(14,14.8,state.shotElapsed)};
-  if(state.shot===10){
-    const enter=smoothstep(.8,1.6,state.shotElapsed),leave=1-smoothstep(8.3,9,state.shotElapsed);
-    return {site:'fifth-avenue',prefetch:true,blend:enter*leave};
-  }
+  // Shot 10 ("New York", the store flight + stair descent) is cut
+  // (scene-11-delete pass, 2026-09-13) — its enter/leave fade special-case
+  // is retired with it; shot 19 (Beneath it) now opens the fifth-avenue
+  // site itself and falls through to the generic authoredSite blend below,
+  // same as it (and shot 12/Close) already did.
   if (authoredSite) return {site:authoredSite,prefetch:true,blend:1};
   const nearby = (Object.keys(SITES) as SiteId[]).find(id => nearSite(id, lat, lng, Math.min(altitude, 0.001)));
   if (!nearby || altitude >= 0.008) return { site: null, prefetch: false, blend: 0 };

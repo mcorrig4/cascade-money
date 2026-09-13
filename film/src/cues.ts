@@ -19,8 +19,10 @@
  * that ISN'T the "money plus time" beat, then again at 12.40s as part of
  * it) resolves to the right occurrence rather than the first.
  *
- * Numbers throughout this file are the NEW (post reorder-to-13,
- * 2026-09-13) numbering. One scene was deliberately left with fewer cues
+ * Numbers throughout this file are the NEW (post scene-11-delete pass,
+ * 2026-09-13) 12-scene numbering — scene 11 ("New York" in the prior
+ * 13-scene numbering) is cut, so old scene 12 (Beneath it) and 13 (Close)
+ * are now 11 and 12. One scene was deliberately left with fewer cues
  * than it has visual beats — not an oversight:
  *   - Scene 10's closing "a second dimension to money" card is not spoken
  *     at all in this narration cut (docs/cascade/hackathon vs. the
@@ -29,11 +31,11 @@
  *     back. (Scene 6's counters, previously in the same boat under the v7
  *     cut, are now keyed to the v9 narration's actual words — see the
  *     scene 6 entry below.)
- *   - Scene 9's closing StressResultFlash and all of scene 13's close card
+ *   - Scene 9's closing StressResultFlash and all of scene 12's close card
  *     are excluded entirely (no cue defined). The old scene 13 (The rules
  *     survive) footer this note used to describe is cut as a standalone
  *     scene (reorder-to-13 pass) — its headline figure now lives in scene
- *     9's StressResultFlash, not narration-keyed. Scene 13's (Close, old
+ *     9's StressResultFlash, not narration-keyed. Scene 12's (Close, old
  *     17) three beats (tagline -> wordmark -> "Dated dollars on Arc.") are
  *     a deliberate held dramatic sequence timed off the scene's own
  *     duration; the actual VO is now four words ("This is Cascade
