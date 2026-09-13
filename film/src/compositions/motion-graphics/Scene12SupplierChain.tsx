@@ -33,17 +33,28 @@ export const Scene12SupplierChain: React.FC<{
   const frame = useCurrentFrame();
   const {width, height, fps} = useVideoConfig();
   // Reserve one second each for the centered hold and the final black screen.
-  // Quantize the main boundaries; supplier subcues stay fractional to preserve
-  // their ordering even in the 15fps draft composition.
+  // Keep rounded cues strictly ordered, reserving room for every remaining phase.
+  // Sub-frame spacing also supports scenes shorter than the seven closing phases.
   const h = fps / dur;
   const a = 1 - 2 * h;
   const boundary = (fraction: number) => Math.round(dur * fraction);
-  const contextFadeStart = boundary(0.50 * a);
-  const contextFadeEnd = boundary(0.58 * a);
-  const markFadeInEnd = boundary(0.68 * a);
-  const markMoveEnd = boundary(0.90 * a);
-  const markHoldEnd = markMoveEnd + Math.round(fps);
-  const blackStart = dur - Math.round(fps);
+  const preferredBoundaries = [
+    boundary(0.50 * a),
+    boundary(0.58 * a),
+    boundary(0.68 * a),
+    boundary(0.90 * a),
+    boundary(0.90 * a) + Math.round(fps),
+    dur - Math.round(fps),
+    dur,
+  ];
+  const minimumGap = Math.min(1, dur / preferredBoundaries.length);
+  let previousBoundary = 0;
+  const [contextFadeStart, contextFadeEnd, markFadeInEnd, markMoveEnd, markHoldEnd, blackStart] = preferredBoundaries.map((preferred, index) => {
+    const latest = dur - (preferredBoundaries.length - 1 - index) * minimumGap;
+    const next = Math.min(latest, Math.max(previousBoundary + minimumGap, preferred));
+    previousBoundary = next;
+    return next;
+  });
   // The original supplier choreography finishes at 84% of its local timeline.
   const supplierDur = contextFadeStart / 0.84;
   const move = interpolate(frame, [0, supplierDur * 0.16], [0, 1], CLAMP);
