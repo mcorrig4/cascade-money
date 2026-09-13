@@ -15,16 +15,43 @@ export function canUseTiles(enabled: boolean, key: string | undefined, failed = 
   return enabled && !!key?.trim() && !failed;
 }
 
+const OPTIONAL_IMAGERY_MESSAGE='Optional imagery unavailable';
+let consoleGated=false;
+/**
+ * 3d-tiles-renderer's per-tile load path already special-cases AbortError and
+ * stays silent (TilesRendererBase#requestTileContents), but its ROOT tileset
+ * load path (TilesRendererBase#update) does not: it unconditionally
+ * console.error()s whatever rejects loadRootTileset(), regardless of error
+ * name. A root request can fail this way on every cold load whenever the
+ * optional imagery is unreachable (revoked/misconfigured key, offline,
+ * quota) — expected and already handled by `onFailure` above, not a bug to
+ * surface. Filter only this one, exact, already-handled message; every
+ * other console.error call passes through untouched.
+ */
+function gateOptionalImageryConsoleError() {
+  if (consoleGated || typeof console === 'undefined') return;
+  consoleGated = true;
+  const original = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    const isOptionalImageryAbort = args.some(arg =>
+      (arg instanceof DOMException && arg.name === 'AbortError' && arg.message === OPTIONAL_IMAGERY_MESSAGE) ||
+      (typeof arg === 'string' && arg.includes(OPTIONAL_IMAGERY_MESSAGE)));
+    if (isOptionalImageryAbort) return;
+    original(...args);
+  };
+}
+
 /** Fail closed without exposing signed tile URLs, and preserve ordinary LOD aborts. */
 export async function fetchOptionalTile(fetchTile:(url:string,options:RequestInit)=>Promise<Response>,url:string,options:RequestInit={},onFailure:()=>void) {
+  gateOptionalImageryConsoleError();
   try {
     const timeout=AbortSignal.timeout(12000);
     const response=await fetchTile(url,{...options,cache:'no-store',signal:options.signal?AbortSignal.any([options.signal,timeout]):timeout});
-    if(!response.ok)throw new Error('Optional imagery unavailable');
+    if(!response.ok)throw new Error(OPTIONAL_IMAGERY_MESSAGE);
     return response;
   } catch {
     if(!options.signal?.aborted)onFailure();
-    throw new DOMException('Optional imagery unavailable','AbortError');
+    throw new DOMException(OPTIONAL_IMAGERY_MESSAGE,'AbortError');
   }
 }
 

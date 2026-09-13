@@ -16,14 +16,17 @@ export function ShotOverlays({ engine, state, onVerify }: { engine: PlaybackEngi
  const shown=(name:string,seconds:number)=>tMs>=at(name,seconds);
  const motion=(name:string,seconds:number)=>revealStyle(tMs,at(name,seconds));
  const event=latestEvent(engine.index,state.day,state.cursor),sheet=event?.balanceSheet??{},checks=activeChecks(event);
- const coinNames=['coin','coin-date','same-date','coin-claim','coin-extend','coin-yield','coin-return'];
+ // Cue names for scene 7 ("the primitive") match the recorder's cue map
+ // (film/src/cues.ts, eb9b5c9): swap on "interchangeable", earlier-pays-later
+ // on "face", extend on "push", final-card on the Kokoro tail's "One dollar".
+ const coinNames=['coin','coin-date','swap','earlier-pays-later','extend','coin-yield','final-card'];
  const coinIndex=Math.max(0,COIN_BEATS.findLastIndex((b,i)=>shown(coinNames[i],b.at)));
  const coinBeat=COIN_BEATS[coinIndex];
- const extension=extensionAt(tMs,at('coin-extend',15.2),at('coin-yield',21.2));
+ const extension=extensionAt(tMs,at('extend',15.2),at('coin-yield',21.2));
  // The primitive holds its simulation day at zero while the maturity is extended.
  const unit=datedUnit(extension.maturityDay,state.day);
  const swapping=coinBeat.key==='fungibility';
- const swap=sameDateSwapAt(tMs,at('same-date',6.4),at('coin-claim',8.8));
+ const swap=sameDateSwapAt(tMs,at('swap',6.4),at('earlier-pays-later',8.8));
  const appUrl=import.meta.env.VITE_PUBLIC_APP_URL||new URL(import.meta.env.BASE_URL,location.href).href;
  const showWordmark=kind==='wordmark'&&shown('wordmark',2.5);
  return <div className={`shot-overlay scene-overlay-${kind}`} data-testid={`overlay-${state.shot}`}>
@@ -37,7 +40,7 @@ export function ShotOverlays({ engine, state, onVerify }: { engine: PlaybackEngi
   {kind==='coin'&&<section className={`overlay-card coin-layout coin-${coinBeat.key}`} aria-label="Dated coin" data-beat={coinBeat.key}>
    {swapping?<div className="same-date-stage" data-testid="same-date-swap">{swap.map((pose,i)=><div key={i} className="swap-coin" style={{transform:`translate(calc(-50% + ${pose.x*24}vw), calc(-50% + ${pose.y*18}vh))`}}><DatedDollar {...unit} size={180}/></div>)}</div>:<>
    <div className="coin-copy" style={motion(coinNames[coinIndex],coinBeat.at)}><span className="eyebrow">A DOLLAR WITH A DATE</span><h2>{coinBeat.title}</h2><p>{coinBeat.text}</p>
-    {shown('coin-extend',15.2)&&!shown('coin-return',25.2)&&<div className="coin-extension">
+    {shown('extend',15.2)&&!shown('final-card',25.2)&&<div className="coin-extension">
      <div className="date-interval"><span>DAY 0</span><span>DAY 30</span><span>DAY 90</span></div>
      <div className="extension-ticks" aria-label={`${extension.addedDays} added days of yield`}>{extension.ticks.map(tick=><i key={tick.day} data-day={tick.day} data-filled={tick.filled} style={{background:tick.filled?'#e8b768':'#233c39'}}/>)}</div>
      <div className="meter-label"><span>{extension.addedDays} added days</span><span>Yield only for the new interval</span></div>

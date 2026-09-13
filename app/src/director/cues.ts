@@ -1,7 +1,7 @@
 export const CUE_NAMES = [
   'date-card','stat-suppliers','stat-factories','stat-countries','stat-cost','system-recreated','payment-layer',
   'rows-in','dates-line','question-card','committed-counter','settled-counter','companies-counter','tagline',
-  'coin','coin-date','coin-fungibility','same-date','coin-claim','coin-extend','coin-yield','coin-return',
+  'coin','coin-date','coin-yield','swap','earlier-pays-later','extend','final-card',
   'backing-card','contract','kicker','op-extensions','op-transfers','op-redemptions','op-sales',
   'law-ownership','law-yield','word-loans','word-forwards','word-bonds','word-derivatives',
   'money-plus-time','final-line','promises','before-cash','close-line','wordmark','company',
