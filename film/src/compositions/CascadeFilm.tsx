@@ -49,6 +49,7 @@ import {Scene12Stress} from './motion-graphics/Scene12Stress';
 import {ConservationLaws} from './motion-graphics/ConservationLaws';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
 import {Scene17Close} from './motion-graphics/Scene17Close';
+import {Hook} from './motion-graphics/Hook';
 
 ensureFontsLoaded();
 
@@ -395,11 +396,26 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           <SceneVO num={1} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 2 — Apple Park" durationInFrames={durations[1]}>
+        <Series.Sequence name="Scene 2 — The hook" durationInFrames={durations[1]}>
           {(() => {
             const sc = sceneByNum(2);
             const cap = captureFor(sc, captureOverrides, durations[1]);
-            return cap ? <CaptureBeat sc={sc} duration={durations[1]} cap={cap} /> : null;
+            // Capture (Apple Park orbit -> arch swoop -> pull-out to Earth
+            // with the HUD) is unchanged — product owner's round-2 brief
+            // (2026-09-13) only replaces the OLD narration overlay (there
+            // wasn't one) with the Hook beats/citation chips on top of it.
+            const hook = (
+              <Hook durationInFrames={durations[1]} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />
+            );
+            return cap ? (
+              <CaptureBeat sc={sc} duration={durations[1]} cap={cap}>
+                {hook}
+              </CaptureBeat>
+            ) : (
+              <GraphicBeat sc={sc} duration={durations[1]}>
+                {hook}
+              </GraphicBeat>
+            );
           })()}
           <SceneVO num={2} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
