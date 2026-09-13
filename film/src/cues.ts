@@ -30,13 +30,12 @@
  *     all of scene 17's close card are excluded entirely (no cue defined).
  *     Scene 13's footer is a documented fix (verified issue #1): it is
  *     PINNED to the bottom for the whole scene by design, not a beat that
- *     should wait for its own number to be spoken. Scene 17's four beats
- *     (tagline -> wordmark -> "Dated dollars on Arc." -> "money with a
- *     date.") are a deliberate held dramatic sequence timed off the
- *     scene's own duration; the actual VO is five words ("Cascade. Money
- *     with a date.") spoken almost entirely in the first two seconds, so
- *     anchoring the wordmark to the word "Cascade" would collapse the
- *     sequence instead of pacing it.
+ *     should wait for its own number to be spoken. Scene 17's three beats
+ *     (tagline -> wordmark -> "Dated dollars on Arc.") are a deliberate
+ *     held dramatic sequence timed off the scene's own duration; the
+ *     actual VO is now four words ("This is Cascade Money.") spoken almost
+ *     entirely in the first two seconds, so anchoring the wordmark to the
+ *     word "Cascade" would collapse the sequence instead of pacing it.
  */
 export interface CuePhrase {
   /** Stable name for this reveal — referenced from the motion-graphics component via cueFrame(). */

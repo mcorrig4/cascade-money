@@ -35,7 +35,7 @@ const table:ShotDefinition[]=[
  {id:8,title:"The rules survive",words:28,end:p(30,170,2.3),motion:'east drift',overlay:'laws'},
  {id:11,title:"Zoom out",words:42,end:p(37.3349,-122.009,2.6),motion:'pull-out + east sweep',overlay:'composable'},
  {id:10,title:"New York",words:26,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + stair descent',overlay:'none',site:'fifth-avenue' as const},
- {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift',overlay:'promises',site:'fifth-avenue' as const},
+ {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift',overlay:'none',site:'fifth-avenue' as const},
  {id:12,title:"Close",words:9,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift + exposure',overlay:'wordmark',site:'fifth-avenue' as const},
 ];
 export type NarrationDurations=Record<string,number>;
