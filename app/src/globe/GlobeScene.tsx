@@ -26,6 +26,8 @@ import { appleParkShotCamera, fifthAvenueShotCamera, nearSite, SITES, siteCamera
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
 import { canUseTiles } from './tiles-policy.ts';
 import { EARTH_BACKGROUND } from './readiness.ts';
+import { PulseRingLayer } from './pulse-ring-layer.ts';
+import { DeterministicArcLayer } from './deterministic-arc-layer.ts';
 import parkUrl from '../assets/apple-park.svg';
 
 const MONEY = '#69e6c0';
@@ -47,6 +49,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     // bare name while multi-site firms showed the city only on their secondary markers).
     const firms = [...engine.index.firms.values()].flatMap(f => [f.named && f.city ? { ...f, name: `${f.name} · ${f.city}` } : f, ...(f.named ? (f.sites ?? []).filter(site => site.lat !== f.lat || site.lng !== f.lng).map(site => ({ ...f, id: `${f.id}:${site.id}`, name: `${f.name} · ${site.city ?? site.id}`, lat: site.lat, lng: site.lng })) : [])]).filter(f => f.lat != null && f.lng != null);
     const named = firms.filter(f => f.named), pool = new ArcPool(), layer = new AmountLayer(amounts.current);
+    const pulseLayer = new PulseRingLayer(globe), deterministicArcs = new DeterministicArcLayer(globe);
     const companyLayer = new CompanyLayer(companies.current, named);
     let localFocus:Vector3|undefined;
     let arcIds = '', cinematic=false, campusFraming=0;
@@ -63,7 +66,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if(id===lastTransitionShot)return;
       lastTransitionShot=id;
       const shot=SHOTS.find(candidate=>candidate.id===id);
-      if(shot)sceneTransitions.push({sceneIndex:shot.scene,sceneId:id,tMs:performance.now()});
+      if(shot){
+        if(frameDriven)sceneTransitions.splice(0);
+        sceneTransitions.push({sceneIndex:shot.scene,sceneId:id,tMs:frameDriven?engine.state.shotElapsed*1000:performance.now()});
+      }
     });
     let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
     let pulseRings: { lat: number; lng: number; color: string; born: number }[] = [];
@@ -173,7 +179,15 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if (globe.renderer().getPixelRatio() !== desiredPixelRatio) globe.renderer().setPixelRatio(desiredPixelRatio);
       if (state.shot !== null) time = 250 + ((SHOTS.find(s=>s.id===state.shot)?.startTime??0)+state.shotElapsed)*1000;
       else if (moving) time += elapsed;
-      if (state.camera.id !== cameraId) {
+      if (frameDriven) {
+        cameraId = state.camera.id;
+        const from = state.camera.from ?? state.camera;
+        globe.pointOfView(from, 0); controls.target.set(0, 0, 0); camera.up.set(0, 1, 0); camera.fov = globeFov; camera.updateProjectionMatrix(); camera.lookAt(controls.target);
+        flight = { from, to: state.camera, elapsed: state.cameraElapsed,
+          eye: camera.position.clone(), target: controls.target.clone(), up: camera.up.clone(),
+          fromFov: globeFov, targetFov: state.camera.site ? siteCamera(state.camera.site, globe.getGlobeRadius()).fov : globeFov,
+          local: !!state.camera.site };
+      } else if (state.camera.id !== cameraId) {
         cameraId = state.camera.id;
         flight = { from: globe.pointOfView(), to: state.camera, elapsed: 0,
           eye: camera.position.clone(), target: controls.target.clone(), up: camera.up.clone(),
@@ -299,6 +313,25 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           state.camera.site === 'fifth-avenue' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.camera.site === 'fifth-avenue',state.timelapse,state.shot !== null);
       const reversing = state.timelapse?.direction===-1 && state.timelapse.elapsed<2000;
       const incoming = [] as typeof engine.index.days[number]['events'];
+      if(frameDriven){
+        const scripted=(engine.storyEvents??[]).filter(event=>isPayment(event)||event.type==='extend');
+        const life=arcLifetime(speedRate(state.speed),state.shot===3||state.shot===4);
+        if(reversing){
+          pool.clear();
+          for(const sample of sampleRewindEvents(engine.index,state.position,state.timelapse!.elapsed,{windowDays:50,maxEvents:80})){
+            pool.add(sample.event,engine.index,time-sample.age,sample.life);
+            const arc=pool.arcs.find(a=>a.id===sample.event.seq);if(arc)arc.reverse=true;
+          }
+        }else pool.sync(scripted.filter(isPayment).map(event=>({event,born:250+(engine.storyEventTimes.get(event.seq)??0),life,
+          maturity:state.paymentMaturity??undefined,displayAmount:state.paymentAmount??undefined})),engine.index,time,state.paymentPresentation==='waiting');
+        const rings=scripted.slice(-40).flatMap(event=>{
+          const firm=engine.index.firms.get(event.to??event.accounts[0]),born=250+(engine.storyEventTimes.get(event.seq)??0),age=time-born;
+          return firm?.lat!=null&&firm.lng!=null&&age>=0&&age<650?[{id:event.seq,lat:firm.lat,lng:firm.lng,
+            color:event.type==='extend'?'#e8b768':MONEY,age,life:650}]:[];
+        });
+        if(state.shot===16&&state.shotElapsed*1000<650)rings.push({id:-16,lat:37.3349,lng:-122.009,color:MONEY,age:state.shotElapsed*1000,life:650});
+        pulseLayer.update(rings);revision=state.revision;day=state.day;cursor=state.cursor;
+      }else{
       if (revision !== state.revision || state.day < day) {
         pool.clear(); arcIds = '\0'; pulseRings = []; globe.ringsData([]); cursor = 0; day = state.day;
       }
@@ -340,8 +373,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       }
       cursor = state.cursor;
       pool.tick(time,state.paymentPresentation==='waiting');
+      }
       const nextArcIds = pool.arcs.map(arc => arc.id).join(',');
-      if (nextArcIds !== arcIds) { arcIds = nextArcIds; globe.arcsData(pool.arcs); }
+      if(frameDriven)deterministicArcs.update(pool.arcs);
+      else if (nextArcIds !== arcIds) { arcIds = nextArcIds; globe.arcsData(pool.arcs); }
       updateArcMaterials(pool.arcs, globe.getGlobeRadius());
       if ((moving && now - lastColor > 33) || incoming.length) {
         lastColor = now;
@@ -361,9 +396,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     if (!frameDriven) raf = requestAnimationFrame(frame);
     {
       const bookmarks=new CameraBookmarks();
-      window.__cascade = { frameDriven,ready:()=>engine.ready(),cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:effects.readiness,cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
+      const ready=async()=>{await Promise.all([engine.ready(),frameDriven?models.preload():Promise.resolve()]);if(frameDriven)globe.pauseAnimation();};
+      window.__cascade = { frameDriven,ready,cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:effects.readiness,cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
         playScene:(id)=>playShot(engine,id),playFilm:async()=>{await engine.ready();sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=frameDriven?0:performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
-        renderFrame:(tMs:number)=>{frame(tMs,false);camera.lookAt(controls.target);camera.updateMatrixWorld(true);globe.scene().updateMatrixWorld(true);globe.renderer().setRenderTarget(null);globe.renderer().render(globe.scene(),camera);},
+        renderFrame:(tMs:number)=>{frame(tMs,false);camera.lookAt(controls.target);camera.updateMatrixWorld(true);globe.scene().updateMatrixWorld(true);globe.renderer().setRenderTarget(null);globe.renderer().render(globe.scene(),camera);const pov=globe.pointOfView();return {camera:camera.position.toArray(),target:controls.target.toArray(),up:camera.up.toArray(),fov:camera.fov,pov,arcs:pool.arcs.map(arc=>arc.id)};},
         tiles: () => siteStatus,
         siteView: (site, orbit = 0) => {
           engine.stopShot(); flight = undefined;
@@ -399,7 +435,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       disposed = true;
       root.removeEventListener('touchstart', captureTouch); root.removeEventListener('touchmove', captureTouch);
       cancelAnimationFrame(raf); observer.disconnect(); layer.dispose(); companyLayer.dispose();
-      models.dispose();
+      models.dispose(); pulseLayer.dispose(); deterministicArcs.dispose();
       if (globePaused) globe.resumeAnimation(); siteScene?.dispose();
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
       controls.removeEventListener('change',maintainSiteControls);

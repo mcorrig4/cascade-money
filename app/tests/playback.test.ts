@@ -47,6 +47,18 @@ test('arc pool never exceeds 200 including retiring arcs and fades before expiry
   pool.tick(1800); assert.equal(pool.arcs.length, 0);
 });
 
+test('frame-driven arc sync derives age from authored cue time and is order independent', () => {
+  const event=index.days[0].events.find(e=>e.type==='issue')!,pool=new ArcPool();
+  pool.sync([{event,born:4400,life:3500}],index,6000,true);
+  const first={...pool.arcs[0]},identity=pool.arcs[0];
+  pool.sync([],index,4000,true);assert.equal(pool.arcs.length,0);
+  pool.sync([{event,born:4400,life:3500}],index,6000,true);
+  assert.deepEqual({...pool.arcs[0],event:undefined},{...first,event:undefined});
+  const rebuilt=pool.arcs[0];
+  pool.sync([{event,born:4400,life:3500}],index,6100,true);
+  assert.equal(pool.arcs[0],rebuilt);assert.notEqual(pool.arcs[0],identity);
+});
+
 test('seek to day zero cancels playback and director work and stays paused', async()=>{
   const {ledgerMode}=await import('../src/components/ledger-mode.ts');
   for(const shot of [null,2,6,10]) {

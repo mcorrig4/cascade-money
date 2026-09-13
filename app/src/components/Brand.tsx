@@ -7,6 +7,7 @@ export function Brand({ onDirector }: { onDirector: () => void }) {
   return <a className="brand" href="./" aria-label="Cascade home" title="Hold to open shot director"
     onPointerDown={event => {
       if (!event.isPrimary || event.button !== 0) return;
+      if (window.__cascade?.frameDriven) { event.preventDefault(); return; }
       cancel(); held.current = false; start.current = { x: event.clientX, y: event.clientY };
       event.currentTarget.setPointerCapture(event.pointerId);
       timer.current = setTimeout(() => { held.current = true; onDirector(); }, 650);

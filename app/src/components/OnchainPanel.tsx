@@ -13,6 +13,7 @@ export function OnchainPanel({onClose,tMs=0}:{onClose:()=>void;tMs?:number}) {
   const [live,setLive]=useState<ArcReading>(),[loading,setLoading]=useState(true);
   useEffect(()=>{
     dialog.current?.showModal();
+    if(window.__cascade?.frameDriven){setLoading(false);return()=>dialog.current?.close();}
     let disposed=false, active:AbortController|undefined;
     const refresh=async()=>{
       if(active) return;

@@ -7,7 +7,8 @@ import {seekTo} from '@cascade-app/director/seek.ts';
 type LiveCascade = {
   frameDriven?: boolean;
   ready?: Promise<void>;
-  renderFrame?: (tMs: number) => void;
+  renderFrame?: (tMs: number) => unknown;
+  models?: () => {id: string; pending: boolean; missing: boolean; loaded: boolean; fade: number}[];
 };
 
 const browserWindow = window as unknown as {__cascade?: LiveCascade};
@@ -22,7 +23,9 @@ const waitForGlobe = async () => {
   await browserWindow.__cascade.ready;
 };
 
-export const AppFrame: React.FC = () => {
+export type AppFrameProps = {scene?: number; timesMs?: number[]};
+
+export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const [handle] = useState(() => delayRender('Loading Cascade globe, textures, models, and stream'));
@@ -39,14 +42,16 @@ export const AppFrame: React.FC = () => {
 
   useLayoutEffect(() => {
     if (!ready) return;
-    const tMs = frame / fps * 1000;
-    seekTo(tMs);
-    browserWindow.__cascade?.renderFrame?.(tMs);
+    const tMs = timesMs?.[frame] ?? frame / fps * 1000;
+    seekTo(tMs, scene);
+    const sample=browserWindow.__cascade?.renderFrame?.(tMs);
+    if(timesMs)console.info(`[CascadeLive probe] frame ${frame}:`,JSON.stringify(sample));
+    if (frame === 0) console.info('[CascadeLive] frame 0 models:', JSON.stringify(browserWindow.__cascade?.models?.()));
     if (!continued.current) {
       continued.current = true;
       continueRender(handle);
     }
-  }, [fps, frame, handle, ready]);
+  }, [fps, frame, handle, ready, scene, timesMs]);
 
   return <div className="cascade-live-frame" style={{position: 'absolute', inset: 0, width: 1920, height: 1080, overflow: 'hidden'}}>
     <style>{`.cascade-live-frame *, .cascade-live-frame *::before, .cascade-live-frame *::after {animation: none !important; transition: none !important;}`}</style>

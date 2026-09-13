@@ -38,6 +38,13 @@ export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId,
     } finally { entry.pending = false; entry.controller = undefined; }
   }
   return {
+    async preload() {
+      await Promise.all(entries.map(async entry => {
+        entry.wanted = true;
+        if (!entry.loaded && !entry.pending && !entry.missing) await load(entry);
+        entry.wanted = false;
+      }));
+    },
     update(lat: number, lng: number, altitude: number, _elapsed: number) {
       for (const entry of entries) {
         entry.wanted = nearSite(entry.id, lat, lng, altitude);
