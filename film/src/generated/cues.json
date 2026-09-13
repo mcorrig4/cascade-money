@@ -1,7 +1,7 @@
 {
   "1": {
-    "phone-reveal": 5.53,
-    "phone-reveal-fallback": 6.09
+    "phone-reveal": 4.67,
+    "phone-reveal-fallback": 5.15
   },
   "2": {
     "hook-open": 2.036,
@@ -9,18 +9,19 @@
     "stat-suppliers": 5.416,
     "stat-factories": 7.202,
     "stat-countries": 9.148,
-    "promises": 12.63,
+    "promises": 11.61,
+    "promises-fallback": 12.63,
     "wordmark": 14.09
   },
   "3": {
-    "example-labels": 32.13
+    "example-labels": 31.71
   },
   "4": {
     "question-card": 1.57,
     "question-card-fallback": 2.19,
     "dated-dollar": 3.19,
     "dated-dollar-fallback": 3.45,
-    "not-cash": 5.45
+    "not-cash": 5.35
   },
   "6": {
     "committed-counter": 0.97,
