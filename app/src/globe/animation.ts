@@ -3,6 +3,18 @@ export const DASH_KM = 90;
 export const GAP_KM = 60;
 const clamp = (x: number) => Math.max(0, Math.min(1, x));
 const smooth = (x: number) => { x = clamp(x); return x * x * (3 - 2 * x); };
+/** Ground-kilometres the dash pattern travels over one arc lifetime. */
+export const ARC_PHASE_KM = 1350;
+/**
+ * The dash pattern's travel for an arc's real age, WITHOUT the lifecycle's
+ * progress clamp. A held arc (a proof scene, where the routes stay on screen
+ * for the whole beat instead of retiring) finishes its grow-in and then keeps
+ * this running, so the route reads as money still moving rather than a line
+ * that drew itself once and froze — product owner, 2026-09-13 07:09: "it has
+ * moving lines, it grows from one buyer to the other, it doesn't just appear
+ * as a static line".
+ */
+export const arcPhaseKm = (age: number, life: number) => (age / life) * ARC_PHASE_KM;
 export function arcLifecycle(age: number, life: number) {
   const progress = clamp(age / life);
   return {
@@ -11,7 +23,7 @@ export function arcLifecycle(age: number, life: number) {
     clipEnd: smooth(progress / 0.32),
     alpha: clamp(age / Math.min(100, life * 0.15)) * (1 - smooth((progress - 0.65) / 0.35)),
     // Subtract this from the ground distance in the shader: patterns move toward the payee.
-    phaseKm: progress * 1350,
+    phaseKm: progress * ARC_PHASE_KM,
   };
 }
 export function pickup(age: number, life: number) {

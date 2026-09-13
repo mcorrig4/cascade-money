@@ -13,7 +13,10 @@
     "wordmark": 14.09
   },
   "3": {
-    "example-labels": 32.13
+    "Samsung": 2.21,
+    "Corning": 7.15,
+    "Sony": 12.29,
+    "chain-fanout": 15.37
   },
   "4": {
     "question-card": 1.57,

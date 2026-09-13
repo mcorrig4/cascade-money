@@ -684,7 +684,10 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   }else if(sceneIndex===12){
     visual=<Scene12Close durationInFrames={duration} />;
   }else if(source==='live'){
-    const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
+    // Scene 3 is a full-app scene: it renders in the same recording presentation
+    // the film's other app scenes were CAPTURED in, so the live path and the
+    // captures path look like one film.
+    const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline recordingHud={sceneIndex===3} />;
     if(sceneIndex===1){
       visual=<Scene1Beat duration={duration} app={app} phoneEarliestFrame={loadingFrames} />;
     }else if(WINDOWED_SCENES.has(sceneIndex)){

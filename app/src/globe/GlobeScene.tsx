@@ -11,7 +11,7 @@ import type { GlobeInstance } from 'globe.gl';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, SRGBColorSpace, TextureLoader, TOUCH, Raycaster, Vector3 } from 'three';
 import type { PerspectiveCamera, Group } from 'three';
 import { isPayment } from '../data/types.ts';
-import type { Firm } from '../data/types.ts';
+import type { Event, Firm } from '../data/types.ts';
 import type { PlaybackEngine } from '../playback/engine.ts';
 import { speedRate } from '../playback/engine.ts';
 import { ArcPool } from './arc-pool.ts';
@@ -350,6 +350,14 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         isClose && (state.shot === 1 || state.shot === 2) ? siteSun('apple-park', globe.getGlobeRadius()) :
           state.camera.site === 'fifth-avenue' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.camera.site === 'fifth-avenue',state.timelapse,state.shot !== null);
       const reversing = state.timelapse?.direction===-1 && state.timelapse.elapsed<2000;
+      // `time` is the ABSOLUTE film clock (250 + startTime + shotElapsed, see
+      // above) while storyEventTimes are SHOT-LOCAL milliseconds, so a reveal
+      // timestamp has to be lifted onto the same origin before it can be an
+      // arc's birth. Subtracting the two directly made every arc in a frame-
+      // driven render `startTime` seconds old the instant it appeared: past the
+      // end of its own lifecycle, so it could only ever show fully drawn and
+      // frozen (or, unheld, not at all) instead of growing from payer to payee.
+      const storyBorn=(event:Event)=>250+(SHOTS.find(s=>s.id===state.shot)?.startTime??0)*1000+(engine.storyEventTimes.get(event.seq)??0);
       const incoming = [] as typeof engine.index.days[number]['events'];
       if(frameDriven){
         const scripted=(engine.storyEvents??[]).filter(event=>isPayment(event)||event.type==='extend');
@@ -360,10 +368,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
             pool.add(sample.event,engine.index,time-sample.age,sample.life);
             const arc=pool.arcs.find(a=>a.id===sample.event.seq);if(arc)arc.reverse=true;
           }
-        }else pool.sync(scripted.filter(isPayment).map(event=>({event,born:250+(engine.storyEventTimes.get(event.seq)??0),life,
+        }else pool.sync(scripted.filter(isPayment).map(event=>({event,born:storyBorn(event),life,
           maturity:state.paymentMaturity??undefined,displayAmount:state.paymentAmount??undefined})),engine.index,time,state.paymentPresentation==='waiting');
         const rings=scripted.slice(-40).flatMap(event=>{
-          const firm=engine.index.firms.get(event.to??event.accounts[0]),born=250+(engine.storyEventTimes.get(event.seq)??0),age=time-born;
+          const firm=engine.index.firms.get(event.to??event.accounts[0]),born=storyBorn(event),age=time-born;
           return firm?.lat!=null&&firm.lng!=null&&age>=0&&age<650?[{id:event.seq,lat:firm.lat,lng:firm.lng,
             color:event.type==='extend'?'#e8b768':MONEY,age,life:650}]:[];
         });

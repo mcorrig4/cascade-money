@@ -12,8 +12,12 @@ test('12 scenes cover narration v6, preserve API IDs and connect every declared 
  // the store flight + stair descent) is cut — the store beat is dropped.
  // Scene 8 ("Underneath it", shot 18) STAYS. 12 shots remain: ids 1, 2, 3,
  // 16, 4, 17, 6, 18, 5, 11, 19, 12 (in play order).
- assert.ok(Math.abs(FILM_SECONDS-186.4)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,12);
- assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,20.2,8.2,23,13,27.8,20.6,18.2,17.8,10.2,4.6]);
+ // Scene 3 carries an authored bookmark flight (33.6s of travel and holds,
+ // timed to the recorded take), and buildShots floors a shot's duration at its
+ // path length — so its provisional 20.2s word-count estimate is superseded and
+ // the film's provisional total moves with it (186.4 - 20.2 + 33.6).
+ assert.ok(Math.abs(FILM_SECONDS-199.8)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,12);
+ assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,33.6,8.2,23,13,27.8,20.6,18.2,17.8,10.2,4.6]);
  for(let i=0;i<SHOTS.length;i++){
   // Stage 18's scene 2 (California zoom -> Apple marker approach -> pull-out)
   // legitimately names a hold beat in its motion string; every other shot

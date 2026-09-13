@@ -68,7 +68,7 @@
 @keyframes coin-enter{0%{opacity:0;transform:scale(1.8) rotate(-8deg)}65%{opacity:1;transform:scale(.94) rotate(1deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 
 /* HUD recordings retain the product. Overlay scenes reserve a live ledger strip. */
-.recording .story-selector,.recording .network-status,.recording .director{display:none!important}
+.recording .story-selector,.recording .network-status,.recording .site-navigation,.recording .director{display:none!important}
 .recording-hud{--film-top:100px;--film-bottom:285px;--film-log:44px}
 .recording-hud .topbar,.recording-hud .bottom-panel,.recording-hud .ledger{visibility:visible;opacity:1;pointer-events:auto}
 .app.recording-hud .shot-overlay,.app.recording-hud .scene-narration{inset:var(--film-top) 0 calc(var(--film-bottom) + var(--film-log) + 8px)}

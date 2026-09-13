@@ -19,8 +19,13 @@ Config.overrideWebpackConfig(current => ({
     alias: {
       ...current.resolve?.alias,
       '@cascade-app': resolve(filmDir, '../app/src'),
-      react$: resolve(filmDir, 'node_modules/react'),
-      'react-dom$': resolve(filmDir, 'node_modules/react-dom'),
+      // Prefix aliases, not exact ones: the app tree has its own (older) React
+      // in app/node_modules, and a DEEP import from it (react-dom/client, any
+      // react/jsx-runtime) slips past a `react$` exact alias and loads a second
+      // copy — React then throws #527 (react 19.2.7 vs react-dom 19.2.4) the
+      // moment the live app actually mounts. One React for the whole bundle.
+      react: resolve(filmDir, 'node_modules/react'),
+      'react-dom': resolve(filmDir, 'node_modules/react-dom'),
     },
     // app/src/styles.css's `url('/fonts/RobotoCondensed-Light.woff2')` (the
     // coin-v3/stage18 merge's dated-dollar font, 2026-09-13) is a root-
