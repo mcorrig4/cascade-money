@@ -58,7 +58,7 @@ const CascadePresentation: React.FC<{at: (name: string) => number; geometry: Win
   const {fps} = useVideoConfig();
   const unit = geometry.width / 1920;
   const start = at('same-dollars'), settled = at('nine-invoices');
-  const tickFrames = 1.1 * fps / 8;
+  const tickFrames = 1.1 * fps / 9;
   const progress = (onset: number, duration: number) => interpolate(frame, [onset, onset + duration], [0, 1], {
     extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
   });
@@ -67,9 +67,9 @@ const CascadePresentation: React.FC<{at: (name: string) => number; geometry: Win
   return <section className="film-cascade-spine" aria-label="The same dollars: nine invoices settled" style={visibility(on(start))}>
     <div className="film-totals-eyebrow">THE SAME DOLLARS</div>
     <div className="film-cascade-spine-row">
-      <svg className="film-cascade-spine-drawing" width={56 * unit} height={450 * unit}>
+      <svg className="film-cascade-spine-drawing" width={56 * unit} height={502 * unit}>
         <rect className="film-cascade-source" width={56 * unit} height={34 * unit}/>
-        {Array.from({length: 8}, (_, i) => <g key={i}>
+        {Array.from({length: 9}, (_, i) => <g key={i}>
           <rect className="film-cascade-hop" x={0} y={(40 + i * 52) * unit} width={56 * unit} height={46 * unit}/>
           <rect className="film-cascade-hop-fill" x={0} y={(40 + i * 52) * unit} width={56 * unit}
             height={46 * unit * progress(start + i * tickFrames, tickFrames)}/>
