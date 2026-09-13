@@ -1,0 +1,200 @@
+{
+  "scene": 2,
+  "words": [
+    {
+      "word": "You",
+      "start": 0.0,
+      "end": 0.16
+    },
+    {
+      "word": "know",
+      "start": 0.16,
+      "end": 0.24
+    },
+    {
+      "word": "what's",
+      "start": 0.24,
+      "end": 0.48
+    },
+    {
+      "word": "crazy?",
+      "start": 0.48,
+      "end": 0.96
+    },
+    {
+      "word": "Nearly",
+      "start": 1.24,
+      "end": 1.9
+    },
+    {
+      "word": "$200",
+      "start": 1.9,
+      "end": 2.52
+    },
+    {
+      "word": "billion",
+      "start": 2.52,
+      "end": 2.92
+    },
+    {
+      "word": "of",
+      "start": 2.92,
+      "end": 3.48
+    },
+    {
+      "word": "product",
+      "start": 3.48,
+      "end": 3.78
+    },
+    {
+      "word": "costs.",
+      "start": 3.78,
+      "end": 4.34
+    },
+    {
+      "word": "200",
+      "start": 5.2,
+      "end": 5.88
+    },
+    {
+      "word": "suppliers.",
+      "start": 5.88,
+      "end": 6.56
+    },
+    {
+      "word": "Thousands",
+      "start": 7.18,
+      "end": 7.54
+    },
+    {
+      "word": "of",
+      "start": 7.54,
+      "end": 7.84
+    },
+    {
+      "word": "factories.",
+      "start": 7.84,
+      "end": 8.34
+    },
+    {
+      "word": "50",
+      "start": 9.12,
+      "end": 9.38
+    },
+    {
+      "word": "countries.",
+      "start": 9.38,
+      "end": 9.84
+    },
+    {
+      "word": "All",
+      "start": 10.34,
+      "end": 10.88
+    },
+    {
+      "word": "of",
+      "start": 10.88,
+      "end": 11.02
+    },
+    {
+      "word": "it",
+      "start": 11.02,
+      "end": 11.18
+    },
+    {
+      "word": "running",
+      "start": 11.18,
+      "end": 11.52
+    },
+    {
+      "word": "on",
+      "start": 11.52,
+      "end": 11.76
+    },
+    {
+      "word": "payment",
+      "start": 11.76,
+      "end": 12.12
+    },
+    {
+      "word": "terms",
+      "start": 12.12,
+      "end": 12.54
+    },
+    {
+      "word": "and",
+      "start": 12.54,
+      "end": 12.78
+    },
+    {
+      "word": "promises.",
+      "start": 12.78,
+      "end": 13.22
+    },
+    {
+      "word": "Cascade",
+      "start": 14.24,
+      "end": 14.92
+    },
+    {
+      "word": "Money",
+      "start": 14.92,
+      "end": 15.12
+    },
+    {
+      "word": "settles",
+      "start": 15.12,
+      "end": 15.68
+    },
+    {
+      "word": "those",
+      "start": 15.68,
+      "end": 15.88
+    },
+    {
+      "word": "terms",
+      "start": 15.88,
+      "end": 16.16
+    },
+    {
+      "word": "on",
+      "start": 16.16,
+      "end": 16.48
+    },
+    {
+      "word": "ARK.",
+      "start": 16.48,
+      "end": 16.8
+    },
+    {
+      "word": "Let",
+      "start": 17.0,
+      "end": 17.34
+    },
+    {
+      "word": "me",
+      "start": 17.34,
+      "end": 17.46
+    },
+    {
+      "word": "show",
+      "start": 17.46,
+      "end": 17.68
+    },
+    {
+      "word": "you",
+      "start": 17.68,
+      "end": 17.92
+    },
+    {
+      "word": "with",
+      "start": 17.92,
+      "end": 18.3
+    },
+    {
+      "word": "Apple.",
+      "start": 18.3,
+      "end": 18.58
+    }
+  ]
+}

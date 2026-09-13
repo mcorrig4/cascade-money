@@ -1,0 +1,335 @@
+{
+  "scene": 9,
+  "words": [
+    {
+      "word": "Now",
+      "start": 0.0,
+      "end": 0.84
+    },
+    {
+      "word": "let's",
+      "start": 0.84,
+      "end": 1.12
+    },
+    {
+      "word": "zoom",
+      "start": 1.12,
+      "end": 1.28
+    },
+    {
+      "word": "out.",
+      "start": 1.28,
+      "end": 1.6
+    },
+    {
+      "word": "Thousands",
+      "start": 2.26,
+      "end": 2.54
+    },
+    {
+      "word": "of",
+      "start": 2.54,
+      "end": 2.76
+    },
+    {
+      "word": "invoices,",
+      "start": 2.76,
+      "end": 3.38
+    },
+    {
+      "word": "payments",
+      "start": 3.6,
+      "end": 4.22
+    },
+    {
+      "word": "moving",
+      "start": 4.22,
+      "end": 4.56
+    },
+    {
+      "word": "company",
+      "start": 4.56,
+      "end": 5.0
+    },
+    {
+      "word": "to",
+      "start": 5.0,
+      "end": 5.14
+    },
+    {
+      "word": "company,",
+      "start": 5.14,
+      "end": 5.56
+    },
+    {
+      "word": "cross",
+      "start": 5.98,
+      "end": 6.28
+    },
+    {
+      "word": "countries,",
+      "start": 6.28,
+      "end": 6.72
+    },
+    {
+      "word": "cross",
+      "start": 7.16,
+      "end": 7.38
+    },
+    {
+      "word": "tiers,",
+      "start": 7.38,
+      "end": 7.72
+    },
+    {
+      "word": "cross",
+      "start": 8.26,
+      "end": 8.52
+    },
+    {
+      "word": "borders.",
+      "start": 8.52,
+      "end": 8.9
+    },
+    {
+      "word": "One",
+      "start": 9.4,
+      "end": 9.88
+    },
+    {
+      "word": "commitment",
+      "start": 9.88,
+      "end": 10.3
+    },
+    {
+      "word": "can",
+      "start": 10.3,
+      "end": 10.6
+    },
+    {
+      "word": "keep",
+      "start": 10.6,
+      "end": 10.82
+    },
+    {
+      "word": "moving,",
+      "start": 10.82,
+      "end": 11.26
+    },
+    {
+      "word": "settling",
+      "start": 11.54,
+      "end": 12.04
+    },
+    {
+      "word": "obligation",
+      "start": 12.04,
+      "end": 12.68
+    },
+    {
+      "word": "after",
+      "start": 12.68,
+      "end": 13.12
+    },
+    {
+      "word": "obligation",
+      "start": 13.12,
+      "end": 13.78
+    },
+    {
+      "word": "until",
+      "start": 13.78,
+      "end": 14.44
+    },
+    {
+      "word": "it",
+      "start": 14.44,
+      "end": 14.66
+    },
+    {
+      "word": "finally",
+      "start": 14.66,
+      "end": 15.0
+    },
+    {
+      "word": "matures.",
+      "start": 15.0,
+      "end": 15.48
+    },
+    {
+      "word": "Separately,",
+      "start": 16.14,
+      "end": 16.9
+    },
+    {
+      "word": "we",
+      "start": 17.12,
+      "end": 17.32
+    },
+    {
+      "word": "tested",
+      "start": 17.32,
+      "end": 17.62
+    },
+    {
+      "word": "10",
+      "start": 17.62,
+      "end": 17.92
+    },
+    {
+      "word": ",000",
+      "start": 17.92,
+      "end": 18.4
+    },
+    {
+      "word": "operations",
+      "start": 18.4,
+      "end": 19.0
+    },
+    {
+      "word": "with",
+      "start": 19.0,
+      "end": 19.46
+    },
+    {
+      "word": "zero",
+      "start": 19.46,
+      "end": 19.74
+    },
+    {
+      "word": "accounting",
+      "start": 19.74,
+      "end": 20.24
+    },
+    {
+      "word": "invariance,",
+      "start": 20.24,
+      "end": 20.84
+    },
+    {
+      "word": "zero",
+      "start": 20.94,
+      "end": 21.32
+    },
+    {
+      "word": "violations.",
+      "start": 21.32,
+      "end": 21.92
+    },
+    {
+      "word": "That's",
+      "start": 24.32,
+      "end": 24.92
+    },
+    {
+      "word": "where",
+      "start": 24.92,
+      "end": 25.02
+    },
+    {
+      "word": "this",
+      "start": 25.02,
+      "end": 25.2
+    },
+    {
+      "word": "user",
+      "start": 25.2,
+      "end": 25.42
+    },
+    {
+      "word": "interface",
+      "start": 25.42,
+      "end": 25.84
+    },
+    {
+      "word": "came",
+      "start": 25.84,
+      "end": 26.12
+    },
+    {
+      "word": "from.",
+      "start": 26.12,
+      "end": 26.42
+    },
+    {
+      "word": "I",
+      "start": 26.66,
+      "end": 27.02
+    },
+    {
+      "word": "wanted",
+      "start": 27.02,
+      "end": 27.28
+    },
+    {
+      "word": "something",
+      "start": 27.28,
+      "end": 27.62
+    },
+    {
+      "word": "to",
+      "start": 27.62,
+      "end": 27.84
+    },
+    {
+      "word": "visualize",
+      "start": 27.84,
+      "end": 28.24
+    },
+    {
+      "word": "our",
+      "start": 28.24,
+      "end": 28.8
+    },
+    {
+      "word": "stress",
+      "start": 28.8,
+      "end": 29.2
+    },
+    {
+      "word": "test",
+      "start": 29.2,
+      "end": 29.5
+    },
+    {
+      "word": "simulations,",
+      "start": 29.5,
+      "end": 30.04
+    },
+    {
+      "word": "and",
+      "start": 30.74,
+      "end": 31.04
+    },
+    {
+      "word": "that's",
+      "start": 31.04,
+      "end": 31.38
+    },
+    {
+      "word": "how",
+      "start": 31.38,
+      "end": 31.46
+    },
+    {
+      "word": "we",
+      "start": 31.46,
+      "end": 31.56
+    },
+    {
+      "word": "got",
+      "start": 31.56,
+      "end": 31.7
+    },
+    {
+      "word": "this",
+      "start": 31.7,
+      "end": 31.88
+    },
+    {
+      "word": "presentation.",
+      "start": 31.88,
+      "end": 32.26
+    }
+  ]
+}

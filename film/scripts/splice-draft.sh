@@ -18,10 +18,8 @@
 # (dimensions, duration, pix_fmt, color_range) for both outputs and fails
 # loudly if either duration exceeds 240.0s (the 4:00 cap).
 #
-# Both modes try a stream-copy concat first (no quality loss, fast); if the
-# parts don't share identical codec/profile/resolution/fps it falls back to
-# a full re-encode with the matching profile, so the output is guaranteed
-# playable either way.
+# Draft filters trim audio to frame duration; final normalizes audio in
+# temporary parts before stream-copy concat; final master video is never re-encoded.
 export PATH="/opt/homebrew/bin:$PATH"
 set -euo pipefail
 
@@ -53,8 +51,9 @@ else
   RENDER_HINT="render-scenes.sh \$SCENE or --full"
 fi
 
-CONCAT_LIST="$(mktemp)"
-trap 'rm -f "$CONCAT_LIST"' EXIT
+TEMP_DIR="$(mktemp -d)"
+CONCAT_LIST="$TEMP_DIR/concat.txt"
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # The film is 12 scenes (scene-11-delete pass, 2026-09-13) — concat the
 # contiguous surviving scene numbers.
@@ -63,6 +62,18 @@ for num in 01 02 03 04 05 06 07 08 09 10 11 12; do
   if [[ ! -f "$part" ]]; then
     echo "missing $part — render it first ($RENDER_HINT)" >&2
     exit 1
+  fi
+  if [[ "$MODE" == "final" ]]; then
+    # W4 v4 splice incident: mono parts dropped later audio, so every input must share stereo/48 kHz before concat.
+    frames=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nw=1:nk=1 "$part")
+    part_fps=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nw=1:nk=1 "$part")
+    duration=$(perl -e 'my ($n,$d)=split "/",$ARGV[1]; printf "%.9f",$ARGV[0]*($d||1)/$n' "$frames" "$part_fps")
+    # W4 final-padding incident: trim audio to the picture duration before joining parts.
+    normalized="$TEMP_DIR/scene-${num}.mp4"
+    ffmpeg -hide_banner -loglevel error -y -i "$part" -map 0:v:0 -map 0:a:0 -c:v copy \
+      -af "aresample=48000,aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,atrim=duration=$duration,asetpts=PTS-STARTPTS" \
+      -c:a aac -b:a 192k -ar 48000 -ac 2 "$normalized"
+    part="$normalized"
   fi
   echo "file '$part'" >> "$CONCAT_LIST"
 done
@@ -80,46 +91,26 @@ if [[ "$MODE" == "draft" ]]; then
     frames=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nw=1:nk=1 "$part")
     part_fps=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nw=1:nk=1 "$part")
     duration=$(perl -e 'my ($n,$d)=split "/",$ARGV[1]; printf "%.9f",$ARGV[0]*($d||1)/$n' "$frames" "$part_fps")
-    FILTER+="[$INDEX:v]setpts=PTS-STARTPTS[v$INDEX];[$INDEX:a]atrim=duration=$duration,asetpts=PTS-STARTPTS[a$INDEX];"
+    # W4 v4 splice incident: normalize each input before concat while retaining frame-exact atrim.
+    FILTER+="[$INDEX:v]setpts=PTS-STARTPTS[v$INDEX];[$INDEX:a]aresample=48000,aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,atrim=duration=$duration,asetpts=PTS-STARTPTS[a$INDEX];"
     INDEX=$((INDEX+1))
   done
   for index in $(seq 0 $((${#SURVIVING_SCENES[@]}-1))); do FILTER+="[v$index][a$index]"; done
   FILTER+="concat=n=${#SURVIVING_SCENES[@]}:v=1:a=1[v][a]"
   ffmpeg -hide_banner -loglevel error -y "${INPUTS[@]}" -filter_complex "$FILTER" -map '[v]' -map '[a]' \
-    -r "${SPLICE_FPS:-${part_fps%%/*}}" -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -movflags +faststart "$OUT_FILE"
+    -r "${SPLICE_FPS:-${part_fps%%/*}}" -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -ar 48000 -ac 2 -movflags +faststart "$OUT_FILE"
   echo "-> $OUT_FILE (frame-exact filtered concat)" >&2
   exit 0
 fi
 
 echo "Attempting stream-copy concat..." >&2
-if ffmpeg -y -f concat -safe 0 -i "$CONCAT_LIST" -c copy -movflags +faststart "$OUT_FILE" 2>/tmp/splice-draft-copy.log; then
+# W4 final-padding incident: preserve the negative AAC priming timestamp instead of shifting picture and audio by one packet.
+if ffmpeg -y -copyts -f concat -safe 0 -i "$CONCAT_LIST" -c copy -movflags +faststart "$OUT_FILE" 2>"$TEMP_DIR/copy.log"; then
   echo "-> $OUT_FILE (stream copy, no re-encode)" >&2
 else
-  echo "Stream copy failed (mismatched params) — falling back to re-encode:" >&2
-  tail -n 20 /tmp/splice-draft-copy.log >&2 || true
-
-  if [[ "$MODE" == "final" ]]; then
-    ffmpeg -y -f concat -safe 0 -i "$CONCAT_LIST" \
-      -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -color_range tv -r 30 \
-      -c:a aac -b:a 192k \
-      -movflags +faststart \
-      "$OUT_FILE"
-  else
-    # Draft parts render at 15fps now (render-scenes.sh's --props='{"fps":15}'
-    # draft profile, product owner decision 2026-09-11 22:59 ET) — this
-    # script only concats/re-encodes existing parts, so there's no --props
-    # flag here, but the fallback rate must still match them.
-    ffmpeg -y -f concat -safe 0 -i "$CONCAT_LIST" \
-      -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r 15 \
-      -c:a aac -b:a 128k \
-      -movflags +faststart \
-      "$OUT_FILE"
-  fi
-  echo "-> $OUT_FILE (re-encoded)" >&2
-fi
-
-if [[ "$MODE" != "final" ]]; then
-  exit 0
+  echo "Stream copy failed — refusing to re-encode final master video:" >&2
+  tail -n 20 "$TEMP_DIR/copy.log" >&2 || true
+  exit 1
 fi
 
 echo "Deriving 720p copy..." >&2

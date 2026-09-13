@@ -1,0 +1,140 @@
+{
+  "scene": 8,
+  "words": [
+    {
+      "word": "The",
+      "start": 0.0,
+      "end": 0.76
+    },
+    {
+      "word": "Vault",
+      "start": 0.76,
+      "end": 0.98
+    },
+    {
+      "word": "is",
+      "start": 0.98,
+      "end": 1.22
+    },
+    {
+      "word": "an",
+      "start": 1.22,
+      "end": 1.34
+    },
+    {
+      "word": "ERC",
+      "start": 1.34,
+      "end": 1.96
+    },
+    {
+      "word": "-1155",
+      "start": 1.96,
+      "end": 2.84
+    },
+    {
+      "word": "contract",
+      "start": 2.84,
+      "end": 3.2
+    },
+    {
+      "word": "with",
+      "start": 3.2,
+      "end": 3.78
+    },
+    {
+      "word": "a",
+      "start": 3.78,
+      "end": 3.9
+    },
+    {
+      "word": "token",
+      "start": 3.9,
+      "end": 4.16
+    },
+    {
+      "word": "ID",
+      "start": 4.16,
+      "end": 4.4
+    },
+    {
+      "word": "for",
+      "start": 4.4,
+      "end": 4.82
+    },
+    {
+      "word": "each",
+      "start": 4.82,
+      "end": 5.1
+    },
+    {
+      "word": "UTC",
+      "start": 5.1,
+      "end": 5.58
+    },
+    {
+      "word": "maturity",
+      "start": 5.58,
+      "end": 6.04
+    },
+    {
+      "word": "day,",
+      "start": 6.04,
+      "end": 6.4
+    },
+    {
+      "word": "designed",
+      "start": 6.66,
+      "end": 7.62
+    },
+    {
+      "word": "to",
+      "start": 7.62,
+      "end": 7.78
+    },
+    {
+      "word": "be",
+      "start": 7.78,
+      "end": 7.92
+    },
+    {
+      "word": "used",
+      "start": 7.92,
+      "end": 8.34
+    },
+    {
+      "word": "with",
+      "start": 8.34,
+      "end": 8.74
+    },
+    {
+      "word": "USYC",
+      "start": 8.74,
+      "end": 9.78
+    },
+    {
+      "word": "as",
+      "start": 9.78,
+      "end": 10.16
+    },
+    {
+      "word": "its",
+      "start": 10.16,
+      "end": 10.3
+    },
+    {
+      "word": "yield",
+      "start": 10.3,
+      "end": 10.56
+    },
+    {
+      "word": "bearing",
+      "start": 10.56,
+      "end": 10.82
+    },
+    {
+      "word": "reserve.",
+      "start": 10.82,
+      "end": 11.22
+    }
+  ]
+}

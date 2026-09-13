@@ -1,0 +1,110 @@
+{
+  "scene": 4,
+  "words": [
+    {
+      "word": "cascade",
+      "start": 0.0,
+      "end": 0.48
+    },
+    {
+      "word": "gives",
+      "start": 0.48,
+      "end": 0.88
+    },
+    {
+      "word": "that",
+      "start": 0.88,
+      "end": 1.08
+    },
+    {
+      "word": "value",
+      "start": 1.08,
+      "end": 1.48
+    },
+    {
+      "word": "a",
+      "start": 1.48,
+      "end": 1.72
+    },
+    {
+      "word": "form",
+      "start": 1.72,
+      "end": 2.02
+    },
+    {
+      "word": "that",
+      "start": 2.02,
+      "end": 2.18
+    },
+    {
+      "word": "can",
+      "start": 2.18,
+      "end": 2.34
+    },
+    {
+      "word": "move",
+      "start": 2.34,
+      "end": 2.74
+    },
+    {
+      "word": "a",
+      "start": 2.74,
+      "end": 3.34
+    },
+    {
+      "word": "dated",
+      "start": 3.34,
+      "end": 3.6
+    },
+    {
+      "word": "dollar",
+      "start": 3.6,
+      "end": 4.04
+    },
+    {
+      "word": "not",
+      "start": 4.04,
+      "end": 5.42
+    },
+    {
+      "word": "as",
+      "start": 5.42,
+      "end": 5.6
+    },
+    {
+      "word": "cash",
+      "start": 5.6,
+      "end": 6.04
+    },
+    {
+      "word": "as",
+      "start": 6.04,
+      "end": 6.44
+    },
+    {
+      "word": "a",
+      "start": 6.44,
+      "end": 6.52
+    },
+    {
+      "word": "dollar",
+      "start": 6.52,
+      "end": 6.76
+    },
+    {
+      "word": "with",
+      "start": 6.76,
+      "end": 6.94
+    },
+    {
+      "word": "a",
+      "start": 6.94,
+      "end": 7.04
+    },
+    {
+      "word": "date",
+      "start": 7.04,
+      "end": 7.2
+    }
+  ]
+}

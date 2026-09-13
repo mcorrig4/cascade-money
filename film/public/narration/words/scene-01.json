@@ -1,0 +1,80 @@
+{
+  "scene": 1,
+  "words": [
+    {
+      "word": "After",
+      "start": 0.0,
+      "end": 0.42
+    },
+    {
+      "word": "years",
+      "start": 0.42,
+      "end": 0.66
+    },
+    {
+      "word": "of",
+      "start": 0.66,
+      "end": 0.84
+    },
+    {
+      "word": "rumors,",
+      "start": 0.84,
+      "end": 1.18
+    },
+    {
+      "word": "patent",
+      "start": 1.54,
+      "end": 1.78
+    },
+    {
+      "word": "leaks,",
+      "start": 1.78,
+      "end": 2.12
+    },
+    {
+      "word": "and",
+      "start": 2.36,
+      "end": 2.4
+    },
+    {
+      "word": "speculation,",
+      "start": 2.4,
+      "end": 3.04
+    },
+    {
+      "word": "it's",
+      "start": 3.74,
+      "end": 3.88
+    },
+    {
+      "word": "finally",
+      "start": 3.88,
+      "end": 4.24
+    },
+    {
+      "word": "here.",
+      "start": 4.24,
+      "end": 4.62
+    },
+    {
+      "word": "The",
+      "start": 4.84,
+      "end": 5.34
+    },
+    {
+      "word": "first",
+      "start": 5.34,
+      "end": 5.68
+    },
+    {
+      "word": "foldable",
+      "start": 5.68,
+      "end": 6.24
+    },
+    {
+      "word": "iPhone.",
+      "start": 6.24,
+      "end": 6.62
+    }
+  ]
+}

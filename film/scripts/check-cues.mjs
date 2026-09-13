@@ -29,6 +29,11 @@ if (!existsSync(LOCK_PATH)) {
 }
 
 const lock = JSON.parse(readFileSync(LOCK_PATH, 'utf8'));
+// W4 empty-lock incident: an empty lock verified nothing while allowing a render.
+if (Object.keys(lock).length === 0) {
+  console.error(`check-cues: empty narration lock at ${LOCK_PATH} — refusing render.`);
+  process.exit(1);
+}
 const stale = [];
 const missing = [];
 
