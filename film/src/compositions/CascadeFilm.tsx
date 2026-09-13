@@ -249,13 +249,21 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
           {(() => {
             const sc = sceneByNum(5);
             const cap = captureFor(sc, captureOverrides, durations[4]);
+            // The scene-05 recapture is the app's own recording, which
+            // already burns in the "dates don't line up" contradiction
+            // card (app/src/director/ShotOverlays.tsx, overlay 'contradiction').
+            // Drawing ContradictionOverlay on top of it doubles that card —
+            // one owner per element, capture wins (ac02b78). Only the
+            // fallback (pre-overlay) shot-02-network capture needs this
+            // component to draw the card itself.
+            const overlay = captureOverrides[5] ? null : <ContradictionOverlay durationInFrames={durations[4]} />;
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[4]} cap={cap}>
-                <ContradictionOverlay durationInFrames={durations[4]} />
+                {overlay}
               </CaptureBeat>
             ) : (
               <GraphicBeat sc={sc} duration={durations[4]}>
-                <ContradictionOverlay durationInFrames={durations[4]} />
+                {overlay}
               </GraphicBeat>
             );
           })()}
@@ -282,9 +290,17 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
           {(() => {
             const sc = sceneByNum(8);
             const cap = captureFor(sc, captureOverrides, durations[7]);
+            // The scene-08 recapture is the app's own recording, which
+            // already burns in the $100M/$400M/4-companies counters
+            // (app/src/director/ShotOverlays.tsx, overlay 'totals', stage
+            // 12 "Let it land"). Rendering Scene08Counters on top of it
+            // doubled the counters (ghosted duplicate behind the sharp
+            // numerals, draft v5 ~t=128s). One owner per element, capture
+            // wins (ac02b78) — only render the Remotion counters in the
+            // fallback path, when no scene-08 capture exists yet.
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[7]} cap={cap}>
-                <Scene08Counters durationInFrames={durations[7]} />
+                {!captureOverrides[8] && <Scene08Counters durationInFrames={durations[7]} />}
               </CaptureBeat>
             ) : null;
           })()}
@@ -322,9 +338,13 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
           {(() => {
             const sc = sceneByNum(12);
             const cap = captureFor(sc, captureOverrides, durations[11]);
+            // scene-12 recapture already burns in the vault balance sheet
+            // ("Extensions. Transfers. Redemptions. Sales." + invariants —
+            // app's 'vault' overlay). Scene12Stress duplicates that
+            // headline; render it only in the fallback path.
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[11]} cap={cap}>
-                <Scene12Stress durationInFrames={durations[11]} />
+                {!captureOverrides[12] && <Scene12Stress durationInFrames={durations[11]} />}
               </CaptureBeat>
             ) : null;
           })()}
@@ -335,13 +355,18 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
           {(() => {
             const sc = sceneByNum(13);
             const cap = captureFor(sc, captureOverrides, durations[12]);
+            // scene-13 recapture already burns in "Nothing counted twice."
+            // plus the ownership/yield/operations laws (app's 'laws'
+            // overlay). ConservationLaws duplicates that; render it only
+            // in the fallback path.
+            const overlay = captureOverrides[13] ? null : <ConservationLaws durationInFrames={durations[12]} />;
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[12]} cap={cap}>
-                <ConservationLaws durationInFrames={durations[12]} />
+                {overlay}
               </CaptureBeat>
             ) : (
               <GraphicBeat sc={sc} duration={durations[12]}>
-                <ConservationLaws durationInFrames={durations[12]} />
+                {overlay}
               </GraphicBeat>
             );
           })()}
@@ -352,13 +377,18 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
           {(() => {
             const sc = sceneByNum(14);
             const cap = captureFor(sc, captureOverrides, durations[13]);
+            // scene-14 recapture already burns in "Composable." plus the
+            // Loans/Forwards/Bonds/Derivatives + "Money plus time" beats
+            // (app's 'composable' overlay). Scene14ZoomOut duplicates that;
+            // render it only in the fallback path.
+            const overlay14 = captureOverrides[14] ? null : <Scene14ZoomOut durationInFrames={durations[13]} />;
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[13]} cap={cap}>
-                <Scene14ZoomOut durationInFrames={durations[13]} />
+                {overlay14}
               </CaptureBeat>
             ) : (
               <GraphicBeat sc={sc} duration={durations[13]}>
-                <Scene14ZoomOut durationInFrames={durations[13]} />
+                {overlay14}
               </GraphicBeat>
             );
           })()}
