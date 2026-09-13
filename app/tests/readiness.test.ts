@@ -85,3 +85,28 @@ test('site compilation barrier runs on hidden meshes and finishes GPU work; fail
   assert.throws(()=>compileSiteMaterials(renderer as never,root,{} as never,{} as never),/Site material compilation failed/);
   assert.equal(renderer.debug.onShaderError,handler);
 });
+
+test('public opening readiness waits for the completed cover fade and resolves immediately for later callers', async () => {
+  const { openingRevealed } = await import('../src/globe/readiness.ts');
+  const previous = Object.getOwnPropertyDescriptor(globalThis, 'document');
+  const events = new EventTarget();
+  const dataset: Record<string, string> = {};
+  Object.defineProperty(globalThis, 'document', { configurable: true, value: {
+    documentElement: { dataset }, querySelector: () => ({}),
+    addEventListener: events.addEventListener.bind(events),
+  } });
+  try {
+    let resolved = false;
+    const first = openingRevealed().then(() => { resolved = true; });
+    await Promise.resolve();
+    assert.equal(resolved, false, 'a composed GPU frame must not expose the fading cover to capture');
+    dataset.cascadeRevealed = 'true';
+    events.dispatchEvent(new Event('cascade:revealed'));
+    await first;
+    assert.equal(resolved, true);
+    await openingRevealed();
+  } finally {
+    if (previous) Object.defineProperty(globalThis, 'document', previous);
+    else Reflect.deleteProperty(globalThis, 'document');
+  }
+});

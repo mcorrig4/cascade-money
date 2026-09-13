@@ -515,5 +515,21 @@
     "deliver_to": "dow-freeport",
     "caption": "Dow paid Great Plains Rail 20 million for input transport, traced back to Apple's original hundred million. The same day-90 units continue circulating.",
     "operation": "pay"
+  },
+  {
+    "story_id": "apple-duo",
+    "beat": "camera-sensors",
+    "day": 0,
+    "debtor": "Apple",
+    "creditor": "Sony",
+    "amount_cents": 5000000000,
+    "maturity": 90,
+    "item": "camera sensors",
+    "quantity": 2000000,
+    "unit": "sensors",
+    "deliver_to": "foxconn-zhengzhou",
+    "caption": "Apple bought 2,000,000 camera sensors from Sony, delivered to Foxconn Zhengzhou.",
+    "operation": "issue",
+    "branch": "root"
   }
 ]

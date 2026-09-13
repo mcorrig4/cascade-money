@@ -8,6 +8,7 @@ declare global {
     __cascade?: {
       frameDriven?: boolean;
       ready:()=>Promise<void>;
+      cameraOrientation:()=>{up:number[];north:number[];angleDegrees:number;allowRoll:boolean};
       renderFrame?: (tMs:number)=>unknown;
       cue:(name:import('./director/cues.ts').CueName,value?:string,atMs?:number)=>void;
       cameraClearance:()=>{actualMeters:number;minimumMeters:number;site:string|null;groundMeters:number};

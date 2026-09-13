@@ -15,15 +15,16 @@ test('optional tiles require configuration and fail closed on request failure', 
   assert.equal(enoughTiles(.95, 80, 0), true);
 });
 
-test('shot crossfades prefetch before display and hold the requested sites', () => {
-  assert.deepEqual(tilePlan({shot:1,shotElapsed:0},0,0,2),{site:'apple-park',prefetch:true,blend:1});
-  assert.deepEqual(tilePlan({shot:2,shotElapsed:0},0,0,2),{site:'apple-park',prefetch:true,blend:1});
-  assert.ok(tilePlan({shot:1,shotElapsed:14.35},0,0,2).blend > 0 && tilePlan({shot:1,shotElapsed:14.35},0,0,2).blend < 1);
+test('only authored site shots prefetch imagery; opening and California remain on the globe', () => {
+  for(const shot of [1,2])for(const shotElapsed of [0,3,8,14.35]){
+    assert.deepEqual(tilePlan({shot,shotElapsed},37.3349,-122.009,shot===1?1.9:.18),{site:null,prefetch:false,blend:0});
+  }
   assert.deepEqual(tilePlan({shot:10,shotElapsed:0},0,0,2),{site:'fifth-avenue',prefetch:true,blend:0});
+  assert.ok(tilePlan({shot:10,shotElapsed:1.2},0,0,2).blend>0&&tilePlan({shot:10,shotElapsed:1.2},0,0,2).blend<1);
   assert.equal(tilePlan({shot:10,shotElapsed:1.6},0,0,2).blend,1);
   assert.equal(tilePlan({shot:10,shotElapsed:8.3},0,0,2).blend,1);
   assert.equal(tilePlan({shot:10,shotElapsed:9},0,0,2).blend,0);
-  assert.deepEqual(tilePlan({shot:19,shotElapsed:0},0,0,2),{site:'fifth-avenue',prefetch:true,blend:1});
+  for(const shot of [19,12])assert.deepEqual(tilePlan({shot,shotElapsed:0},0,0,2),{site:'fifth-avenue',prefetch:true,blend:1});
 });
 
 test('optional tiles never hold choreography, whether pending, ready, failed or missing', () => {

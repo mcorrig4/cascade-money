@@ -62,10 +62,10 @@ const DATA_PROJECTORS = {
     return { invoice: projectInvoice(data.invoice) };
   },
   issue(data) {
-    return pick(data, ['debtor', 'creditor', 'invoice_id', 'mint_date']);
+    return pick(data, ['debtor', 'creditor', 'invoice_id', 'mint_date', 'outstanding_cents']);
   },
   pay(data) {
-    return pick(data, ['debtor', 'creditor', 'invoice_id']);
+    return pick(data, ['debtor', 'creditor', 'invoice_id', 'outstanding_cents']);
   },
   transfer(data) {
     return pick(data, ['sender', 'recipient']);

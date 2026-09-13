@@ -43,7 +43,7 @@ export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'> & Pa
   // HUD jumps name their destination before the camera reaches its proximity radius.
   const jumpSite=state.shot===null?state.camera?.site:null;
   if(jumpSite && jumpSite in SITES)return {site:jumpSite,prefetch:true,blend:1-smoothstep(0.0012,0.0035,altitude)};
-  if(state.shot===1)return {site:'apple-park',prefetch:true,blend:1-smoothstep(14,14.8,state.shotElapsed)};
+  if(state.shot===1||state.shot===2)return {site:null,prefetch:false,blend:0};
   if(state.shot===10){
     const enter=smoothstep(.8,1.6,state.shotElapsed),leave=1-smoothstep(8.3,9,state.shotElapsed);
     return {site:'fifth-avenue',prefetch:true,blend:enter*leave};

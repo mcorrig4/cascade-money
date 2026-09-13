@@ -289,3 +289,215 @@ visual check. Data preparation preserves an already supplied public fixture when
 an isolated worktree has no root simulation file. The public and built streams
 have identical SHA-256:
 `146c1255a863e593cbba8d620151d5fb28141796359bbb776b06b5c659925288`.
+
+## Stage 18 — Sony order and regenerated simulation — September 13, 2026 (EDT)
+
+The earlier “copied without edits” data note and “no Apple → Sony order” inventory
+note are superseded for this stage. The authored `apple-duo` story now includes a
+second root issue: Apple buys 2,000,000 camera sensors from Sony for $50M, day 0,
+maturity day 90, delivered to `foxconn-zhengzhou`. Its unique beat is
+`camera-sensors`. The annotation is appended, preserving all previous invoice
+IDs. The full world excludes `apple-fixture` annotations before assigning IDs,
+so this new invoice is `story:23`.
+
+The pre-regeneration stream's `run_started` metadata was inspected: world `apple`,
+365 requested days, seed 1, `check_every: checkpoint`, exact date policy,
+1,000 basis-point cash need. Remaining CLI defaults are unchanged (2,000 suppliers,
+12,000 generated invoices). The existing untracked metrics were preserved at
+`/tmp/cascade-stage18-baseline-events.metrics.json`. Exact regeneration commands:
+
+```bash
+python3 -m sim scenarios
+python3 -m sim run --world apple --days 365 --seed 1 --check-every checkpoint --out events.ndjson
+pnpm --dir app prepare:data
+```
+
+The simulation runs for the full calendar in the foreground. `prepare:data`
+projects the root stream to fields consumed by the app, applies the existing
+story-relevance filter, and applies its existing 200-per-day cap to selected
+internal event types only when the result exceeds 25 MB. It writes
+`app/public/events.ndjson`; the build copies that artifact to `dist`. Both source
+and public event streams remain gitignored.
+
+The complete `apple-duo` aggregate now includes Sony: $500M settled and $150M
+committed. The Samsung descendant tree remains separately scoped: its original
+$100M issue and nine `pay` hops settle $450M. Sony is an additional issue, never a
+tenth descendant pay hop. Python regression checks select those nine payment
+invoice IDs explicitly and verify all payment legs retain day-90 dates.
+
+The full run completed successfully in 283.45 seconds: 254,848 root events
+(1,368,910,852 bytes), 12,029 registered invoices, 6,943 settled invoices,
+144,947,096,464 cents gross settlement, and 50,822,850,000 cents committed
+principal. The prior annual invoice count was 12,028; annual downstream activity
+also changes because the Sony issue adds circulating funds. The public bake
+completed with 34,006 events and 32,501,253 bytes. The optional cap ran but removed
+no further events: 25 MB is a target, not a reason to discard required invoices
+or payments. Public SHA-256:
+`f5a0019f8d59d1622e9bb76eb249f5a7a1c72971b7fcfd1233e5d9953c920b29`.
+
+The baked stream contains the Sony invoice registration at seq 8, issue at seq 9,
+and story cue at seq 10; its annotation delivery site is preserved. Direct baked
+stream inspection confirms exactly nine Samsung descendant pay events
+(`story:1` through `story:9`). All six simulator scenarios passed; all 20 tests in
+`tests/test_incremental.py` passed using
+`/home/claude/code/cascade/.venv/bin/python -m pytest tests/test_incremental.py -q`
+(the system Python lacks the test-only `hypothesis` dependency).
+
+## Stage 18 — camera, opening, hook and narration cues
+
+The authored sequence currently has 13 scenes; stable shot IDs and all existing
+scene entries are retained. Geographic north from `siteFrame(...).north` is the
+camera default. `allowRoll` is explicit on shot definitions, camera commands,
+primitives and bookmarks. `camera/orientation.ts` resolves north at the look-at
+location (or the viewed surface beneath a center-looking globe camera), then
+applies it after camera movement and controls, before labels and rendering.
+The Three scene's render callback also enforces it for globe.gl-owned frames.
+
+`PlaybackEngine.beginShot()` publishes a reset for every start/restart, including
+continuous `playFilm()` transitions. Recording-mode entry publishes the same
+reset through `director/recording.ts`, including external engine updates.
+There is no `director/seek.ts`: timeline scrubbing calls `PlaybackEngine.seek()`,
+which stops the old motion, clears roll permission and publishes a fresh camera
+command/reset. `GlobeScene.tsx` consumes it before saving flight orientation and
+rendering, for both realtime and frame-driven paths. `siteNadir()` was the old
+`frame.north` assignment cited in the brief; it was not the scrub handler.
+
+Explicit `allowRoll: true` exceptions are shot IDs 10, 19 and 12 (authored scenes
+11, 12 and 13): Fifth Avenue street/descent, the continued hall view and Close.
+These preserve the existing local architectural vertical (`frame.up`) and the
+shared interior composition. All globe shots, including scenes 1–3, stay north-up.
+Apple Park models and camera asset helpers remain intact for other callers.
+
+Scene 1 now stays at wide globe scale with a constant 0.4 degrees/second rotation.
+Scene 2 is a single Hermite spline from wide to Cupertino (altitude 0.18), a
+stationary hold from 30% to 72% of its narration duration, and back to wide.
+The continuous entrance retains scene 1's longitude velocity; stationary hold
+and exit tangents give smooth boundaries. The existing geographic Apple SVG logo
+is the hook subject. Neither opening shot requests a site/model/tiles view.
+
+The loading cover remains above the mounted app until Earth textures, decoded
+company logos, HUD/fonts and the initial projected/rendered scene are ready.
+It then performs one 600 ms opacity transition. The extra scene-1 black fade was
+removed. Public `__cascade.ready()` also waits for that transition to finish.
+
+Scene 3 declares literal narration words `Samsung`, `Corning`, `Sony` in its
+`orderCues` table, mapped to the `display`, `cover-glass`, `camera-sensors` story
+beats. `__cascade.cue(word, undefined, milliseconds)` supplies exact local word
+times; these override scaled fallback times 4.4, 9.2 and 13.4 seconds and reveal
+each actual event once. Selection uses semantic story markers, not invoice array
+positions. The displayed participants are Apple → Samsung Display, Samsung
+Display → Corning, and Apple → Sony. All retain their real dates and amounts.
+
+The two “FROM APPLE · LATER” / “PAYMENT NEEDED · TODAY” labels actually live in
+`film/src/compositions/CascadeFilm.tsx`, with the `obligation` word mapping in
+`film/src/cues.ts`; they are fixed film overlays, not per-event app labels.
+Those files and their existing obligation/fallback cue wiring are unchanged.
+No narration files, recordings, film renders or external sends were performed.
+
+The app's live scene-5 counter previously counted the deposit as well as its
+nine downstream payments. It now excludes the initial issue in that shot's
+readout; the separately scoped Samsung tree and $100M/$450M totals are unchanged.
+The annual invoice figure is reconciled to the new 12,029-invoice stream.
+
+Build-script discrepancy verified directly: this worktree's unchanged `build`
+script explicitly sets `VITE_ENABLE_TILES=1` for Vite and the bundle check, while
+`build:local-tiles` invokes `pnpm build`. The existing `build:no-tiles` script is
+the tiles-free variant. Both are run; browser verification uses the latter's
+output. No package build scripts were changed.
+
+Stage 18 verification follow-up: the browser harness also retained two obsolete
+pre-stage assertions: exactly 17 shots and a `ratio` HUD test ID that was removed
+when the invoice counter replaced it. It now validates contiguous authored scene
+numbers/unique stable IDs and the current `invoices-settled` HUD. Camera proof
+sampling compares rendered frames (rather than assuming SwiftShader can render
+within 200 ms). The full engine test still samples every 30 frames throughout
+all 13 scenes. Direct starts also reset globe FOV/target independently of a
+recording-mode toggle; bookmark flags resolve against the shot's policy, never
+against the previous bookmark's flag.
+
+Latest unit verification: `pnpm --dir app test` reports 152 tests, 144 passing,
+8 failing, all eight from the supplied nine-failure baseline. The `post16`
+regressions now pass with prepared real data and the revised opening/cue contract;
+all five new Stage 18 tests pass. Python verification:
+`/home/claude/code/cascade/.venv/bin/python -m pytest tests/test_incremental.py -q`
+passes all 20 tests, including the shared-root aggregate and nine-pay subtree.
+
+`node app/scripts/check-stage18.mjs` passes all six checks and saves 12 PNGs plus
+`app/artifacts/stage18-proof.json`. The live camera samples cover starts, holds
+and ends of all ten shots without `allowRoll`; their maximum north error is 0°.
+The full engine test additionally traverses all 13 shots at 60 fps, checking
+starts and every 30 frames. The proof verifies cold texture gating/rotation,
+the Apple coast marker hold and wide exit, literal cue overrides revealing the
+three real orders once, the live scene-5 count of exactly 9 ($100M/$450M), and
+orientation after a contaminated-camera timeline seek. The loading, north-up,
+California, three-order, counter and seek images were visually inspected.
+
+The full real-data gate exposed a pre-existing 640×360 coin-card overflow:
+its yield-tick strip retained a fixed 24 px height and 18 px margins while the
+surrounding layout scaled to one third. The card measured 221 px high with
+224 px of content. `film.css` now scales those tick dimensions with `--film-unit`,
+matching the rest of the film layout. The browser gate retains its overflow
+assertion. Scene capture now pauses background globe rendering and explicitly
+renders each sampled pose; this preserves the manual-clock composition while
+avoiding redundant software WebGL work between captures.
+
+The final desktop scene and layout assertions passed, including the repaired
+640×360 card. An overlapping mobile cold start then reached the existing
+60-second Earth-readiness deadline while the desktop architecture continued
+rendering. The harness now closes its completed desktop context before opening
+the independent mobile context, releasing the desktop WebGL resources. No
+startup timeout or readiness assertion was relaxed.
+
+Final verification completed: `pnpm --dir app build` and
+`pnpm --dir app build:no-tiles` both pass; the final local bundle is tiles-free.
+`pnpm --dir app check:browser --static --real-data` passes desktop/mobile
+gestures and layout, geography, texture ordering, arcs, director scenes and
+the year endpoint (34,006 prepared events; maximum measured seek 3.6 ms).
+`pnpm --dir app check:browser --static --legibility` also passes, capturing all
+13 authored scenes at both proof sizes. The dedicated Stage 18 proof passes
+all six checks. The full app test result remains 144 passed / 8 baseline
+failures, with zero new failures. No recording or actual narration timing-file
+lookup was performed under the stage freeze; literal word overrides were
+verified through the existing cue API. Changes are left uncommitted for review.
+
+Stage 18 follow-up review: the 8,796 year-end HUD count was a pre-existing app
+projection/counting bug, not a Sony simulation error. Both the HEAD projection
+and HUD fallback dropped `outstanding_cents` and interpreted absence as zero.
+A direct reduction of the unchanged root stream finds 8,796 invoices touched by
+Issue/Pay, of which 6,943 are fully settled and 1,853 remain partially settled.
+The projection now retains the balance, and the HUD requires explicit zero.
+Scene 5 still counts its nine Pay hops. Only `prepare:data` (via the tiles-free
+build) was rerun; the full simulation was not repeated.
+
+Ledger descriptions now group integer quantities, omit count units already in
+the item name, and humanize delivery keys: `2,000,000 camera sensors → Foxconn
+Zhengzhou`. Existing authored annotations take precedence. The California logo
+caption can use its full intrinsic width during the hold. The 5,400-pixel Earth
+atlas already uses mipmapping/linear filtering and anisotropy; its close-up
+pixelation needs a higher-detail source asset, not another filtering setting.
+That asset improvement remains out of scope. Historical narrative documents,
+unused laws-overlay tests, deployment configuration and narration remain untouched.
+
+Follow-up verification: `pnpm --dir app test` reports 147 passed / the same eight
+baseline failures (155 total, zero new failures). The line-item formatting,
+projection-balance and real-data settlement regressions pass. `pnpm --dir app
+build:no-tiles` passes and rebakes 34,006 events to 32,785,582 bytes with balances
+preserved. `node app/scripts/check-stage18.mjs` passes seven checks and writes
+13 proof images, including the new `stage18-year-settled.png` at 6,943. Refreshed
+opening, California-hold, three-orders and year-end images were visually
+inspected; the California caption reads `Apple · Cupertino` without clipping.
+The north-up, readiness/rotation, three-order cues, nine-pay cascade and seek
+checks remain green. Broader browser gates were not repeated for this follow-up;
+the dedicated browser proof exercises the affected behavior.
+
+Scene 2 refinement (product owner 05:55 EDT): scene 1 remains unchanged at
+OPENING_WIDE altitude 1.9 with its existing rotation/reveal. Scene 2 holds at
+37.65, -122.45, altitude 0.18 from 30–50% of the take, then pans southeast and
+zooms slowly to the Apple Park marker coordinates (37.3349, -122.009), altitude
+0.06, at 75%. This deliberately avoids the extreme 0.0003 building-level pose.
+The final quarter pulls back to altitude 1.65, at the same latitude/longitude
+as the previous endpoint. One Hermite spline supplies the entire take, with
+zero tangents at hold/approach/exit knots; no site model, arch, orbit or roll
+opt-in is introduced. Scene 3 inherits this new endpoint automatically. The
+browser proof additionally captures the marker approach and full-globe exit,
+checking the globe's angular radius against the camera's vertical field of view.

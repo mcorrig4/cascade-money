@@ -3,7 +3,8 @@ import { sampleRewindEvents } from './rewind-events.ts';
 import { companyCues } from '../director/company-cues.ts';
 import { CameraBookmarks } from '../director/bookmarks.ts';
 import { ORDER_SITES, proofMaturity, SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
-import { easeAt, sampleCamera, EARTH_METERS, SITE_CLEARANCE_METERS, clampCamera, cameraClearance, cameraGround } from '../camera/primitives.ts';
+import { applyCameraOrientation, cameraOrientation } from '../camera/orientation.ts';
+import { cameraAllowsRoll, easeAt, sampleCamera, EARTH_METERS, SITE_CLEARANCE_METERS, clampCamera, cameraClearance, cameraGround } from '../camera/primitives.ts';
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 import type { GlobeInstance } from 'globe.gl';
@@ -26,7 +27,7 @@ import { createSiteModels } from './site-models.ts';
 import { appleParkShotCamera, fifthAvenueShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
 import { canUseTiles } from './tiles-policy.ts';
-import { EARTH_BACKGROUND, compileSiteMaterials, finishFirstFrame } from './readiness.ts';
+import { EARTH_BACKGROUND, compileSiteMaterials, finishFirstFrame, openingRevealed } from './readiness.ts';
 import { PulseRingLayer } from './pulse-ring-layer.ts';
 import { DeterministicArcLayer } from './deterministic-arc-layer.ts';
 import parkUrl from '../assets/apple-park.svg';
@@ -53,9 +54,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const pulseLayer = new PulseRingLayer(globe), deterministicArcs = new DeterministicArcLayer(globe);
     const companyLayer = new CompanyLayer(companies.current, named);
     let localFocus:Vector3|undefined;
+    let orientationRevision=-1,shotRevision=-1;
     let arcIds = '', cinematic=false, campusFraming=0;
     let time = 250, last = frameDriven ? 0 : performance.now(), lastColor = 0, raf = 0;
-    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false, previousShot: number | null = null;
+    let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, markerOnly = false, disposed = false;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
     let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
 
@@ -123,7 +125,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if(engine.state.camera.site)engine.update({camera:{...engine.state.camera,site:undefined}});
       if (engine.state.shot !== null) engine.stopShot();
       flight = undefined; cameraId = engine.state.camera.id;
-      globe.controls().target.set(0, 0, 0); globe.camera().up.set(0, 1, 0);
+      globe.controls().target.set(0, 0, 0); engine.resetOrientation(); applyCameraOrientation(globe.camera(),globe.controls().target);
     };
     const captureTouch = (event: TouchEvent) => { if (event.cancelable) event.preventDefault(); };
     root.addEventListener('touchstart', captureTouch, { passive: false });
@@ -142,10 +144,16 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const maintainSiteControls=()=>{
       // globe.gl's earlier change listener resets the target and shrinks zoom
       // speed toward zero at site scale. Keep the authored focus until drag.
-      if(localFocus&&!interacting){controls.target.copy(localFocus);camera.lookAt(localFocus);}
+      if(localFocus&&!interacting)controls.target.copy(localFocus);
+      applyCameraOrientation(camera,controls.target,cameraAllowsRoll(engine.state.camera,engine.state.cameraElapsed));
       controls.zoomSpeed=Math.max(.4,Math.min(1.2,Math.sqrt(Math.max(0,globe.pointOfView().altitude))*.5));
     };
     controls.addEventListener('change',maintainSiteControls);
+    const scene=globe.scene(),beforeRender=scene.onBeforeRender;
+    scene.onBeforeRender=(...args)=>{
+      beforeRender.apply(scene,args);
+      if(args[2]===camera)applyCameraOrientation(camera,controls.target,cameraAllowsRoll(engine.state.camera,engine.state.cameraElapsed));
+    };
 
     // A curved, geographically registered local SVG decal: no tile service or satellite dependency.
     let resolveParkTexture!:()=>void, rejectParkTexture!:(reason:unknown)=>void;
@@ -165,11 +173,12 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const park = new Mesh(geometry, material); park.visible = false; park.renderOrder = 2; park.name = 'Apple Park ring decal'; park.userData.skipBloom = true; globe.scene().add(park);
     const models = createSiteModels(globe, { 'apple-park': park, 'fifth-avenue': fifth.group });
     let siteMaterialsCompiled = false;
-    void Promise.all([effects.ready(),parkTextureReady]).then(async () => {
+    void Promise.all([effects.ready(),parkTextureReady,companyLayer.ready()]).then(async () => {
       if (frameDriven) await models.preload();
       if (disposed) return;
       // Include hidden landmarks, site GLBs and globe markers in the readiness barrier.
       compileSiteMaterials(globe.renderer(), globe.scene(), camera, globe.scene());
+      frame(frameDriven?0:performance.now(),false);
       finishFirstFrame(() => globe.postProcessingComposer().render(0), globe.renderer().getContext());
       siteMaterialsCompiled = true;
       root.style.visibility = 'visible'; readinessGate.finish();
@@ -184,15 +193,21 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const elapsed = frameDriven ? 0 : now - last; last = now;
       if (document.hidden && !frameDriven) { raf = requestAnimationFrame(frame); return; }
       const state = engine.state, moving = state.playing || state.shotRunning;
-      if(state.shot!==previousShot){
-        previousShot=state.shot;
-
-        // A URL/director entry has no preceding scene to provide its camera.
-        // Start from the authored pose; continuous film transitions still inherit.
-        if(state.shot!==null&&!state.film&&state.shotElapsed<.1){
-          const authored=SHOTS.find(shot=>shot.id===state.shot);
-          if(authored){flight=undefined;globe.pointOfView(state.camera.bookmarkPath?state.camera.from!:authored.start,0);cameraId=-1;}
+      const allowRoll=cameraAllowsRoll(state.camera,state.cameraElapsed);
+      if(state.shotRevision!==shotRevision){
+        shotRevision=state.shotRevision;
+        if(state.shot!==null&&(!state.film||state.shot===1)){
+          // Direct entry/restart has no previous camera take to inherit. This is
+          // independent of recording entry, which must preserve a mid-shot pose.
+          flight=undefined;interiorDescent=undefined;localFocus=undefined;
+          controls.target.set(0,0,0);camera.fov=globeFov;camera.updateProjectionMatrix();
+          globe.pointOfView(state.camera.from??state.camera,0);cameraId=-1;
         }
+      }
+      if(state.orientationRevision!==orientationRevision){
+        orientationRevision=state.orientationRevision;
+        // Consume shot/restart/recording/seek resets before saving flight.up.
+        applyCameraOrientation(camera,controls.target,allowRoll);
       }
       if(cinematic!==(state.shot!==null||!!state.camera.site)){cinematic=state.shot!==null||!!state.camera.site;if(cinematic)globe.globeOffset([0,0]);else resize();}
       const desiredPixelRatio = state.recording ? 1 : Math.min(window.devicePixelRatio, 1.5);
@@ -202,7 +217,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if (frameDriven) {
         cameraId = state.camera.id;
         const from = state.camera.from ?? state.camera;
-        globe.pointOfView(from, 0); controls.target.set(0, 0, 0); camera.up.set(0, 1, 0); camera.fov = globeFov; camera.updateProjectionMatrix(); camera.lookAt(controls.target);
+        globe.pointOfView(from, 0); controls.target.set(0, 0, 0); applyCameraOrientation(camera,controls.target,allowRoll); camera.fov = globeFov; camera.updateProjectionMatrix(); camera.lookAt(controls.target);
         flight = { from, to: state.camera, elapsed: state.cameraElapsed,
           eye: camera.position.clone(), target: controls.target.clone(), up: camera.up.clone(),
           fromFov: globeFov, targetFov: state.camera.site ? siteCamera(state.camera.site, globe.getGlobeRadius()).fov : globeFov,
@@ -211,7 +226,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         cameraId = state.camera.id;
         if(state.camera.velocity&&flight?.to.landmarkPath==='apple-park-arch'){
           const end=appleParkShotCamera(globe.getGlobeRadius(),13.7);
-          controls.target.copy(end.target);camera.up.copy(end.up);camera.fov=end.fov;
+          controls.target.copy(end.target);if(allowRoll)camera.up.copy(end.up);camera.fov=end.fov;
         }
         flight = { from: globe.pointOfView(), to: state.camera, elapsed: 0,
           eye: camera.position.clone(), target: controls.target.clone(), up: camera.up.clone(),
@@ -227,17 +242,18 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           const base=appleParkShotCamera(globe.getGlobeRadius(),0);
           camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
           controls.target.copy(globe.getCoords(primitive.center.lat,primitive.center.lng,0));
-          camera.up.copy(base.up);camera.fov=base.fov;camera.updateProjectionMatrix();camera.lookAt(controls.target);
+          if(allowRoll)camera.up.copy(base.up);camera.fov=globeFov;camera.updateProjectionMatrix();camera.lookAt(controls.target);
         } else if(primitive?.kind==='spline' && flight.to.landmarkPath==='apple-park-arch') {
           // Resolve the landmark against the other lane's calibrated camera
           // functions, not the script's approximate kilometre-scale altitudes.
           camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
           const look=appleParkShotCamera(globe.getGlobeRadius(),6.5+t*7.2);
-          controls.target.lerpVectors(flight.target,look.target,eased);camera.up.copy(look.up);camera.fov=look.fov;camera.updateProjectionMatrix();camera.lookAt(controls.target);
+          controls.target.lerpVectors(flight.target,look.target,eased);if(allowRoll)camera.up.copy(look.up);camera.fov=look.fov;camera.updateProjectionMatrix();camera.lookAt(controls.target);
         } else if(primitive?.kind==='spline') {
           camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
           controls.target.copy(flight.target).multiplyScalar(1-eased);
-          camera.up.lerpVectors(flight.up,new Vector3(0,1,0),eased).normalize();camera.lookAt(controls.target);
+          camera.fov=flight.fromFov+(globeFov-flight.fromFov)*eased;camera.updateProjectionMatrix();
+          if(allowRoll)camera.up.lerpVectors(flight.up,new Vector3(0,1,0),eased).normalize();camera.lookAt(controls.target);
         } else if (flight.local) {
           const pose = flight.to.site ? siteCamera(flight.to.site, globe.getGlobeRadius()) : {
             position: new Vector3().copy(globe.getCoords(flight.to.lat, flight.to.lng, flight.to.altitude)), target: new Vector3(), up: new Vector3(0, 1, 0) };
@@ -245,7 +261,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           if(flight.to.velocity)camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
           else camera.position.lerpVectors(flight.eye, pose.position, eased);
           controls.target.lerpVectors(flight.target, pose.target, eased);
-          camera.up.lerpVectors(flight.up, pose.up, eased).normalize();
+          if(allowRoll)camera.up.lerpVectors(flight.up, pose.up, eased).normalize();
           camera.fov = flight.fromFov + (flight.targetFov - flight.fromFov) * eased; camera.updateProjectionMatrix();
           camera.lookAt(controls.target);
         } else {
@@ -255,7 +271,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (t === 1) flight = undefined;
       }
       // Ring center at 60% of the frame, easing back to center for the arch.
-      const framingTarget=state.camera.primitive?.kind==='orbit'?.1:0;
+      const framingTarget=state.camera.site==='apple-park'&&state.camera.primitive?.kind==='orbit'?.1:0;
       campusFraming = framingTarget * easeAt(Math.min(1,state.cameraElapsed/350));
       if(campusFraming>.00001)camera.setViewOffset(root.clientWidth,root.clientHeight,-root.clientWidth*campusFraming,0,root.clientWidth,root.clientHeight);
       else if(camera.view?.enabled)camera.clearViewOffset();
@@ -276,7 +292,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           pose.fov=interiorDescent.fov+(pose.fov-interiorDescent.fov)*blend;
           pose.position.sub(pose.target).applyAxisAngle(pose.up,idleDelta.orbit*Math.PI/180).add(pose.target);
         }
-        camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
+        camera.position.copy(pose.position); if(allowRoll)camera.up.copy(pose.up); controls.target.copy(pose.target); camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
       }
       if((!flight || !moving) && state.camera.primitive?.kind==='orbit') {
         const normal=controls.target.clone().normalize();camera.position.sub(controls.target).applyAxisAngle(normal,idleDelta.lng*Math.PI/180).add(controls.target);camera.lookAt(controls.target);
@@ -300,11 +316,12 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const reference = cameraGround(eye, hasInterior);
       const safeEye = clampCamera(eye,reference);
       camera.position.copy(globe.getCoords(safeEye.lat,safeEye.lng,safeEye.altitude));camera.lookAt(controls.target);
+      applyCameraOrientation(camera,controls.target,allowRoll);
       clearance = cameraClearance(safeEye,reference);
       localFocus=state.camera.site&&!interacting?controls.target.clone():undefined;
       effects.setInterior(reference.site==='fifth-avenue'&&reference.minimumMeters<12);
       const isClose = globe.pointOfView().altitude < 0.02;
-      if (close !== isClose) { close = isClose; globe.pointsData(close ? [] : firms); }
+      if (close !== isClose || markerOnly !== (state.shot===2)) { close = isClose; markerOnly = state.shot===2; globe.pointsData(close || markerOnly ? [] : firms); }
       const pov = globe.pointOfView();
       if(!flight)engine.observeCamera(pov);
       models.update(pov.lat, pov.lng, pov.altitude, elapsed);
@@ -406,12 +423,12 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         pulseRings = nextRings;
       }
       // Project DOM labels from this frame’s camera, including the first explicit seek.
-      camera.updateMatrixWorld(true);
+      applyCameraOrientation(camera,controls.target,allowRoll);
       const landscape=root.clientWidth/root.clientHeight>=4/3;
       const filmScale=landscape?Math.min(root.clientWidth/1920,root.clientHeight/1080):1;
       const ledgerLeft = !landscape?root.clientWidth-12:state.recording?root.clientWidth-24*filmScale:root.clientWidth-760*filmScale;
       layer.update(globe, state.shot===3||state.shot===4?[]:pool.arcs, time, ledgerLeft, root.clientHeight - 330*filmScale,filmScale,state.day);
-      companyLayer.update(globe, named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
+      companyLayer.update(globe, state.shot===2?named.filter(f=>f.id==='Apple'):named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
         root.clientHeight - 330*filmScale, close, !landscape,filmScale);
       companyLayer.updateCallouts(globe,named,state.shot===3||state.shot===4?[]:companyCues(state),state.shot===null?state.tMs:state.shotElapsed*1000,landscape?filmScale:root.clientWidth/1920,root.clientHeight-330*filmScale);
       if (schedule) raf = requestAnimationFrame(frame);
@@ -419,22 +436,22 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     if (!frameDriven) raf = requestAnimationFrame(frame);
     {
       const bookmarks=new CameraBookmarks();
-      const ready=async()=>{await engine.ready();if(frameDriven)globe.pauseAnimation();};
-      window.__cascade = { frameDriven,ready,cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:()=>({...effects.readiness(),fullFrame:effects.readiness().fullFrame&&siteMaterialsCompiled,siteMaterialsCompiled}),cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,recordingTake:()=>recording.snapshot(captureClock()),get filmStartMs(){return filmStartMs;},
+      const ready=async()=>{await engine.ready();await openingRevealed();if(frameDriven)globe.pauseAnimation();};
+      window.__cascade = { frameDriven,ready,cameraOrientation:()=>cameraOrientation(camera,controls.target,cameraAllowsRoll(engine.state.camera,engine.state.cameraElapsed)),cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:()=>({...effects.readiness(),fullFrame:effects.readiness().fullFrame&&siteMaterialsCompiled,siteMaterialsCompiled}),cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append({...globe.pointOfView(),allowRoll:cameraAllowsRoll(engine.state.camera,engine.state.cameraElapsed)},engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,recordingTake:()=>recording.snapshot(captureClock()),get filmStartMs(){return filmStartMs;},
         playScene:(id)=>playShot(engine,id),playFilm:async()=>{await engine.ready();sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=frameDriven?0:performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
-        renderFrame:(tMs:number)=>{frame(tMs,false);camera.lookAt(controls.target);camera.updateMatrixWorld(true);globe.scene().updateMatrixWorld(true);globe.renderer().setRenderTarget(null);globe.renderer().render(globe.scene(),camera);const pov=globe.pointOfView();return {camera:camera.position.toArray(),target:controls.target.toArray(),up:camera.up.toArray(),fov:camera.fov,pov,arcs:pool.arcs.map(arc=>arc.id)};},
+        renderFrame:(tMs:number)=>{frame(tMs,false);applyCameraOrientation(camera,controls.target,cameraAllowsRoll(engine.state.camera,engine.state.cameraElapsed));camera.updateMatrixWorld(true);globe.scene().updateMatrixWorld(true);globe.renderer().setRenderTarget(null);globe.renderer().render(globe.scene(),camera);const pov=globe.pointOfView();return {camera:camera.position.toArray(),target:controls.target.toArray(),up:camera.up.toArray(),fov:camera.fov,pov,arcs:pool.arcs.map(arc=>arc.id)};},
         tiles: () => siteStatus,
         siteView: (site, orbit = 0) => {
           engine.stopShot(); flight = undefined;
           const pose = siteCamera(site, globe.getGlobeRadius(), orbit);
-          camera.position.copy(pose.position); camera.up.copy(pose.up); controls.target.copy(pose.target);
-          camera.fov = pose.fov; camera.updateProjectionMatrix(); camera.lookAt(pose.target);
+          engine.resetOrientation();camera.position.copy(pose.position); controls.target.copy(pose.target);
+          camera.fov = pose.fov; camera.updateProjectionMatrix(); applyCameraOrientation(camera,controls.target);
         },
         siteNadir: (site, altitude = 900) => {
           engine.stopShot(); flight = undefined;
           const radius = globe.getGlobeRadius(), frame = siteFrame(SITES[site].lat, SITES[site].lng, radius);
           const position = sitePoint(site, radius, 0, altitude, 0), target = sitePoint(site, radius, 0, 0, 0);
-          camera.position.copy(position); camera.up.copy(frame.north); controls.target.copy(target);
+          engine.resetOrientation();camera.position.copy(position); camera.up.copy(frame.north); controls.target.copy(target);
           camera.fov = 45; camera.updateProjectionMatrix(); camera.lookAt(target);
         },
         geography: () => {

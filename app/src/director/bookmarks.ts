@@ -1,7 +1,7 @@
-import {normalizeBookmarks,type Bookmark,type Pose} from '../camera/primitives.ts';
+import {normalizeBookmarks,type Bookmark,type Pose,type OrientationPolicy} from '../camera/primitives.ts';
 export class CameraBookmarks {
  readonly items:Bookmark[]=[];
- append(pose:Pose,sceneId:number|null,time:number) {
+ append(pose:Pose & OrientationPolicy,sceneId:number|null,time:number) {
   const bookmark={...pose,sceneId,time,holdMs:0,travelMs:2500};this.items.push(bookmark);return bookmark;
  }
  load(json:string){const next=normalizeBookmarks(JSON.parse(json));this.items.splice(0,this.items.length,...next);return this.items;}

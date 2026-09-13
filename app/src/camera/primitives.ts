@@ -37,9 +37,17 @@ export function clampCamera(pose:Pose,reference=cameraGround(pose)):Pose {
 }
 export type Ease={kind:'cubic'}|{kind:'cubic-out';handoff?:number}|{kind:'bezier';points:[number,number,number,number]};
 export type Route='shortest'|'west'|'east';
-export type Keyframe=Pose & {t:number;tangent?:Pose};
-export type Primitive={kind:'orbit';center:Center;radius:number;angularSpeed:number;bearing:number}|{kind:'spline';keyframes:Keyframe[]}|{kind:'fly'};
-export type CameraCommand=Pose & {velocity?:Pose;landmarkPath?:'apple-park-arch';id:number;duration:number;bookmarkPath?:boolean;site?:'apple-park'|'fifth-avenue';ease?:Ease;route?:Route;from?:Pose;primitive?:Primitive};
+/** Geographic north is the default; only authored shots/paths may opt into roll. */
+export type OrientationPolicy={allowRoll?:boolean};
+export type Keyframe=Pose & OrientationPolicy & {t:number;tangent?:Pose};
+export type Primitive=OrientationPolicy & ({kind:'orbit';center:Center;radius:number;angularSpeed:number;bearing:number}|{kind:'spline';keyframes:Keyframe[]}|{kind:'fly'});
+export type CameraCommand=Pose & OrientationPolicy & {velocity?:Pose;landmarkPath?:'apple-park-arch';id:number;duration:number;bookmarkPath?:boolean;site?:'apple-park'|'fifth-avenue';ease?:Ease;route?:Route;from?:Pose;primitive?:Primitive};
+export function cameraAllowsRoll(command:CameraCommand,elapsedMs=0):boolean {
+ const primitive=command.primitive;
+ const t=command.duration<=0?1:Math.max(0,Math.min(1,elapsedMs/command.duration));
+ const key=primitive?.kind==='spline'?primitive.keyframes.findLast(k=>k.t<=t*primitive.keyframes.at(-1)!.t):undefined;
+ return key?.allowRoll??primitive?.allowRoll??command.allowRoll??false;
+}
 export const clamp=(n:number)=>Math.max(0,Math.min(1,n));
 export function easeAt(t:number,ease:Ease={kind:'cubic'}) {
   t=clamp(t);
@@ -98,7 +106,7 @@ export function sampleCamera(command:CameraCommand,elapsedMs:number):Pose {
 export const SUBSURFACE_INTERIOR_CAMERA_HOOK='subsurface-interior-camera';
 
 
-export type Bookmark = Pose & { sceneId:number|null; time:number; heading?:number; tilt?:number; holdMs:number; travelMs:number };
+export type Bookmark = Pose & OrientationPolicy & { sceneId:number|null; time:number; heading?:number; tilt?:number; holdMs:number; travelMs:number };
 export type CameraBookmark = Bookmark;
 export type BookmarkInput = Omit<Bookmark,'holdMs'|'travelMs'> & Partial<Pick<Bookmark,'holdMs'|'travelMs'>>;
 export function normalizeBookmarks(value:unknown):Bookmark[] {
@@ -108,7 +116,8 @@ export function normalizeBookmarks(value:unknown):Bookmark[] {
   const result={...b,holdMs:b.holdMs??0,travelMs:b.travelMs??2500} as Bookmark;
   if(![result.lat,result.lng,result.altitude,result.time,result.holdMs,result.travelMs].every(Number.isFinite)
    || Math.abs(result.lat)>90 || result.altitude<0 || result.holdMs<0 || result.travelMs<=0
-   || !(result.sceneId===null||Number.isInteger(result.sceneId)))throw new Error('Invalid bookmark pose or timing');
+   || !(result.sceneId===null||Number.isInteger(result.sceneId))
+   || (result.allowRoll!==undefined&&typeof result.allowRoll!=='boolean'))throw new Error('Invalid bookmark pose or timing');
   return result;
  });
 }
@@ -120,7 +129,7 @@ export function fromBookmarks(input:BookmarkInput[]):Keyframe[] {
  const zero={lat:0,lng:0,altitude:0};
  bookmarks.forEach((b,i)=>{
   if(i){t+=b.travelMs/1000;lng+=longitudeDelta(bookmarks[i-1].lng,b.lng);}
-  const key:Keyframe={lat:b.lat,lng,altitude:b.altitude,t};
+  const key:Keyframe={lat:b.lat,lng,altitude:b.altitude,t,...(b.allowRoll===undefined?{}:{allowRoll:b.allowRoll})};
   if(b.holdMs>0)key.tangent={...zero};
   keys.push(key);
   if(b.holdMs>0){t+=b.holdMs/1000;keys.push({...key,t,tangent:{...zero}});}

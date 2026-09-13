@@ -99,52 +99,49 @@ test('capture offsets stay inside every scene and ignore intervening real-time f
  e.setClockMode('realtime');e.tick(SHOTS[0].seconds);assert.equal(e.state.shot,2);
 });
 
-test('opening shot cold-opens on the whole Earth then arrives and holds at Apple Park',async()=>{
- // Shot 1's camera is now a recorded bookmark flight (director/shots.ts's
- // `path`, sourced from dev-mac's record-scene1-v6b.mjs): a whole-Earth
- // pose (alt 3) held for 900ms, a 3200ms flight, then holding at Apple
- // Park (alt .0003) for 2500ms — 6.6s total, matching shot 1's default
- // (narration-less) duration exactly. This replaces the old architectural
- // orbit-from-the-start shot (appleParkShotCamera) — the bookmark flight
- // is a plain overhead pose at Apple Park, not that framing, so this test
- // only checks the pose (lat/lng/altitude), not the old eye-position match.
+test('opening shot rotates from its first frame and remains at whole-Earth scale',async()=>{
  const {siteFrame}=await import('../src/globe/site-math.ts');
+ const {OPENING_ROTATION}=await import('../src/director/shots.ts');
  const e=new PlaybackEngine(index);playShot(e,1);
- const openingPose=sampleCamera(e.state.camera,0);
- assert.equal(openingPose.lat,0);assert.equal(openingPose.altitude,3);
- // Arrival: holdMs(900ms)+travelMs(3200ms) into the flight, the camera lands
- // on Apple Park and dwells there through the rest of the shot. sampleCamera
- // takes elapsed in MILLISECONDS.
- const arrivalElapsedMs=(900+3200);
- const pose=sampleCamera(e.state.camera,arrivalElapsedMs);
- assert.deepEqual({lat:pose.lat,lng:pose.lng,altitude:pose.altitude},{lat:37.3349,lng:-122.009,altitude:.0003});
- const eye=siteFrame(pose.lat,pose.lng,EARTH_METERS).position.multiplyScalar(1+pose.altitude);
- const origin=siteFrame(37.3349,-122.009,EARTH_METERS).position;
- assert.ok(eye.distanceTo(origin)<2500,'Inside even the stricter 2.5 km gate, and therefore the accepted 5 km campus radius');
- // Held at Apple Park through the end of the (default-duration) shot — the
- // flight's own hold, not shot 2's orbit-authored start pose; scene 1 hard-cuts
- // into scene 2 rather than continuing a single unbroken camera move.
+ const opening=sampleCamera(e.state.camera,0),next=sampleCamera(e.state.camera,1000/60);
+ assert.ok(opening.altitude>1);assert.equal(e.state.camera.site,undefined);
+ assert.equal(e.state.camera.bookmarkPath,undefined);
+ assert.ok(Math.abs((next.lng-opening.lng)*60-OPENING_ROTATION)<1e-8,'First visible frame already has the authored angular velocity');
+ for(let frame=0;frame<=Math.floor(SHOTS[0].seconds*60);frame++){
+  const pose=sampleCamera(e.state.camera,frame*1000/60);
+  assert.ok(Math.abs(pose.altitude-opening.altitude)<1e-12);assert.ok(Math.abs(pose.lat-opening.lat)<1e-12);
+  const eye=siteFrame(pose.lat,pose.lng,EARTH_METERS).position.multiplyScalar(1+pose.altitude);
+  assert.ok(eye.length()>2*EARTH_METERS,'Wide scene cannot enter a campus model');
+ }
  e.tick(SHOTS[0].seconds);
- const endPose=sampleCamera(e.state.camera,e.state.cameraElapsed);
- assert.deepEqual({lat:endPose.lat,lng:endPose.lng,altitude:endPose.altitude},{lat:37.3349,lng:-122.009,altitude:.0003});
+ assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),SHOTS[0].end);
+ assert.deepEqual(SHOTS[1].start,SHOTS[0].end,'The California take inherits the opening boundary');
 });
 
-test('scene 2 stays in orbit for ten seconds, swoops, and pulls out only on the last clause',async()=>{
- const {applyNarrationDurations}=await import('../src/director/shots.ts');
+test('scene 2 continuously zooms to California, holds, and returns wide at every narration scale',async()=>{
+ const {applyNarrationDurations,CALIFORNIA_HOLD,APPLE_MARKER_APPROACH}=await import('../src/director/shots.ts');
  try{
   for(const scale of [1,.8,1.25]){
    applyNarrationDurations({'2':16.2*scale});
-   const e=new PlaybackEngine(index);playShot(e,2);
-   e.tick(9.999*scale);assert.equal(e.state.camera.primitive?.kind,'orbit');
-   assert.ok(e.state.camera.altitude<.00004);
-   e.tick(.001*scale);assert.equal(e.state.camera.primitive?.kind,'spline');
-   assert.equal(e.state.camera.landmarkPath,'apple-park-arch');
-   e.tick(3.599*scale);assert.equal(e.state.camera.primitive?.kind,'spline');
-   e.tick(.001*scale);assert.equal(e.state.camera.primitive?.kind,'fly');
-   assert.equal(e.state.camera.altitude,SHOTS[1].end.altitude);
-   e.tick(2.6*scale);
-   assert.ok(Math.abs(sampleCamera(e.state.camera,e.state.cameraElapsed).altitude-SHOTS[1].end.altitude)<1e-7);
-   assert.equal(e.state.shotRunning,false);
+   const e=new PlaybackEngine(index);playShot(e,2);const shot=SHOTS[1],command=e.state.camera;
+   assert.equal(command.primitive?.kind,'spline');assert.equal(command.site,undefined);assert.equal(command.landmarkPath,undefined);
+   assert.deepEqual(sampleCamera(command,0),shot.start);
+   let previous=shot.start.altitude;
+   for(let sample=1;sample<=30;sample++){
+    const pose=sampleCamera(command,command.duration*sample/100);
+    assert.ok(pose.altitude<=previous+1e-12,'Zoom-in stays monotonic');previous=pose.altitude;
+   }
+   for(const fraction of [.3,.4,.5])for(const field of ['lat','lng','altitude'] as const)assert.ok(Math.abs(sampleCamera(command,command.duration*fraction)[field]-CALIFORNIA_HOLD[field])<1e-10);
+   previous=APPLE_MARKER_APPROACH.altitude;
+   assert.deepEqual(sampleCamera(command,command.duration*.75),APPLE_MARKER_APPROACH);
+   assert.ok(shot.end.altitude<shot.start.altitude);
+   for(let sample=76;sample<=100;sample++){
+    const pose=sampleCamera(command,command.duration*sample/100);
+    assert.ok(pose.altitude>=previous-1e-12,'Final clause zooms back out monotonically');previous=pose.altitude;
+   }
+   e.tick(shot.seconds);assert.equal(e.state.shotRunning,false);
+   assert.deepEqual(sampleCamera(command,e.state.cameraElapsed),shot.end);
+   assert.deepEqual(SHOTS[2].start,shot.end,'Next scene inherits wide framing');
   }
  }finally{applyNarrationDurations({});}
 });
