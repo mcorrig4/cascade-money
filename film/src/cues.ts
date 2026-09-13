@@ -78,12 +78,13 @@
  *   - Scene 10 (Zoom out): word-chip cues unchanged; added `wordmark` on
  *     the Kokoro-voiced "Cascade" ("Cascade makes that date part of the
  *     money itself").
- *   - Scene 11 (Beneath it): `promises` on the first "promises" ("an
- *     invisible chain of promises") and `cascade-would` on "Cascade"
+ *   - Scene 11 (New York): `chain-reveal` on "invisible", `promises` on
+ *     the first "promises" ("an invisible chain of promises") and
+ *     `cascade-would` on "Cascade"
  *     ("Cascade would have let those promises move before the cash
  *     does.").
- *   - Scene 12 (Close): `wordmark` on "Cascade" — authored per the note
- *     above; not wired into Scene17Close's rendering.
+ *   - Scene 12 (Beneath it): `wordmark` on "Cascade" — authored per the note
+ *     above; closing choreography uses duration-relative timing.
  */
 export interface CuePhrase {
   /** Stable name for this reveal — referenced from the motion-graphics component via cueFrame(). */
@@ -236,17 +237,16 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'money-plus-time', phrase: 'money plus time'},
     {cue: 'final-line', phrase: 'a second dimension to money'},
   ],
-  // Scene 11 — Beneath it: "Behind this new folding iPhone was an
+  // Scene 11 — New York: "Behind this new folding iPhone was an
   // invisible chain of promises. Cascade would have let those promises
-  // move before the cash does." No film-side overlay exists yet for this
-  // scene — authored against the real words for whenever one lands.
+  // move before the cash does." The network reveal starts on "invisible".
   11: [
+    {cue: 'chain-reveal', phrase: 'invisible'},
     {cue: 'promises', phrase: 'promises'},
     {cue: 'cascade-would', phrase: 'Cascade'},
   ],
-  // Scene 12 — Close: narration is "This is Cascade Money." (2.7s).
-  // Authored per the file header note above — resolves, but Scene17Close
-  // does not read it (deliberate pacing decision, unchanged by this pass).
+  // Scene 12 — Beneath it: narration is "This is Cascade Money." (2.7s).
+  // Authored per the file header note above; the close uses duration-relative timing.
   12: [{cue: 'wordmark', phrase: 'Cascade'}],
 };
 
