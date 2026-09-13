@@ -38,7 +38,13 @@ export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFr
   const [handle] = useState(() => delayRender('Loading Cascade globe, textures, models, and stream'));
   const [ready, setReady] = useState(false);
   const continued = useRef(false);
-  const isLoadingFrame = frame < loadingFrames;
+  // Hold the loading screen until BOTH the authored minimum (loadingFrames)
+  // has elapsed AND the app has actually signaled ready — `ready` is an
+  // async condition (globe/textures/models) that can outlast the authored
+  // hold, and dropping the overlay at the authored cutoff regardless of
+  // readiness left a gap where nothing has been drawn yet: a solid black
+  // content pane for however many frames `ready` takes to catch up.
+  const isLoadingFrame = frame < loadingFrames || !ready;
 
   useEffect(() => {
     let cancelled = false;
