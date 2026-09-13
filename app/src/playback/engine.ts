@@ -34,10 +34,12 @@ export class PlaybackEngine {
   private observedCamera?:{id:number;pose:Pose};
   observeCamera(pose:Pose){this.observedCamera={id:this.state.camera.id,pose};}
   storyEvents: Event[] | null = null;
+  /** Authored reveal time in milliseconds on the current shot clock. */
+  storyEventTimes = new Map<number,number>();
   /** Future interior renderer may accept the descent; absent means above-ground fallback. */
   subsurfaceInteriorCameraHook?: (durationMs:number)=>boolean;
   private storyQueue: Event[] = [];
-  reveal(event: Event) { this.storyEvents?.push(event); this.storyQueue.push(event); }
+  reveal(event: Event) { this.storyEvents?.push(event); this.storyQueue.push(event); this.storyEventTimes.set(event.seq,this.shotClock*1000); }
   drainStoryEvents() { return this.storyQueue.splice(0); }
   private range?: { start: number; end: number; seconds: number; elapsed: number; complete?: () => void };
   constructor(index: EventIndex) {
