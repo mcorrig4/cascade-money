@@ -3,6 +3,7 @@ import { dollars } from '../data/format.ts';
 import { SCENE_LOCATIONS, sceneTextAt, proofMaturity } from './shots.ts';
 
 export function SceneLabels({ shot, elapsed, cues={}, orders=[], payments=[] }: { payments?:Event[]; orders?:Event[]; shot: number | null; elapsed: number; cues?:Record<string,number> }) {
+  if(elapsed<0)return null;
   const location = SCENE_LOCATIONS.find(location => location.shot === shot);
   const cue = sceneTextAt(shot, elapsed,cues);
   return <>

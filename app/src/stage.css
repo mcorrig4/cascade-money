@@ -97,3 +97,24 @@
 .scene-cascade{position:absolute;z-index:14;left:calc(48 * var(--film-unit,1px));top:calc(120 * var(--film-unit,1px));width:calc(420 * var(--film-unit,1px));display:flex;flex-direction:column;gap:calc(8 * var(--film-unit,1px));pointer-events:none;color:#edf6f2}
 .scene-cascade>div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10 * var(--film-unit,1px));border-left:2px solid #69e6c0;background:#071019e8;font-size:calc(20 * var(--film-unit,1px));line-height:1.25}
 .scene-cascade span{max-width:80%}.scene-cascade strong{white-space:nowrap;color:#69e6c0;font-weight:500}
+/* Coin-v2 geometry is static; every animated transform is sampled from scene time. */
+.dated-dollar{display:block;flex-shrink:0;overflow:visible}
+.app .arc-coin{display:flex;justify-content:center;background:none;padding:0;margin:0}
+/* Keep the dated unit readable above the endpoint company cards (z-index 13). */
+.app .amount-layer{z-index:14}
+.app .floating-amount strong{display:block;line-height:1.2}
+.app .coin-stage>.dated-dollar{width:min(44vw,490px);height:auto}
+.app .extension-ticks{display:grid;grid-template-columns:repeat(90,1fr);gap:2px;height:24px;margin:18px 0}
+.extension-ticks i{display:block}
+.app .date-interval{display:grid;grid-template-columns:1fr 2fr auto;gap:0}
+.app .coin-fungibility{position:fixed;inset:0;width:100%;height:100%;padding:0;display:block}
+.same-date-stage{position:fixed;inset:0;background:#071019}
+.swap-coin{position:absolute;left:50%;top:50%}
+.swap-coin .dated-dollar{width:42vw;height:auto;max-width:490px}
+.app:has(.same-date-stage)>:not(.shot-overlay){visibility:hidden}
+.app:has(.same-date-stage) .shot-overlay{inset:0;overflow:visible}
+.app .cascade-stat,.app .cascade-totals h2{transition:none}
+.app .contract-line{font-size:clamp(16px,2vw,30px)}
+
+.app .shot-overlay,.app .shot-overlay *{animation:none;transition:none}
+.app .shot-overlay .coin-fungibility{width:100%;max-width:none;height:100%;padding:0}

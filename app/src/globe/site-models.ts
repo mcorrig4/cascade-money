@@ -1,3 +1,4 @@
+import { compileSiteMaterials } from './readiness.ts';
 import { separateSiteSurfaces } from './site-surfaces.ts';
 import { Group, Material } from 'three';
 import type { GlobeInstance } from 'globe.gl';
@@ -12,17 +13,17 @@ export function siteModelUrl(id: SiteId) {
 
 type Loaded = { root: Group; fade: number; materials: { material: Material; opacity: number; transparent: boolean; depthWrite: boolean }[]; release: () => void };
 export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId, Object3D>, open = () => import('./load-site-model.ts')) {
-  let disposed = false;
+  let disposed = false, retained = false;
   const entries = (Object.keys(SITES) as SiteId[]).map(id => ({ id, wanted: false, pending: false, missing: false,
-    loaded: undefined as Loaded | undefined, controller: undefined as AbortController | undefined }));
+    loaded: undefined as Loaded | undefined, task: undefined as Promise<void> | undefined, controller: undefined as AbortController | undefined }));
   async function load(entry: typeof entries[number]) {
     entry.pending = true; const controller = new AbortController(); entry.controller = controller;
     try {
       const { loadSiteModel, disposeModel } = await open();
-      if (disposed || !entry.wanted) return;
+      if (disposed || (!entry.wanted && !retained)) return;
       const scene = await loadSiteModel(siteModelUrl(entry.id), controller.signal);
       if (!scene) { if (!controller.signal.aborted) entry.missing = true; return; }
-      if (disposed || !entry.wanted) { disposeModel(scene); return; }
+      if (disposed || (!entry.wanted && !retained)) { disposeModel(scene); return; }
       separateSiteSurfaces(scene, entry.id);
       const root = new Group(), site = SITES[entry.id], frame = siteFrame(site.lat, site.lng, globe.getGlobeRadius());
       root.position.copy(frame.position); root.quaternion.copy(frame.rotation); root.scale.setScalar(metersToScene(1, globe.getGlobeRadius()));
@@ -30,7 +31,11 @@ export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId,
       const unique = new Set<Material>();
       scene.traverse(object => { const mesh = object as Mesh; if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) unique.add(m); });
       const materials = [...unique].map(material => ({ material, opacity: material.opacity, transparent: material.transparent, depthWrite: material.depthWrite }));
+      // Warm both the opaque and blended shader variants before publishing the model.
+      root.visible = false;
+      compileSiteMaterials(globe.renderer(), root, globe.camera(), globe.scene());
       materials.forEach(({ material }) => { material.opacity = 0; material.transparent = true; material.depthWrite = true; material.needsUpdate = true; });
+      compileSiteMaterials(globe.renderer(), root, globe.camera(), globe.scene());
       entry.loaded = { root, fade: 0, materials, release: () => disposeModel(root) };
       globe.scene().add(root);
     } catch (error) {
@@ -39,17 +44,19 @@ export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId,
   }
   return {
     async preload() {
+      retained = true;
       await Promise.all(entries.map(async entry => {
         entry.wanted = true;
-        if (!entry.loaded && !entry.pending && !entry.missing) await load(entry);
+        if (!entry.loaded && !entry.pending && !entry.missing) entry.task = load(entry);
+        await entry.task;
         entry.wanted = false;
       }));
     },
     update(lat: number, lng: number, altitude: number, _elapsed: number) {
       for (const entry of entries) {
         entry.wanted = nearSite(entry.id, lat, lng, altitude);
-        if (!entry.wanted) entry.controller?.abort();
-        if (entry.wanted && !entry.loaded && !entry.pending && !entry.missing) void load(entry);
+        if (!entry.wanted && !retained) entry.controller?.abort();
+        if (entry.wanted && !entry.loaded && !entry.pending && !entry.missing) entry.task = load(entry);
         const loaded = entry.loaded;
         if (loaded) {
           // LOD blending follows the sampled camera altitude, never time since load.
@@ -60,7 +67,8 @@ export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId,
             if (material.transparent !== transparent) { material.transparent = transparent; material.needsUpdate = true; }
             material.opacity = original.opacity * loaded.fade; material.depthWrite = original.depthWrite;
           }
-          if (!entry.wanted && loaded.fade === 0) { loaded.release(); entry.loaded = undefined; }
+          loaded.root.visible = loaded.fade > 0;
+          if (!retained && !entry.wanted && loaded.fade === 0) { loaded.release(); entry.loaded = undefined; }
         }
         fallbacks[entry.id].visible = entry.wanted && (!entry.loaded || entry.loaded.fade < 1);
       }

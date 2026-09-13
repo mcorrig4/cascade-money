@@ -128,6 +128,14 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'pull-back-full', phrase: 'countries'},
     {cue: 'pull-back-full-fallback', phrase: 'across'},
   ],
+  // Scene 7 — A dollar with a date (the primitive); same-date exchanges are scene-local.
+  7: [
+    {cue: 'same-date', phrase: 'Same date'},
+    {cue: 'coin-extend', phrase: 'Extend'},
+    {cue: 'coin-yield', phrase: 'yield'},
+  ],
+  // Scene 8 — Underneath it: the vault backing card's ERC-1155 line.
+  8: [{cue: 'contract', phrase: 'The vault is an ERC-1155 contract'}],
   // Scene 10 — Zoom out (renumbered from old scene 14): the four word-chips, then "money plus time" (the
   // closing "a second dimension to money" card is not spoken — see file header).
   10: [

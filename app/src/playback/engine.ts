@@ -9,7 +9,7 @@ export interface PlaybackState {
   tMs:number; cues:Record<string,number>; companyCues:{company:string;atMs:number}[];
   position: number; day: number; cursor: number; playing: boolean; speed: Speed;
   revision: number; shot: number | null; shotRunning: boolean; story: string;
-  presentationTotals: Totals | null;
+  presentationTotals: (Totals & {invoices?:number}) | null;
   paymentPresentation: 'settled' | 'waiting'; paymentMaturity: number | null; paymentAmount: bigint | null; onchainGlimpse: boolean;
   recording: boolean; hud: boolean; camera: CameraCommand; cameraElapsed:number; film:boolean; exposure:number; flash: {from:number;to:number;elapsed:number;duration:number}|null; timelapse:{days:number;direction:number;duration:number;elapsed:number}|null;
   showDebt: boolean; caption: boolean; shotElapsed: number; shotDuration: number; stage: 'main' | 'cube' | 'wide'; focusInvoices: string[] | null;
@@ -77,10 +77,10 @@ export class PlaybackEngine {
     this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = []; this.storyEventTimes.clear();
     this.update({ cues:{},companyCues:[],presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
-  beginShot(shot: number, duration = 0) {
+  beginShot(shot: number, duration = 0, startMs = 0) {
     const {exposure,flash,timelapse}=this.state;
     this.stopShot(); this.update({exposure,flash,timelapse}); this.shotClock = 0;
-    this.update({ shot, shotElapsed: 0, shotDuration: duration, shotRunning: true, revision: this.state.revision + 1 });
+    this.update({ tMs: startMs, shot, shotElapsed: 0, shotDuration: duration, shotRunning: true, revision: this.state.revision + 1 });
   }
   cue(name:CueName,value?:string,atMs=this.state.shot===null?this.state.tMs:this.state.shotElapsed*1000) {
     if(!CUE_NAMES.includes(name))throw new Error(`Unknown cue: ${name}`);
@@ -182,6 +182,19 @@ export class PlaybackEngine {
       return result;
     }
     return bucket.prefix[this.state.cursor - 1] ?? bucket.start;
+  }
+  invoicesSettled(): number {
+    if(this.state.presentationTotals?.invoices!==undefined)return this.state.presentationTotals.invoices;
+    if(this.state.paymentPresentation==='waiting')return 0;
+    const bucket=this.index.days[this.state.day];
+    const seq=bucket.events[this.state.cursor-1]?.seq??(bucket.events[0]?.seq??Infinity)-1;
+    const invoices=new Set<string>();
+    for(const event of this.storyEvents??this.index.payments){
+      if(this.storyEvents===null&&event.seq>seq)continue;
+      if(this.state.focusInvoices&&!this.state.focusInvoices.includes(event.invoiceId??''))continue;
+      if(['issue','pay'].includes(event.type)&&event.invoiceId&&Number(event.data.outstanding_cents??0)===0)invoices.add(event.invoiceId);
+    }
+    return invoices.size;
   }
   visibleEvents(): Event[] { return this.index.days[this.state.day].events.slice(0, this.state.cursor); }
 }

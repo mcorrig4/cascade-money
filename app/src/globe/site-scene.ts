@@ -13,7 +13,7 @@ import { disposeModel, loadSiteModel } from './load-site-model.ts';
 import { globeDirectionToSite, globePointToSite, SITES } from './site-math.ts';
 import type { SiteId } from './site-math.ts';
 import { canUseTiles, enoughTiles, fetchOptionalTile, tileOpacity, tilePlan } from './tiles-policy.ts';
-import { EARTH_BACKGROUND } from './readiness.ts';
+import { EARTH_BACKGROUND, compileSiteMaterials } from './readiness.ts';
 import { CAMPUS_LIFT_METERS, separateSiteSurfaces } from './site-surfaces.ts';
 
 const ROOT_TILESET = 'https://tile.googleapis.com/v1/3dtiles/root.json';
@@ -323,6 +323,7 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
       });
     }
     const size = new Box3().setFromObject(loaded).getSize(new Vector3()); modelSize = [size.x, size.y, size.z];
+    compileSiteMaterials(renderer, loaded, camera, scene);
     model = loaded;
     scene.add(loaded);
   }

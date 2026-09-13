@@ -87,7 +87,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
     <Timeline engine={engine} state={state} />
 
     {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
-    {state.caption && <p className="year-caption">illustrative global supply chain</p>}
+    {state.caption && <p className="year-caption">Global supply chain</p>}
     <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
     <SceneLabels payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?engine.storyEvents?.filter(e=>e.type==='issue')??[]:[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
     {(onchain || state.onchainGlimpse) && <OnchainPanel tMs={state.tMs} onClose={() => {setOnchain(false);engine.update({onchainGlimpse:false});}} />}

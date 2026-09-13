@@ -10,7 +10,7 @@ export const FRAME_DRIVEN_STATE_SOURCES = [
 let loggedSources = false;
 
 /** Deterministically reconstruct a scene at an absolute timeline position. */
-export function seekTo(tMs: number, scene = LIVE_SCENE, absoluteTimeline = false) {
+export function seekTo(tMs: number, scene = LIVE_SCENE, absoluteTimeline = false, cues:Record<string,number> = {}) {
   const engine = window.__cascade?.engine;
   if (!engine) throw new Error('Cascade is not ready to seek');
   const shot = SHOTS.find(candidate => candidate.scene === scene);
@@ -39,8 +39,10 @@ export function seekTo(tMs: number, scene = LIVE_SCENE, absoluteTimeline = false
   });
   engine.setPosition(0, true);
   playShot(engine, shot.id);
+  engine.update({cues});
   // Process authored cues at exactly t=0 before advancing to the requested time.
   engine.tick(0, 'manual');
   engine.tick(elapsedMs / 1000, 'manual');
+  if(requestedElapsedMs<0)engine.update({tMs:shot.startTime*1000+requestedElapsedMs,shotElapsed:requestedElapsedMs/1000});
   return engine.state;
 }

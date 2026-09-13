@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { EventIndex } from '../data/types.ts';
 import { displayDate } from '../data/types.ts';
-import { dollars, ratio } from '../data/format.ts';
+import { dollars } from '../data/format.ts';
 import type { PlaybackEngine, PlaybackState, Speed } from '../playback/engine.ts';
 import { Icon } from './Icon.tsx';
 function VolumeChart({ index, position, growing }: { index: EventIndex; position: number; growing:boolean }) {
@@ -35,9 +35,9 @@ export function Timeline({ engine, state }: { engine: PlaybackEngine; state: Pla
       </div>
     </div>
     <div className="headline-counters" aria-label="Cumulative payment counters">
-      <div className="headline"><span>INVOICES SETTLED</span><strong data-testid="settled">{dollars(totals.settled, true)}</strong></div>
-      <div className="headline"><span>PRINCIPAL COMMITTED</span><strong data-testid="committed">{dollars(totals.committed, true)}</strong></div>
-      <div className="ratio"><strong data-testid="ratio">{ratio(totals.settled, totals.committed)}</strong><span>SETTLED / COMMITTED</span></div>
+      <div className="headline"><strong data-testid="committed">{dollars(totals.committed, true)}</strong><span>deposited</span></div>
+      <div className="headline"><strong data-testid="settled">{dollars(totals.settled, true)}</strong><span>transacted</span></div>
+      <div className="headline"><strong data-testid="invoices-settled">{engine.invoicesSettled().toLocaleString('en-US')}</strong><span>invoices settled</span></div>
     </div>
   </footer>;
 }

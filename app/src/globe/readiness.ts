@@ -1,3 +1,4 @@
+import type { Camera, Object3D, Scene, WebGLRenderer } from 'three';
 /** A render generation owns its gate; disposal never releases a partial frame. */
 export class RenderReadiness {
   readonly promise: Promise<void>;
@@ -26,4 +27,14 @@ export function finishFirstFrame(render:()=>void, context:Pick<WebGLRenderingCon
   render();
   context.finish();
   if(context.isContextLost())throw new Error('WebGL context lost during the first Earth frame');
+}
+
+/** Synchronous barrier for stable site assets, including invisible/out-of-frustum markers.
+ * compile() traverses hidden meshes too; avoid the retiring-material compileAsync poller.
+ */
+export function compileSiteMaterials(renderer: WebGLRenderer, root: Object3D, camera: Camera, scene: Scene) {
+  const previous = renderer.debug.onShaderError;
+  renderer.debug.onShaderError = () => { throw new Error('Site material compilation failed'); };
+  try { finishFirstFrame(() => { renderer.compile(root, camera, scene); }, renderer.getContext()); }
+  finally { renderer.debug.onShaderError = previous; }
 }

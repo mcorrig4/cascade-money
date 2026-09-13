@@ -73,3 +73,15 @@ test('site HUD flights retain site identity and complete using the explicit came
     else assert.ok(pose.altitude<.002);
   }
 });
+
+test('site compilation barrier runs on hidden meshes and finishes GPU work; failure restores shader handler',async()=>{
+  const {compileSiteMaterials}=await import('../src/globe/readiness.ts');
+  const root=new Group();root.visible=false;root.add(new Mesh(new BufferGeometry(),new MeshBasicMaterial()));
+  const order:string[]=[],handler=()=>{};
+  const renderer={debug:{onShaderError:handler},compile:(target:Group)=>{assert.equal(target,root);assert.equal(target.visible,false);order.push('compile');},getContext:()=>({isContextLost:()=>false,finish:()=>order.push('GPU complete')})};
+  compileSiteMaterials(renderer as never,root,{} as never,{} as never);
+  assert.deepEqual(order,['compile','GPU complete']);assert.equal(renderer.debug.onShaderError,handler);
+  renderer.compile=()=>{renderer.debug.onShaderError();};
+  assert.throws(()=>compileSiteMaterials(renderer as never,root,{} as never,{} as never),/Site material compilation failed/);
+  assert.equal(renderer.debug.onShaderError,handler);
+});

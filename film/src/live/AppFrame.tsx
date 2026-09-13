@@ -4,6 +4,7 @@ import '@cascade-app/styles.css';
 import App from '@cascade-app/App.tsx';
 import {seekTo} from '@cascade-app/director/seek.ts';
 import {SHOTS} from '@cascade-app/director/shots.ts';
+import cueTimes from '../generated/cues.json';
 
 type LiveCascade = {
   frameDriven?: boolean;
@@ -66,7 +67,7 @@ export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFr
     const localMs = timesMs?.[frame] ?? (frame - loadingFrames) / fps * 1000;
     const sceneStartMs = SHOTS.find((shot) => shot.scene === scene)?.startTime ?? 0;
     const tMs = localMs + (absoluteTimeline ? sceneStartMs * 1000 : 0);
-    seekTo(tMs, scene, absoluteTimeline);
+    seekTo(tMs, scene, absoluteTimeline, Object.fromEntries(Object.entries((cueTimes as Record<string,Record<string,number>>)[String(scene)]??{}).map(([name,seconds])=>[name,seconds*1000])));
     // Rendering phases are authored scene-locally even though the public seek
     // coordinate is the absolute film timeline.
     const sample=browserWindow.__cascade?.renderFrame?.(localMs);

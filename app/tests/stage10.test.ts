@@ -30,12 +30,12 @@ test('idle motion continues independently of simulation and stays bounded, frame
  assert.ok(travel.every(n=>Math.abs(n-24)<1e-8));
  const clock=new IdleMotion();assert.ok(clock.update(1000,2,false).lng<=.040001);
 });
-test('shot 6 advances real event positions through its narration duration and pause freezes narration',async()=>{
+test('shot 6 holds the primitive simulation day while pause freezes narration',async()=>{
  const index=createIndex();(await readFile(new URL('./fixtures/events-v1.ndjson',import.meta.url),'utf8')).trim().split('\n').forEach(l=>appendEvent(index,parseLine(l)));finishIndex(index);
  const engine=new PlaybackEngine(index);playShot(engine,6);const first=engine.state.position;
- engine.tick(20);assert.ok(engine.state.position>first);assert.equal(engine.state.shotRunning,true);
+ engine.tick(20);assert.equal(engine.state.position,first);assert.equal(engine.state.shotRunning,true);
  engine.toggle();const elapsed=engine.state.shotElapsed;engine.tick(8);assert.equal(engine.state.shotElapsed,elapsed);
- engine.toggle();engine.tick(SHOTS.find(s=>s.id===6)!.seconds-20-.1);assert.equal(engine.state.playing,true);engine.tick(.1);assert.equal(engine.state.playing,false);
+ engine.toggle();engine.tick(SHOTS.find(s=>s.id===6)!.seconds-20-.1);assert.equal(engine.state.shotRunning,true);engine.tick(.1);assert.equal(engine.state.shotRunning,false);
  assert.equal(beatIndex(COIN_BEATS,engine.state.shotElapsed),6);
 });
 

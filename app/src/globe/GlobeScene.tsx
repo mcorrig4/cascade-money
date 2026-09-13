@@ -1,3 +1,4 @@
+import { shotOverlayVisible, SceneRecording, type SceneTransition } from '../director/recording.ts';
 import { sampleRewindEvents } from './rewind-events.ts';
 import { companyCues } from '../director/company-cues.ts';
 import { CameraBookmarks } from '../director/bookmarks.ts';
@@ -25,7 +26,7 @@ import { createSiteModels } from './site-models.ts';
 import { appleParkShotCamera, fifthAvenueShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
 import { canUseTiles } from './tiles-policy.ts';
-import { EARTH_BACKGROUND } from './readiness.ts';
+import { EARTH_BACKGROUND, compileSiteMaterials, finishFirstFrame } from './readiness.ts';
 import { PulseRingLayer } from './pulse-ring-layer.ts';
 import { DeterministicArcLayer } from './deterministic-arc-layer.ts';
 import parkUrl from '../assets/apple-park.svg';
@@ -58,17 +59,27 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
     let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
 
-    const sceneTransitions:{sceneIndex:number;sceneId:number;tMs:number}[]=[];
+    const sceneTransitions:SceneTransition[]=[];
+    const recording=new SceneRecording();
+    const captureClock=()=>frameDriven?engine.state.tMs:performance.now();
+    let wasRecording=false;
     let filmStartMs:number|null=null,lastTransitionShot:number|null=null;
     const unsubscribeTransitions=engine.subscribe(()=>{
       const id=engine.state.shot;
+      if(engine.state.recording!==wasRecording){
+        wasRecording=engine.state.recording;
+        if(wasRecording)recording.begin(captureClock(),sceneTransitions.findLast(t=>t.sceneId===id));
+        else recording.end(captureClock());
+      }
       if(id===null){lastTransitionShot=null;return;}
       if(id===lastTransitionShot)return;
-      lastTransitionShot=id;
       const shot=SHOTS.find(candidate=>candidate.id===id);
-      if(shot){
+      if(shot&&shotOverlayVisible(engine.state,shot)){
+        lastTransitionShot=id;
         if(frameDriven)sceneTransitions.splice(0);
-        sceneTransitions.push({sceneIndex:shot.scene,sceneId:id,tMs:frameDriven?engine.state.shotElapsed*1000:performance.now()});
+        const transition={sceneIndex:shot.scene,sceneId:id,tMs:captureClock(),filmTMs:shot.startTime*1000};
+        sceneTransitions.push(transition);
+        recording.consume(transition);
       }
     });
     let siteStatus: SiteSceneStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null };
@@ -104,10 +115,6 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       engine.subsurfaceInteriorCameraHook = undefined; globe._destructor(); return;
     }
     const fifth = createFifthAvenueCube(globe);
-    void effects.ready().then(() => {
-      if (disposed) return;
-      root.style.visibility = 'visible'; readinessGate.finish();
-    }).catch(reason => { if(!disposed){readinessGate.fail(reason);setError('Earth textures could not be prepared. Reload to retry.');} });
     let clearance = cameraClearance(engine.state.camera);
     let interacting = false;
     const idle = new IdleMotion();
@@ -141,7 +148,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     controls.addEventListener('change',maintainSiteControls);
 
     // A curved, geographically registered local SVG decal: no tile service or satellite dependency.
-    const texture = new TextureLoader().load(parkUrl);
+    let resolveParkTexture!:()=>void, rejectParkTexture!:(reason:unknown)=>void;
+    const parkTextureReady=new Promise<void>((resolve,reject)=>{resolveParkTexture=resolve;rejectParkTexture=reject;});
+    const texture = new TextureLoader().load(parkUrl,()=>resolveParkTexture(),undefined,rejectParkTexture);
     texture.colorSpace = SRGBColorSpace;
     const geometry = new BufferGeometry(), vertices: number[] = [], uv: number[] = [], indices: number[] = [];
     const steps = 16;
@@ -155,6 +164,17 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const material = new MeshBasicMaterial({ map: texture, transparent: true, depthTest: true, depthWrite: false, polygonOffset:true, polygonOffsetFactor:4, polygonOffsetUnits:4, toneMapped: false, side: 2 });
     const park = new Mesh(geometry, material); park.visible = false; park.renderOrder = 2; park.name = 'Apple Park ring decal'; park.userData.skipBloom = true; globe.scene().add(park);
     const models = createSiteModels(globe, { 'apple-park': park, 'fifth-avenue': fifth.group });
+    let siteMaterialsCompiled = false;
+    void Promise.all([effects.ready(),parkTextureReady]).then(async () => {
+      if (frameDriven) await models.preload();
+      if (disposed) return;
+      // Include hidden landmarks, site GLBs and globe markers in the readiness barrier.
+      compileSiteMaterials(globe.renderer(), globe.scene(), camera, globe.scene());
+      finishFirstFrame(() => globe.postProcessingComposer().render(0), globe.renderer().getContext());
+      siteMaterialsCompiled = true;
+      root.style.visibility = 'visible'; readinessGate.finish();
+    }).catch(reason => { if(!disposed){readinessGate.fail(reason);setError('Scene materials could not be prepared. Reload to retry.');} });
+
     const resize = () => {
       globe.width(root.clientWidth).height(root.clientHeight);
       globe.globeOffset([root.clientWidth <= 600 ? 0 : root.clientWidth > 1100 ? -190 : -100, root.clientWidth <= 600 ? -95 : -40]);
@@ -385,10 +405,12 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (nextRings.length !== pulseRings.length || incoming.length) globe.ringsData(nextRings);
         pulseRings = nextRings;
       }
+      // Project DOM labels from this frame’s camera, including the first explicit seek.
+      camera.updateMatrixWorld(true);
       const landscape=root.clientWidth/root.clientHeight>=4/3;
       const filmScale=landscape?Math.min(root.clientWidth/1920,root.clientHeight/1080):1;
       const ledgerLeft = !landscape?root.clientWidth-12:state.recording?root.clientWidth-24*filmScale:root.clientWidth-760*filmScale;
-      layer.update(globe, state.shot===3||state.shot===4?[]:pool.arcs, time, ledgerLeft, root.clientHeight - 330*filmScale,filmScale);
+      layer.update(globe, state.shot===3||state.shot===4?[]:pool.arcs, time, ledgerLeft, root.clientHeight - 330*filmScale,filmScale,state.day);
       companyLayer.update(globe, named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
         root.clientHeight - 330*filmScale, close, !landscape,filmScale);
       companyLayer.updateCallouts(globe,named,state.shot===3||state.shot===4?[]:companyCues(state),state.shot===null?state.tMs:state.shotElapsed*1000,landscape?filmScale:root.clientWidth/1920,root.clientHeight-330*filmScale);
@@ -397,8 +419,8 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     if (!frameDriven) raf = requestAnimationFrame(frame);
     {
       const bookmarks=new CameraBookmarks();
-      const ready=async()=>{await Promise.all([engine.ready(),frameDriven?models.preload():Promise.resolve()]);if(frameDriven)globe.pauseAnimation();};
-      window.__cascade = { frameDriven,ready,cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:effects.readiness,cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
+      const ready=async()=>{await engine.ready();if(frameDriven)globe.pauseAnimation();};
+      window.__cascade = { frameDriven,ready,cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:()=>({...effects.readiness(),fullFrame:effects.readiness().fullFrame&&siteMaterialsCompiled,siteMaterialsCompiled}),cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,recordingTake:()=>recording.snapshot(captureClock()),get filmStartMs(){return filmStartMs;},
         playScene:(id)=>playShot(engine,id),playFilm:async()=>{await engine.ready();sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=frameDriven?0:performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
         renderFrame:(tMs:number)=>{frame(tMs,false);camera.lookAt(controls.target);camera.updateMatrixWorld(true);globe.scene().updateMatrixWorld(true);globe.renderer().setRenderTarget(null);globe.renderer().render(globe.scene(),camera);const pov=globe.pointOfView();return {camera:camera.position.toArray(),target:controls.target.toArray(),up:camera.up.toArray(),fov:camera.fov,pov,arcs:pool.arcs.map(arc=>arc.id)};},
         tiles: () => siteStatus,

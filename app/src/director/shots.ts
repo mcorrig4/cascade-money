@@ -111,9 +111,10 @@ export function narrationTime(state:Pick<PlaybackState,'shot'|'shotElapsed'|'sho
  const shot=SHOTS.find(s=>s.id===state.shot);
  return shot?state.shotElapsed*shot.baseSeconds/(state.shotDuration||shot.seconds):state.shotElapsed;
 }
+// docs/BRANCHING_REPORT.md: one Issue + nine Pays settle ten invoices to eight suppliers.
 export const CASCADE_FIGURES={
- straight:{committed:100_000_00000n,settled:400_000_00000n,companies:4},
- branched:{committed:100_000_00000n,settled:450_000_00000n,companies:8},
+ straight:{committed:100_000_00000n,settled:400_000_00000n,companies:4,invoices:4},
+ branched:{committed:100_000_00000n,settled:450_000_00000n,companies:8,invoices:10},
 };
 // Keep this switch aligned with film Scene08Counters for a future straight-line re-cut.
 export const USE_EXTENDED_FIGURES=true;
@@ -236,7 +237,7 @@ export function playFilm(engine:PlaybackEngine):void|Promise<void>{if(!engine.is
 export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const shot=SHOTS.find(s=>s.id===id);if(!shot)return;
  const duration=shot.path?Math.max(shot.seconds,fromBookmarks(shot.path).at(-1)!.t):shot.seconds;
- engine.beginShot(id,duration);engine.update({film:continuous,tMs:shot.startTime*1000});
+ engine.beginShot(id,duration,shot.startTime*1000);engine.update({film:continuous});
  if(shot.path)engine.playBookmarkPath(shot.path,true);
  const ms=shot.seconds*1000,scale=shot.seconds/shot.baseSeconds;
  const at=(seconds:number,run:()=>void)=>engine.after(seconds*scale,run);
@@ -295,7 +296,8 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
   engine.after(shot.seconds*2/3,()=>fly(shot.end,ms/3,'west'));
  }else if(id===6){
   fly(shot.end,ms,'west');
-  if(engine.index.payments.length)engine.playRange(position(engine,engine.index.payments[0]),position(engine,engine.index.payments.at(-1)!,true),shot.seconds);
+  // The primitive extends a maturity while its simulation day stays fixed.
+  engine.setPosition(0,true);
  }else if(id===18){
   fly(shot.end,ms,'east');engine.setPosition(364.999,true);
   at(15.6,()=>engine.update({onchainGlimpse:true}));

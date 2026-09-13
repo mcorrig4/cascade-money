@@ -1,3 +1,4 @@
+import { shotOverlayVisible } from './recording.ts';
 import { START, displayDate } from '../data/types.ts';
 import { cueMs } from './cues.ts';
 import { SHOTS } from './shots.ts';
@@ -6,9 +7,10 @@ import {clamp} from '../camera/primitives.ts';
 import {narrationTime} from './shots.ts';
 /** Exposure and typography share the narration clock, including manual capture. */
 export function FilmEffects({state}:{state:PlaybackState}) {
- const t=narrationTime(state),closing=state.shot===12;
+ const t=narrationTime(state);
  const black=state.shot===1?1-clamp(t/.8):0;
  const scene=SHOTS.find(s=>s.id===state.shot);
+ const closing=!!scene&&scene.id===12&&shotOverlayVisible(state,scene);
  const closeAt=scene?cueMs(state,'wordmark',2.5,scene.baseSeconds)/1000:2.5;
  const rewind=state.timelapse?.direction===-1&&state.timelapse.elapsed<2000;
  const rewindUtc=new Date(START+state.position*86400000);

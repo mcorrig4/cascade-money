@@ -82,7 +82,7 @@ test('site LOD stays lazy, blends by sampled altitude, unloads between visits an
   const { createSiteModels } = await import('../src/globe/site-models.ts');
   const scene = new Group(), fallbacks = { 'apple-park':new Group(), 'fifth-avenue':new Group() };
   let requests=0, disposals=0;
-  const globe = { getGlobeRadius:()=>100, scene:()=>scene } as unknown as import('globe.gl').GlobeInstance;
+  const globe = { getGlobeRadius:()=>100, scene:()=>scene, camera:()=>({}), renderer:()=>({debug:{},compile:()=>new Set(),getContext:()=>({isContextLost:()=>false,finish:()=>{}})}) } as unknown as import('globe.gl').GlobeInstance;
   const models=createSiteModels(globe,fallbacks,async()=>({
     loadSiteModel:async()=>{ requests++; const root=new Group(); root.add(new Mesh(new BoxGeometry(),new MeshBasicMaterial())); return root; },
     disposeModel:root=>{ disposals++; disposeModel(root); },
@@ -102,4 +102,21 @@ test('site LOD stays lazy, blends by sampled altitude, unloads between visits an
   missing.update(SITES['apple-park'].lat,SITES['apple-park'].lng,.0001,300);
   assert.equal(missing.status()[0].missing,true); assert.equal(fallbacks['apple-park'].visible,true);
   missing.dispose();
+});
+
+test('frame preload compiles hidden site variants and retains them through distant shots and repeated seeks', async () => {
+  const { createSiteModels } = await import('../src/globe/site-models.ts');
+  const scene=new Group(), fallbacks={'apple-park':new Group(),'fifth-avenue':new Group()};
+  let requests=0, compiles=0, finishes=0;
+  const globe={getGlobeRadius:()=>100,scene:()=>scene,camera:()=>({}),renderer:()=>({debug:{},
+    compile:(root:Group)=>{assert.equal(root.visible,false);assert.equal(scene.children.includes(root),false);compiles++;return new Set();},
+    getContext:()=>({isContextLost:()=>false,finish:()=>{finishes++;}}),
+  })} as unknown as import('globe.gl').GlobeInstance;
+  const models=createSiteModels(globe,fallbacks,async()=>({loadSiteModel:async()=>{requests++;const root=new Group();root.add(new Mesh(new BoxGeometry(),new MeshBasicMaterial()));return root;},disposeModel}));
+  await models.preload();assert.equal(requests,2);assert.equal(compiles,4);assert.equal(finishes,4);
+  models.update(0,0,2,0);assert.equal(scene.children.length,2);assert.ok(scene.children.every(root=>!root.visible));
+  const sample=()=>{models.update(SITES['apple-park'].lat,SITES['apple-park'].lng,.0001,0);return {status:models.status(),visible:scene.children.map(root=>root.visible)};};
+  const first=sample();assert.equal(first.visible[0],true);
+  models.update(0,0,2,0);assert.deepEqual(sample(),first);assert.equal(requests,2);assert.equal(compiles,4);
+  models.dispose();
 });
