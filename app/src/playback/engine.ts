@@ -1,4 +1,5 @@
 import { CUE_NAMES, type CueName } from '../director/cues.ts';
+import { recordingOrientationPatch } from '../director/recording.ts';
 import { RenderReadiness } from '../globe/readiness.ts';
 import { fromBookmarks, type BookmarkInput, sampleCamera, type CameraCommand, type Pose, type Center, type Ease, type Route, type Keyframe, orbitAt } from '../camera/primitives.ts';
 import { DAYS } from '../data/types.ts';
@@ -6,6 +7,7 @@ import type { Event, EventIndex, Totals } from '../data/types.ts';
 
 export type Speed = 1 | 10 | 50 | 'year';
 export interface PlaybackState {
+  allowRoll:boolean; orientationRevision:number; shotRevision:number;
   tMs:number; cues:Record<string,number>; companyCues:{company:string;atMs:number}[];
   position: number; day: number; cursor: number; playing: boolean; speed: Speed;
   revision: number; shot: number | null; shotRunning: boolean; story: string;
@@ -27,6 +29,7 @@ export class PlaybackEngine {
   listeners = new Set<() => void>();
   private bookmarkOverride=false;
   private scheduled: { time: number; run: () => void }[] = [];
+  private wordActions: {name:CueName;fallbackMs:number;run:()=>void;fired:boolean}[]=[];
   private shotClock = 0;
   private clockMode: 'realtime' | 'manual' = 'realtime';
   /** Captures own the timeline; RAF ticks must not add unaccounted wall time. */
@@ -39,19 +42,22 @@ export class PlaybackEngine {
   /** Future interior renderer may accept the descent; absent means above-ground fallback. */
   subsurfaceInteriorCameraHook?: (durationMs:number)=>boolean;
   private storyQueue: Event[] = [];
-  reveal(event: Event) { this.storyEvents?.push(event); this.storyQueue.push(event); this.storyEventTimes.set(event.seq,this.shotClock*1000); }
+  reveal(event: Event) { if(this.storyEventTimes.has(event.seq))return;this.storyEvents?.push(event); this.storyQueue.push(event); this.storyEventTimes.set(event.seq,this.shotClock*1000); }
   drainStoryEvents() { return this.storyQueue.splice(0); }
   private range?: { start: number; end: number; seconds: number; elapsed: number; complete?: () => void };
   constructor(index: EventIndex) {
     this.index = index;
-    this.state = { tMs:0,cues:{},companyCues:[],position: 0.999, day: 0, cursor: index.days[0].events.length, playing: false, speed: 1,
+    this.state = { allowRoll:false,orientationRevision:0,shotRevision:0,tMs:0,cues:{},companyCues:[],position: 0.999, day: 0, cursor: index.days[0].events.length, playing: false, speed: 1,
       presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,cameraElapsed:0, film:false, exposure:0, flash:null, timelapse:null, revision: 0, shot: null, shotRunning: false, story: 'all', recording: false, hud: true, showDebt: false, caption: false,
       shotElapsed: 0, shotDuration: 0, stage: 'main', focusInvoices: null,
       camera: { lat: 36, lng: -145, altitude: 2.15, duration: 0, id: 0 } };
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   getSnapshot = () => this.state;
-  update(patch: Partial<PlaybackState>) { this.state = { ...this.state, ...patch }; this.listeners.forEach(fn => fn()); }
+  update(patch: Partial<PlaybackState>) { this.state = { ...this.state, ...recordingOrientationPatch(this.state,patch), ...patch }; this.listeners.forEach(fn => fn()); }
+  resetOrientation(allowRoll=false) {
+    this.update({allowRoll,orientationRevision:this.state.orientationRevision+1,camera:{...this.state.camera,allowRoll}});
+  }
   setPosition(position: number, revision = false) {
     position = Math.max(0, Math.min(DAYS - 0.000001, position));
     const day = Math.floor(position), fraction = position - day, events = this.index.days[day].events;
@@ -59,7 +65,11 @@ export class PlaybackEngine {
     while (cursor < high) { const mid = (cursor + high) >>> 1; if (eventPosition(mid, events.length) <= fraction) cursor = mid + 1; else high = mid; }
     this.update({ position, day, cursor, revision: this.state.revision + Number(revision) });
   }
-  seek(day: number) { this.stopShot(); this.update({ playing: false }); this.setPosition(Math.floor(day) + 0.999, true); }
+  seek(day: number) {
+    const pose=this.currentCamera();this.stopShot();this.resetOrientation();
+    this.update({playing:false,camera:{...pose,id:this.state.camera.id+1,duration:0,allowRoll:false},cameraElapsed:0});
+    this.setPosition(Math.floor(day) + 0.999, true);
+  }
   replayDay() { this.stopShot(); this.setPosition(this.state.day, true); this.update({ playing: true }); }
   toggle() {
     if (this.state.shot !== null && !this.state.shotRunning && !this.range && !this.scheduled.length) this.stopShot();
@@ -74,13 +84,14 @@ export class PlaybackEngine {
   stopShot() {
     this.bookmarkOverride=false;
     if(this.state.camera.bookmarkPath)this.update({camera:{...this.state.camera,bookmarkPath:false}});
-    this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = []; this.storyEventTimes.clear();
+    this.scheduled = []; this.wordActions=[]; this.range = undefined; this.storyEvents = null; this.storyQueue = []; this.storyEventTimes.clear();
     this.update({ cues:{},companyCues:[],presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
-  beginShot(shot: number, duration = 0, startMs = 0) {
+  beginShot(shot: number, duration = 0, startMs = 0, allowRoll=false) {
     const {exposure,flash,timelapse}=this.state;
     this.stopShot(); this.update({exposure,flash,timelapse}); this.shotClock = 0;
-    this.update({ tMs: startMs, shot, shotElapsed: 0, shotDuration: duration, shotRunning: true, revision: this.state.revision + 1 });
+    this.resetOrientation(allowRoll);
+    this.update({ tMs: startMs, shot, shotRevision:this.state.shotRevision+1,shotElapsed: 0, shotDuration: duration, shotRunning: true, revision: this.state.revision + 1 });
   }
   cue(name:CueName,value?:string,atMs=this.state.shot===null?this.state.tMs:this.state.shotElapsed*1000) {
     if(!CUE_NAMES.includes(name))throw new Error(`Unknown cue: ${name}`);
@@ -88,7 +99,17 @@ export class PlaybackEngine {
     if(name==='company') {
       if(!value?.trim())throw new Error('Company cue requires a name');
       this.update({companyCues:[...this.state.companyCues,{company:value,atMs}]});
-    } else this.update({cues:{...this.state.cues,[name]:atMs}});
+    } else {this.update({cues:{...this.state.cues,[name]:atMs}});this.fireWordActions();}
+  }
+  atWord(name:CueName,fallbackSeconds:number,run:()=>void) {
+    this.wordActions.push({name,fallbackMs:fallbackSeconds*1000,run,fired:false});
+  }
+  private fireWordActions() {
+    for(const action of this.wordActions){
+      if(!action.fired&&(this.state.cues[action.name]??action.fallbackMs)<=this.shotClock*1000+1e-6){
+        action.fired=true;action.run();
+      }
+    }
   }
   after(seconds: number, run: () => void) {
     this.scheduled.push({ time: seconds, run }); this.scheduled.sort((a, b) => a.time - b.time);
@@ -99,24 +120,25 @@ export class PlaybackEngine {
     this.update({ playing: true });
   }
   currentCamera():Pose { return this.observedCamera?.id===this.state.camera.id && this.state.cameraElapsed>=this.state.camera.duration ? this.observedCamera.pose : sampleCamera(this.state.camera,this.state.cameraElapsed); }
-  fly(lat:number,lng:number,altitude:number,duration=1800,siteOrOptions?:CameraCommand['site']|{ease?:Ease;route?:Route;site?:CameraCommand['site']}) {
+  fly(lat:number,lng:number,altitude:number,duration=1800,siteOrOptions?:CameraCommand['site']|{ease?:Ease;route?:Route;site?:CameraCommand['site'];allowRoll?:boolean}) {
     if(this.bookmarkOverride)return;
     const options=typeof siteOrOptions==='string'?{site:siteOrOptions}:siteOrOptions??{};
-    this.update({camera:{lat,lng,altitude,duration,id:this.state.camera.id+1,from:this.currentCamera(),primitive:{kind:'fly'},ease:{kind:'cubic'},...options},cameraElapsed:0});
+    this.update({camera:{lat,lng,altitude,duration,id:this.state.camera.id+1,from:this.currentCamera(),allowRoll:this.state.shot===null?false:this.state.allowRoll,primitive:{kind:'fly'},ease:{kind:'cubic'},...options},cameraElapsed:0});
   }
-  orbit(center:Center,radius:number,altitude:number,angularSpeed:number,duration:number,bearing=0) {
+  orbit(center:Center,radius:number,altitude:number,angularSpeed:number,duration:number,bearing=0,allowRoll=this.state.shot===null?false:this.state.allowRoll) {
     if(this.bookmarkOverride)return;
     const end=orbitAt(center,radius,altitude,bearing+angularSpeed*duration/1000);
-    this.update({camera:{...end,id:this.state.camera.id+1,duration,from:this.currentCamera(),site:'apple-park',primitive:{kind:'orbit',center,radius,angularSpeed,bearing}},cameraElapsed:0});
+    this.update({camera:{...end,id:this.state.camera.id+1,duration,allowRoll,from:this.currentCamera(),primitive:{kind:'orbit',center,radius,angularSpeed,bearing}},cameraElapsed:0});
   }
-  splinePath(keyframes:Keyframe[],duration:number,landmarkPath?:CameraCommand['landmarkPath']) {
+  splinePath(keyframes:Keyframe[],duration:number,landmarkPath?:CameraCommand['landmarkPath'],allowRoll=this.state.shot===null?false:this.state.allowRoll) {
     if(this.bookmarkOverride)return;
     if(keyframes.length<2 || keyframes.some((k,i)=>i>0&&k.t<=keyframes[i-1].t))throw new Error('Spline requires two ordered keyframes');
-    this.update({camera:{...keyframes.at(-1)!,id:this.state.camera.id+1,duration,from:this.currentCamera(),primitive:{kind:'spline',keyframes},landmarkPath},cameraElapsed:0});
+    this.update({camera:{...keyframes.at(-1)!,id:this.state.camera.id+1,duration,allowRoll,from:this.currentCamera(),primitive:{kind:'spline',keyframes},landmarkPath},cameraElapsed:0});
   }
   playBookmarkPath(list:BookmarkInput[],override=false) {
     const keys=fromBookmarks(list),duration=keys.at(-1)!.t*1000;
-    this.bookmarkOverride=false;this.splinePath(keys,duration);
+    const allowRoll=this.state.shot===null?false:this.state.allowRoll;
+    this.bookmarkOverride=false;this.resetOrientation(allowRoll);this.splinePath(keys,duration,undefined,allowRoll);
     this.update({camera:{...this.state.camera,bookmarkPath:true,from:keys[0]}});
     this.bookmarkOverride=override;return duration;
   }
@@ -142,7 +164,9 @@ export class PlaybackEngine {
     do {
       // Consume exact cue boundaries, including when a capture advances many
       // seconds at once. No range from scene N leaks into N+1.
-      const next=this.state.shotRunning?this.scheduled[0]?.time:undefined;
+      const wordTimes=this.wordActions.filter(a=>!a.fired).map(a=>(this.state.cues[a.name]??a.fallbackMs)/1000);
+      const boundary=Math.min(this.scheduled[0]?.time??Infinity,...wordTimes);
+      const next=this.state.shotRunning&&Number.isFinite(boundary)?boundary:undefined;
       const dt=next===undefined?remaining:Math.min(remaining,Math.max(0,next-this.shotClock));
       this.update({tMs:this.state.tMs+dt*1000});
       if(this.state.shotRunning){this.shotClock+=dt;this.update({shotElapsed:this.shotClock});}
@@ -159,6 +183,7 @@ export class PlaybackEngine {
         }else{const position=this.state.position+dt*speedRate(this.state.speed);this.setPosition(position);if(position>=DAYS)this.update({playing:false});}
       }
       remaining-=dt;
+      if(this.state.shotRunning)this.fireWordActions();
       while(this.state.shotRunning&&this.scheduled.length&&this.scheduled[0].time<=this.shotClock+1e-9)this.scheduled.shift()!.run();
       if(++guard>1000)throw new Error('Director cue loop');
     }while(remaining>1e-9);
@@ -190,9 +215,11 @@ export class PlaybackEngine {
     const seq=bucket.events[this.state.cursor-1]?.seq??(bucket.events[0]?.seq??Infinity)-1;
     const invoices=new Set<string>();
     for(const event of this.storyEvents??this.index.payments){
+      // The cascade readout counts the nine downstream Pays, excluding its deposit.
+      if(this.state.shot===4&&event.type!=='pay')continue;
       if(this.storyEvents===null&&event.seq>seq)continue;
       if(this.state.focusInvoices&&!this.state.focusInvoices.includes(event.invoiceId??''))continue;
-      if(['issue','pay'].includes(event.type)&&event.invoiceId&&Number(event.data.outstanding_cents??0)===0)invoices.add(event.invoiceId);
+      if(['issue','pay'].includes(event.type)&&event.invoiceId&&event.data.outstanding_cents!=null&&Number(event.data.outstanding_cents)===0)invoices.add(event.invoiceId);
     }
     return invoices.size;
   }

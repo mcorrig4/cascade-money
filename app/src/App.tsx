@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { receiver } from './data/handoff.ts';
 import type { EventIndex } from './data/types.ts';
 import { PlaybackEngine, speedRate } from './playback/engine.ts';
@@ -16,11 +16,20 @@ import { FilmEffects } from './director/FilmEffects.tsx';
 import { SHOTS, playShot, loadNarrationDurations } from './director/shots.ts';
 import './stage.css';
 import './film.css';
-import { recordingVisibility } from './director/recording.ts';
+import { recordingVisibility, setRecordingMode } from './director/recording.ts';
 
-function LoadedApp({ index }: { index: EventIndex }) {
+function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: () => void; onError: (message: string) => void }) {
   const [engine] = useState(() => { const value = new PlaybackEngine(index); value.prepareScene(); return value; });
   const state = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
+  useEffect(() => {
+    let cancelled = false;
+    // The complete HUD is mounted while the opaque loading cover is still present.
+    // Scene readiness includes the first projected labels and completed GPU frame.
+    void Promise.all([engine.ready(), document.fonts.ready]).then(() => {
+      if (!cancelled) onReady();
+    }).catch(reason => { if (!cancelled) onError(reason instanceof Error ? reason.message : 'The scene could not be prepared.'); });
+    return () => { cancelled = true; };
+  }, [engine, onReady, onError]);
   const [director, setDirector] = useState(false), [ledgerOpen, setLedgerOpen] = useState(false);
   const [onchain, setOnchain] = useState(false);
   const openOnchain = () => { engine.update({ playing: false, shotRunning: false }); setOnchain(true); };
@@ -54,7 +63,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
       if (event.shiftKey && event.code === 'KeyD') { event.preventDefault(); setDirector(v => !v); }
       if (event.code === 'Space') { event.preventDefault(); engine.toggle(); }
       if (event.code === 'Escape') { engine.stopShot(); setDirector(false); engine.update({ recording: false }); }
-      if (event.code === 'KeyR') { void engine.ready().then(()=>{engine.update({ recording: !engine.state.recording }); setDirector(false);}); }
+      if (event.code === 'KeyR') { void engine.ready().then(()=>{setRecordingMode(engine, !engine.state.recording); setDirector(false);}); }
     };
     if (!frameDriven) window.addEventListener('keydown', keyboard);
     const shot = Number(new URLSearchParams(location.search).get('shot'));
@@ -72,7 +81,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
   },[director]);
   const visibility=recordingVisibility(state.recording,state.hud);
   const tesla = [...index.firms.values()].some(f => f.id.toLowerCase().includes('tesla'));
-  return <main className={`app ${state.camera.site?'site-focused':''} ${state.recording ? visibility.hud?'recording recording-hud':'recording clean-frame' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
+  return <main className={`app ${state.shot===2?'california-hook':''} ${state.camera.site?'site-focused':''} ${state.recording ? visibility.hud?'recording recording-hud':'recording clean-frame' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
     <div className={state.timelapse&&state.timelapse.elapsed<state.timelapse.duration?'time-lapse-blur':''}><Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense></div>
     <header className="topbar"><Brand onDirector={openDirector} />
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>
@@ -89,7 +98,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
     {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
     {state.caption && <p className="year-caption">Global supply chain</p>}
     <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
-    <SceneLabels payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?engine.storyEvents?.filter(e=>e.type==='issue')??[]:[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
+    <SceneLabels payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?engine.storyEvents??[]:[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
     {(onchain || state.onchainGlimpse) && <OnchainPanel tMs={state.tMs} onClose={() => {setOnchain(false);engine.update({onchainGlimpse:false});}} />}
     {director && visibility.director && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;
@@ -97,6 +106,23 @@ function LoadedApp({ index }: { index: EventIndex }) {
 export default function App() {
   useEffect(() => initializeTelegram(window.Telegram?.WebApp, document.documentElement), []);
   const [index, setIndex] = useState<EventIndex>(), [error, setError] = useState('');
+  const [revealing, setRevealing] = useState(false), [revealed, setRevealed] = useState(false);
+  const beginReveal = useCallback(() => setRevealing(true), []);
+  const finishReveal = useCallback(() => {
+    document.documentElement.dataset.cascadeRevealed = 'true';
+    document.dispatchEvent(new Event('cascade:revealed'));
+    setRevealed(true);
+  }, []);
+  useEffect(() => {
+    delete document.documentElement.dataset.cascadeRevealed;
+    return () => { delete document.documentElement.dataset.cascadeRevealed; };
+  }, []);
+  useEffect(() => {
+    if (!revealing) return;
+    // Fallback for environments that suppress transitionend (e.g. background tabs).
+    const timer = setTimeout(finishReveal, 650);
+    return () => clearTimeout(timer);
+  }, [revealing, finishReveal]);
   useEffect(() => {
     const narrationReady=loadNarrationDurations(new URL(`${import.meta.env.BASE_URL}narration/narration.json`,location.href).href);
     let cancelled=false;
@@ -113,6 +139,10 @@ export default function App() {
     return () => {cancelled=true;worker.terminate();};
   }, []);
   if (error) return <main className="loading"><span className="eyebrow">CASCADE</span><h1>Unable to open payments</h1><p role="alert">{error}</p><button onClick={() => location.reload()}>Try again</button></main>;
-  if (!index) return <main className="loading"><span className="eyebrow">CASCADE</span><h1>Opening the network<span className="loading-dot">.</span></h1></main>;
-  return <LoadedApp index={index} />;
+  return <>
+    {index && <LoadedApp index={index} onReady={beginReveal} onError={setError} />}
+    {!revealed && <div className={`loading opening-cover${revealing ? ' opening-reveal' : ''}`} role="status" aria-label="Opening the network" onTransitionEnd={event => {
+      if (event.target === event.currentTarget && event.propertyName === 'opacity') finishReveal();
+    }}><span className="eyebrow">CASCADE</span><h1>Opening the network<span className="loading-dot">.</span></h1></div>}
+  </>;
 }

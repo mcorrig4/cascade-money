@@ -70,6 +70,9 @@ async function captureScenes(context, legibility=false) {
   page.on('pageerror',e=>errors.push(e.message));
   const target=new URL(url);target.searchParams.set('inspect','1');
   await page.goto(target.href);await waitForEarthReady(page);
+  // Scene sampling uses the manual engine clock. Render each requested pose
+  // explicitly instead of burning software WebGL frames between screenshots.
+  await page.evaluate(()=>window.__cascade.globe.pauseAnimation());
   await page.keyboard.press('Shift+D');
   await page.keyboard.press('b');
   assert.equal(await page.evaluate(()=>window.__cascade.bookmarks.length),1,'B appends a rendered view');
@@ -80,7 +83,8 @@ async function captureScenes(context, legibility=false) {
 
   await page.keyboard.press('Shift+D');
   const shots=await page.evaluate(()=>window.__cascade.shots);
-  assert.equal(shots.length,17,'Narration v6 has exactly 17 scenes');
+  assert.deepEqual(shots.map(shot=>shot.scene),Array.from({length:shots.length},(_,i)=>i+1),'Every authored scene has a contiguous scene number');
+  assert.equal(new Set(shots.map(shot=>shot.id)).size,shots.length,'Authored scene IDs stay unique');
   const directory=legibility?'legibility':'scenes';await mkdir(`artifacts/${directory}`,{recursive:true});
   const manifest=[];
   for(const [width,height] of legibility?[[640,360],[426,240]]:[[1920,1080],[640,360]]) {
@@ -101,6 +105,7 @@ async function captureScenes(context, legibility=false) {
       },targetTime-clock);clock=targetTime;
       await page.waitForTimeout(700);
       await page.waitForFunction(()=>window.__cascade.models().every(m=>!m.pending));
+      await page.evaluate(()=>window.__cascade.renderFrame(performance.now()));
       const path=`artifacts/${directory}/scene-${String(shot.scene).padStart(2,'0')}-${width}x${height}.png`;
       const frame=await page.screenshot();
       if(legibility) {
@@ -144,7 +149,7 @@ async function captureScenes(context, legibility=false) {
         assert.deepEqual(audit.type.filter(item=>item.fontPx+0.05<item.minimum),[],`Scene ${shot.scene} text survives downscaling to ${width}×${height}`);
       }
       assert.equal(audit.hud,true,'Recording keeps the product HUD');assert.equal(audit.hidden,true,'Recording hides production controls');
-      assert.equal(audit.mode,shot.id,`Capture follows the 17-scene order (scene ${shot.scene}, film time ${targetTime}s)`);
+      assert.equal(audit.mode,shot.id,`Capture follows the authored scene order (scene ${shot.scene}, film time ${targetTime}s)`);
       assert.ok(Math.abs(audit.elapsed-seconds)<1e-7, 'Capture uses the declared scene-relative time');
       assert.deepEqual(audit.frameClipped,[],`${shot.title} keeps film content between the visible HUD regions at ${width}×${height}`);
       assert.deepEqual(audit.overflow,[],`${shot.title} fits inside its overlay card at ${width}×${height}`);
@@ -218,7 +223,7 @@ try {
   }
   assert.ok((await page.getByTestId('settled').innerText()).startsWith('$'));
   assert.ok((await page.getByTestId('committed').innerText()).startsWith('$'));
-  assert.ok((await page.getByTestId('ratio').innerText()).endsWith('×'));
+  assert.match(await page.getByTestId('invoices-settled').innerText(),/^[0-9,]+$/,'Current HUD displays the settled invoice count');
   await page.screenshot({ path: 'artifacts/globe-1920x1080.png' });
   await page.evaluate(() => window.__cascade.ageArcs(-600));
   await page.waitForTimeout(150);
@@ -296,6 +301,9 @@ try {
   await page.getByRole('button',{name:'Close Verify on Arc'}).click();
   assert.equal(await page.locator('.close-card a').count(), 4);
   assert.equal(await page.locator('.close-card a[href="/architecture"]').count(), 1);
+  // Desktop verification is complete. Release its architectural WebGL scene
+  // before measuring a separate mobile cold start on software GL.
+  await context.close();
   const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   await routeStatic(mobile);
   await mobile.addInitScript(() => {

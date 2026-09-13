@@ -24,8 +24,14 @@ def test_corrected_story_routes_and_annotations():
     assert not any(b['debtor']=='TSMC' and b['creditor']=='Corning' for b in beats)
     assert all(b['operation']=='extend_pay' for b in beats if b['story_id']=='tesla' and b['debtor']!='Tesla')
     proof=[b for b in beats if b['story_id']=='apple-duo']
-    assert sum(b['amount_cents'] for b in proof)==45_000_000_000
-    assert sum(b['amount_cents'] for b in proof if b['operation']=='issue')==10_000_000_000
+    assert sum(b['amount_cents'] for b in proof)==50_000_000_000
+    assert sum(b['amount_cents'] for b in proof if b['operation']=='issue')==15_000_000_000
+    sony=[b for b in proof if b['beat']=='camera-sensors']
+    assert len(sony)==1
+    assert (sony[0]['debtor'],sony[0]['creditor'],sony[0]['amount_cents'],sony[0]['maturity'],sony[0]['deliver_to'])==('Apple','Sony',5_000_000_000,90,'foxconn-zhengzhou')
+    samsung_tree=[b for b in proof if b['beat']!='camera-sensors']
+    assert len([b for b in samsung_tree if b['operation']=='pay'])==9
+    assert sum(b['amount_cents'] for b in samsung_tree)==45_000_000_000
     assert max(b['day'] for b in proof)<30
 
 
@@ -112,18 +118,24 @@ def test_checkpoint_and_operation_verification_match_full_30_day_world():
     a=run_world(days=30,seed=1,check_every="checkpoint")
     b=run_world(days=30,seed=1,check_every=1)
     assert a.metrics==b.metrics
-    assert a.metrics['story_totals']['apple-duo']=={'settled_cents':45_000_000_000,'committed_cents':10_000_000_000}
+    assert a.metrics['story_totals']['apple-duo']=={'settled_cents':50_000_000_000,'committed_cents':15_000_000_000}
 
 
 def test_branching_proof_reuses_only_original_day_90_units():
     result=run_world(days=5,suppliers=40,invoices=20,retain=True)
     events=result.vault.events.events
     proof=[e for e in events if e['type']=='story' and e['data']['story_id']=='apple-duo']
-    assert len(proof)==10
+    assert len(proof)==11
     assert {e['data']['branch'] for e in proof} >= {'root','silica','chemicals','silica/refining','silica/freight','chemicals/feedstock','chemicals/rail'}
-    assert proof[-1]['data']['settled_cents']==45_000_000_000
-    assert all(e['data']['committed_cents']==10_000_000_000 for e in proof)
-    payments=[e for e in events if e['type']=='pay' and e['request_id'].startswith('story-pay') and e['data']['debtor'] not in ('Panasonic','Pohang Cathode')]
+    assert proof[-1]['data']['settled_cents']==50_000_000_000
+    assert proof[0]['data']['committed_cents']==10_000_000_000
+    assert all(e['data']['committed_cents']==15_000_000_000 for e in proof[1:])
+    annotations=[b for b in json.loads(Path('sim/story_annotations.json').read_text()) if b['story_id']!='apple-fixture']
+    samsung_pay_ids={f'story:{i}' for i,b in enumerate(annotations) if b['story_id']=='apple-duo' and b['operation']=='pay'}
+    payments=[e for e in events if e['type']=='pay' and e['data']['invoice_id'] in samsung_pay_ids]
+    sony_id=next(f'story:{i}' for i,b in enumerate(annotations) if b['story_id']=='apple-duo' and b['beat']=='camera-sensors')
+    assert any(e['type']=='issue' and e['data']['invoice_id']==sony_id for e in events)
+    assert not any(e['type']=='pay' and e['data']['invoice_id']==sony_id for e in events)
     assert len(payments)==9
     assert all(l['date']==90 for e in payments for l in e['data']['legs'])
 

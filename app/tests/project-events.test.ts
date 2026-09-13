@@ -76,3 +76,10 @@ test('payment date IDs survive projection for compact ledger units', () => {
   const out=projectEvent({...envelope,type:'pay',data:{debtor:'A',creditor:'B',invoice_id:'i:1'}});
   assert.deepEqual(out.dates,[1,2]);
 });
+
+test('payment projection retains explicit outstanding balances, including partial payments', () => {
+  for(const type of ['issue','pay'])for(const outstanding_cents of [0,12345]) {
+    const out=projectEvent({...envelope,type,data:{invoice_id:'i:1',outstanding_cents}});
+    assert.equal(out.data.outstanding_cents,outstanding_cents);
+  }
+});

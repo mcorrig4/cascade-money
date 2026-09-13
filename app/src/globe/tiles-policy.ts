@@ -70,7 +70,8 @@ export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'> & Pa
   // HUD jumps name their destination before the camera reaches its proximity radius.
   const jumpSite=state.shot===null?state.camera?.site:null;
   if(jumpSite && jumpSite in SITES)return {site:jumpSite,prefetch:true,blend:1-smoothstep(0.0012,0.0035,altitude)};
-  if(state.shot===1)return {site:'apple-park',prefetch:true,blend:1-smoothstep(14,14.8,state.shotElapsed)};
+  // Opening and California scenes (stage 18) stay on the globe: no site imagery.
+  if(state.shot===1||state.shot===2)return {site:null,prefetch:false,blend:0};
   // Shot 10 ("New York", the store flight + stair descent) is cut
   // (scene-11-delete pass, 2026-09-13) — its enter/leave fade special-case
   // is retired with it; shot 19 (Beneath it) now opens the fifth-avenue

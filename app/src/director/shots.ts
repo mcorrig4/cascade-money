@@ -1,42 +1,22 @@
 import { eventPosition, PlaybackEngine } from '../playback/engine.ts';
 import type { PlaybackState } from '../playback/engine.ts';
 import type { Event, EventIndex } from '../data/types.ts';
-import { appleParkShotCamera, siteFrame } from '../globe/site-math.ts';
-import { orbitAt, EARTH_METERS, type Pose, type Ease, type Bookmark, fromBookmarks } from '../camera/primitives.ts';
+import { EARTH_METERS, type Pose, type Ease, type Bookmark, type Keyframe, fromBookmarks } from '../camera/primitives.ts';
 export const APPLE={lat:37.3349,lng:-122.009,altitude:.0003};
 export const STORE={lat:40.7638,lng:-73.973,altitude:.05};
 const p=(lat:number,lng:number,altitude:number):Pose=>({lat,lng,altitude});
 // Spoken words from docs/script-v6-liam.md; contractions and hyphenated words count as one.
 // IDs preserve the existing camera/API contracts; scene is the narration order.
-// Scene 1's orbit starts at the authored site-camera eye, without replacing
-// its 225 m height / 520 m campus offset with a globe-scale altitude.
-const opening=appleParkShotCamera(EARTH_METERS,0);
-const campus=siteFrame(APPLE.lat,APPLE.lng,EARTH_METERS);
-const openingEast=opening.position.dot(campus.east),openingNorth=opening.position.dot(campus.north);
-const openingOrbit={
- radius:Math.atan2(Math.hypot(openingEast,openingNorth),opening.position.dot(campus.up))*EARTH_METERS,
- altitude:opening.position.length()/EARTH_METERS-1,
- bearing:Math.atan2(openingEast,openingNorth)*180/Math.PI,
-};
-type ShotDefinition={id:number;title:string;words:number;end:Pose;motion:string;overlay:string;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];openingOrbit?:typeof openingOrbit;orbitUntil?:number;pullOutAt?:number};
+export const OPENING_WIDE=p(37.3349,-128,1.9);
+export const OPENING_ROTATION=.4; // degrees per second, live from the first visible frame
+export const CALIFORNIA_HOLD=p(37.65,-122.45,.18);
+export const APPLE_MARKER_APPROACH=p(APPLE.lat,APPLE.lng,.06);
+export const CALIFORNIA_EXIT=p(OPENING_WIDE.lat,APPLE.lng,1.65);
+export type OrderCue={word:'Samsung'|'Corning'|'Sony';beat:string;at:number};
+export type ShotDefinition={id:number;title:string;words:number;end:Pose;motion:string;overlay:string;allowRoll?:boolean;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];orderCues?:OrderCue[]};
 const table:ShotDefinition[]=[
- // Scene 1's camera is a recorded bookmark flight (dev-mac
- // ~/cascade-3d/capture/record-scene1-v6b.mjs, used to shoot the
- // scene-01 capture): cold load holds on the whole-Earth pose (alt 3),
- // then a 3200ms flight into the Apple Park pose (APPLE, alt .0003),
- // holding there. `path` overrides the orbit motion below via the
- // engine's bookmarkOverride guard (playback/engine.ts) — the loading
- // screen still runs first (AppFrame's own loading window), this only
- // takes over the camera once the app is ready.
- {id:1,title:"The object of desire",words:14,openingOrbit,end:orbitAt(APPLE,openingOrbit.radius,openingOrbit.altitude,openingOrbit.bearing+32),motion:'orbit',overlay:'none',site:'apple-park' as const,
-  path:[
-   {lat:0,lng:-122.009,altitude:3,sceneId:1,time:0,holdMs:900,travelMs:2500},
-   {lat:APPLE.lat,lng:APPLE.lng,altitude:.0003,sceneId:1,time:0,holdMs:2500,travelMs:3200},
-  ]},
- // Pull-out end altitude 1.72 (was 2.5): measured to fill ~85% of frame
- // height (post16 pass, 2026-09-13) — see DECISIONS.md for the render-
- // verified fraction (0.848) and the cubic-out handoff from the arch spline.
- {id:2,title:"Apple Park",words:38,orbitUntil:10,pullOutAt:13.6,end:p(37.3349,-122.009,1.72),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
+ {id:1,title:"The object of desire",words:14,end:OPENING_WIDE,motion:'wide globe rotation',overlay:'none'},
+ {id:2,title:"California",words:38,end:CALIFORNIA_EXIT,motion:'California hold · Apple marker approach · full globe',overlay:'none'},
  // Reorder-to-13 pass (2026-09-13, product owner + Director/wingman 03:33
  // ET): old shots 13 (Rewind) and 15 (The contradiction) are CUT, and old
  // shots 9 (Stress test) and 8 (The rules survive) are CUT as standalone
@@ -46,7 +26,8 @@ const table:ShotDefinition[]=[
  // (buildShots' `i+1` below) now runs 1..13 in THIS array order, which is
  // no longer the shots' own `id` order — ids are stable camera/API
  // contracts (unchanged), only the sequence changes.
- {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'westward payment sweep',overlay:'none'},
+ {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'westward payment sweep',overlay:'none',orderCues:[
+  {word:'Samsung',beat:'display',at:4.4},{word:'Corning',beat:'cover-glass',at:9.2},{word:'Sony',beat:'camera-sensors',at:13.4}]},
  {id:16,title:"The question",words:18,end:p(34,-76,1.8),motion:'idle drift',overlay:'question'},
  {id:4,title:"The cascade",words:55,end:p(33.77,-118.2,1.9),motion:'westward chain sweep',overlay:'none'},
  {id:17,title:"Let it land",words:30,end:p(34,-112,2),motion:'idle drift',overlay:'totals'},
@@ -58,9 +39,10 @@ const table:ShotDefinition[]=[
  // the store flight + stair descent) is CUT, the store visit dropped. Shot
  // 19 (Beneath it) now opens the fifth-avenue site itself instead of
  // continuing New York's descent — see its now-unconditional fly-in in
- // playShot below.
- {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + hall drift',overlay:'none',site:'fifth-avenue' as const},
- {id:12,title:"Close",words:9,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift + exposure',overlay:'wordmark',site:'fifth-avenue' as const},
+ // playShot below. Both interior shots keep stage 18's allowRoll opt-out:
+ // the north-up policy applies to the globe, not to the hall camera.
+ {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + hall drift',overlay:'none',site:'fifth-avenue' as const,allowRoll:true},
+ {id:12,title:"Close",words:9,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift + exposure',overlay:'wordmark',site:'fifth-avenue' as const,allowRoll:true},
 ];
 export type NarrationDurations=Record<string,number>;
 /** narration.json: {"durations":{"1":6.6,"2":16.2}}; keys are scene numbers, values seconds. */
@@ -77,21 +59,18 @@ export function parseNarrationDurations(value:unknown):NarrationDurations {
  return result;
 }
 export function buildShots(durations:NarrationDurations={}) {
- let time=0;
+ let time=0,previous:Pose=OPENING_WIDE;
  return table.map((s,i)=>{
   const baseSeconds=Math.round((s.words*60/150+1)*10)/10;
-  // A shot with a recorded bookmark `path` (currently shot 1's whole-Earth
-  // -> Apple Park flight) has a real-time floor on its duration: the film
-  // can't compress the flight below its own recorded length. Floor `seconds`
-  // here (not just at playback in playShot) so every later shot's startTime
-  // stays in sync with the engine's actual runtime clock even when narration
-  // durations would otherwise shrink this shot below the flight's length.
+  // Bookmark travel and holds remain a duration floor for explicitly authored paths.
   const pathFloor=s.path?Math.round(fromBookmarks(s.path).at(-1)!.t*10)/10:0;
   const seconds=Math.max(durations[String(i+1)]??baseSeconds,pathFloor),startTime=time;time+=seconds;
   // The closing card is captured after its line-to-wordmark transition.
   const captureAt=seconds*(s.id===12?.9:s.id===11?.5:s.id===13?.55:.8);
   if(!(captureAt>0&&captureAt<seconds))throw new Error('Capture must be strictly inside scene');
-  return {...s,scene:i+1,baseSeconds,seconds,captureAt,start:i?table[i-1].end:orbitAt(APPLE,openingOrbit.radius,openingOrbit.altitude,openingOrbit.bearing),
+  const start=previous,end=s.id===1?{...OPENING_WIDE,lng:OPENING_WIDE.lng+OPENING_ROTATION*seconds}:s.end;
+  previous=end;
+  return {...s,end,scene:i+1,baseSeconds,seconds,captureAt,start,
    startTime,endTime:time,duration:`${seconds.toFixed(1)}s`,detail:s.motion};
  });
 }
@@ -123,7 +102,7 @@ export const CASCADE_FIGURES={
 // Keep this switch aligned with film Scene08Counters for a future straight-line re-cut.
 export const USE_EXTENDED_FIGURES=true;
 export const DEFAULT_CASCADE=USE_EXTENDED_FIGURES?CASCADE_FIGURES.branched:CASCADE_FIGURES.straight;
-export const VERIFIED_YEAR_INVOICES=12028;
+export const VERIFIED_YEAR_INVOICES=12029;
 export const STRESS_FIGURES={operations:10000,violations:0};
 export const COMPOSABLE_BEATS=[
  {at:4,title:'Loans',detail:''},{at:4.4,title:'Forwards',detail:''},
@@ -140,8 +119,7 @@ export const COIN_BEATS=[
 ];
 export const beatIndex=(times:readonly {at:number}[],elapsed:number)=>Math.max(0,times.findLastIndex(b=>elapsed>=b.at));
 export const SCENE_LOCATIONS=[
- {shot:1,name:'Apple Park',place:'Cupertino, California'},
- {shot:2,name:'Apple Park',place:'Cupertino, California'},
+ {shot:2,name:'Apple',place:'Cupertino, California'},
  {shot:19,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
 ];
 // Shot 13 (Rewind)'s date-card/stat-line beats were already dead (Rewind
@@ -225,14 +203,31 @@ export const ORDER_SITES:Record<string,string>={
  'story:0':'samsung-display-asan','story:1':'corning-harrodsburg',
  'story:10':'tsmc-hsinchu','story:17':'foxconn-zhengzhou',
 };
-/** Presentation juxtaposes orders issued on days 0, 10 and 120; events keep their dates. */
+/** Resolve narration against semantic story markers, never positional invoice IDs. */
+export function narratedOrder(index:EventIndex,beat:string) {
+ return index.stories.find(s=>s.storyId==='apple-duo'&&s.beat===beat)?.payment;
+}
 export function appleOrders(index:EventIndex) {
  if(index.schema===1)return proofPayments(index).slice(0,1);
- const marked=new Set(index.stories.flatMap(s=>s.payment?[s.payment.seq]:[]));
- return ['story:0','story:10','story:17'].flatMap(id=>{
-  const event=index.payments.find(e=>e.invoiceId===id&&e.type==='issue'&&e.from==='Apple'&&marked.has(e.seq));
-  return event?[event]:[];
+ return ['display','camera-sensors'].flatMap(beat=>{
+  const event=narratedOrder(index,beat);
+  return event?.type==='issue'&&event.from==='Apple'?[event]:[];
  });
+}
+export function sceneThreeOrders(index:EventIndex) {
+ if(index.schema===1)return appleOrders(index);
+ return ['display','cover-glass','camera-sensors'].flatMap(beat=>{
+  const event=narratedOrder(index,beat);return event?[event]:[];
+ });
+}
+/** One C1 path; zero tangents at both hold knots keep the subject completely still. */
+export function californiaPath(from:Pose,seconds:number,incomingLngVelocity=0):Keyframe[] {
+ const zero={lat:0,lng:0,altitude:0};
+ return [{...from,t:0,tangent:{...zero,lng:incomingLngVelocity}},
+  {...CALIFORNIA_HOLD,t:seconds*.3,tangent:zero},
+  {...CALIFORNIA_HOLD,t:seconds*.5,tangent:zero},
+  {...APPLE_MARKER_APPROACH,t:seconds*.75,tangent:zero},
+  {...table[1].end,t:seconds,tangent:zero}];
 }
 export function shotAvailable(_engine:PlaybackEngine,id:number){return SHOTS.some(s=>s.id===id);}
 const chase:Ease={kind:'bezier',points:[.12,.65,.18,1]};
@@ -241,7 +236,10 @@ export function playFilm(engine:PlaybackEngine):void|Promise<void>{if(!engine.is
 export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const shot=SHOTS.find(s=>s.id===id);if(!shot)return;
  const duration=shot.path?Math.max(shot.seconds,fromBookmarks(shot.path).at(-1)!.t):shot.seconds;
- engine.beginShot(id,duration,shot.startTime*1000);engine.update({film:continuous});
+ const incoming=engine.currentCamera();
+ engine.beginShot(id,duration,shot.startTime*1000,shot.allowRoll??false);engine.update({film:continuous});
+ // Every direct entry starts from its authored wide pose; film transitions inherit.
+ if(!continuous||id===1)engine.update({camera:{...shot.start,id:engine.state.camera.id+1,duration:0,allowRoll:shot.allowRoll??false},cameraElapsed:0});
  if(shot.path)engine.playBookmarkPath(shot.path,true);
  const ms=shot.seconds*1000,scale=shot.seconds/shot.baseSeconds;
  const at=(seconds:number,run:()=>void)=>engine.after(seconds*scale,run);
@@ -249,26 +247,21 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  if(id!==12)engine.fadeFromWhite(Math.min(400,ms*.1));
  const show=(event:Event)=>{engine.reveal(event);engine.setPosition(position(engine,event,true));};
  const focus=(events:Event[],straight=false)=>{engine.storyEvents=[];engine.update({focusInvoices:events.map(e=>e.invoiceId!),paymentMaturity:straight?proofMaturity(events[0]):null,paymentAmount:straight?CASCADE_FIGURES.straight.committed:null});};
- if(id===1){engine.setPosition(0,true);engine.orbit(APPLE,openingOrbit.radius,openingOrbit.altitude,32/shot.seconds,ms,openingOrbit.bearing);}
- else if(id===2){
-  const orbitUntil=table[1].orbitUntil!,pullOutAt=table[1].pullOutAt!;
-  engine.orbit(APPLE,openingOrbit.radius,openingOrbit.altitude,18/(orbitUntil*scale),orbitUntil*scale*1000,openingOrbit.bearing+32);
-  at(orbitUntil,()=>{
-   // These are the same calibrated points previously resolved in GlobeScene.
-   // Sampling them here gives the engine and renderer one exact handoff state.
-   const geo=(v:ReturnType<typeof appleParkShotCamera>['position'],t:number)=>({lat:Math.asin(v.y/v.length())*180/Math.PI,lng:Math.atan2(v.x,v.z)*180/Math.PI,altitude:v.length()/EARTH_METERS-1,t});
-   engine.splinePath([{...engine.currentCamera(),t:0},geo(appleParkShotCamera(EARTH_METERS,10).position,.5),
-    geo(appleParkShotCamera(EARTH_METERS,13.7).position,1.2)],(pullOutAt-orbitUntil)*scale*1000,'apple-park-arch');
-  });
-  at(pullOutAt,()=>engine.snapAndPullOut(APPLE,.00005,shot.end.altitude,(shot.baseSeconds-pullOutAt)*scale*1000,{kind:'cubic-out',handoff:.25}));
- }else if(id===3){
-  const orders=appleOrders(engine.index),branch=branchedProofPayments(engine.index,engine.state.story);
-  const downstream=branch.slice(1);
-  focus([...orders,...downstream]);engine.setPosition(0,true);engine.update({paymentPresentation:'waiting'});
-  // A Pacific view keeps the three complete outbound arcs in one composition.
+ if(id===1){
+  engine.setPosition(0,true);
+  const tangent={lat:0,lng:OPENING_ROTATION,altitude:0};
+  engine.splinePath([{...shot.start,t:0,tangent},{...shot.end,t:shot.seconds,tangent}],ms);
+ }else if(id===2){
+  engine.splinePath(californiaPath(continuous?incoming:shot.start,shot.seconds,continuous?OPENING_ROTATION:0),ms);
+  }else if(id===3){
+  const orders=sceneThreeOrders(engine.index);
+  focus(orders);engine.setPosition(0,true);engine.update({paymentPresentation:'waiting'});
+  // Keep the narrated orders together, independently of their simulation days.
   fly(p(42,-170,1.8),4400*scale,'west');
-  at(4.4,()=>orders.forEach(event=>engine.reveal(event)));
-  cascadeBeats(downstream).forEach((generation,i)=>at(9.2+i*2.2,()=>generation.forEach(event=>engine.reveal(event))));
+  for(const cue of shot.orderCues??[])engine.atWord(cue.word,cue.at*scale,()=>{
+   const event=narratedOrder(engine.index,cue.beat)??(cue.word==='Samsung'?orders[0]:undefined);
+   if(event)engine.reveal(event);
+  });
   at(16.4,()=>fly(shot.end,ms-16400*scale,'east'));
  }else if(id===4){
   const chain=USE_EXTENDED_FIGURES?branchedProofPayments(engine.index,engine.state.story):straightProofPayments(engine.index,engine.state.story);
