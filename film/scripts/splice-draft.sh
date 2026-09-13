@@ -62,6 +62,26 @@ for num in $(seq -w 1 17); do
   echo "file '$part'" >> "$CONCAT_LIST"
 done
 
+# AAC encoder padding makes stream-copy concat insert a small timestamp gap at
+# every scene boundary. For the draft, trim each audio stream to its exact
+# video-frame duration and concatenate both streams on a clean 15fps timeline.
+if [[ "$MODE" == "draft" ]]; then
+  INPUTS=(); FILTER=""; INDEX=0
+  for num in $(seq -w 1 17); do
+    part="$PARTS_DIR/scene-${num}.mp4"; INPUTS+=("-i" "$part")
+    frames=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nw=1:nk=1 "$part")
+    duration=$(perl -e 'printf "%.9f",$ARGV[0]/15' "$frames")
+    FILTER+="[$INDEX:v]setpts=PTS-STARTPTS[v$INDEX];[$INDEX:a]atrim=duration=$duration,asetpts=PTS-STARTPTS[a$INDEX];"
+    INDEX=$((INDEX+1))
+  done
+  for index in $(seq 0 16); do FILTER+="[v$index][a$index]"; done
+  FILTER+="concat=n=17:v=1:a=1[v][a]"
+  ffmpeg -hide_banner -loglevel error -y "${INPUTS[@]}" -filter_complex "$FILTER" -map '[v]' -map '[a]' \
+    -r 15 -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -movflags +faststart "$OUT_FILE"
+  echo "-> $OUT_FILE (frame-exact filtered concat)" >&2
+  exit 0
+fi
+
 echo "Attempting stream-copy concat..." >&2
 if ffmpeg -y -f concat -safe 0 -i "$CONCAT_LIST" -c copy -movflags +faststart "$OUT_FILE" 2>/tmp/splice-draft-copy.log; then
   echo "-> $OUT_FILE (stream copy, no re-encode)" >&2

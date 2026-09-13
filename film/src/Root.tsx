@@ -32,6 +32,7 @@ const calculateSceneMetadata: CalculateMetadataFunction<CascadeLiveSceneProps> =
 
 export const RemotionRoot: React.FC = () => {
   return (
+    <>
     <Composition
       id="CascadeFilm"
       component={CascadeFilm}
@@ -67,5 +68,6 @@ export const RemotionRoot: React.FC = () => {
     <Composition id="CascadeLive" component={AppFrame} durationInFrames={301} fps={30} width={1920} height={1080}/>
     <Composition id="CascadeLiveSite" component={AppFrame} durationInFrames={30} fps={30} width={1920} height={1080} defaultProps={{scene:2}}/>
     <Composition id="CascadeSeekProbe" component={AppFrame} durationInFrames={3} fps={30} width={1920} height={1080} defaultProps={{scene:4,timesMs:[4000,10000,4000]}}/>
+    </>
   );
 };
