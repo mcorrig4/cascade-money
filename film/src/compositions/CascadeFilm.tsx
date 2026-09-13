@@ -150,10 +150,12 @@ const durationFor = (durations: number[], num: number): number => {
  * record-take-v6.mjs cuts each clip at the app's authored shot boundary, and
  * its measured per-scene deltas run up to +0.27s past that boundary — i.e.
  * the last few tenths of every clip are already the NEXT shot's opening
- * card. Discarding a flat 0.3s covers every measured overshoot in
- * out-v6/take-report.json without eating a visible amount of real footage.
+ * card. Measured directly off the out-v6 clips (frames sampled every 0.6s
+ * through the last 3s of scenes 5, 6, 7 and 10, 2026-09-13): every one of
+ * them cuts to the next shot's card exactly 1.2s before the file ends, so
+ * 1.25s is the trim that reliably lands on this scene's own last picture.
  */
-const CAPTURE_TAIL_TRIM_SECONDS = 0.3;
+const CAPTURE_TAIL_TRIM_SECONDS = 1.25;
 
 /**
  * Slowest the capture layer is allowed to run. A mild stretch is invisible on

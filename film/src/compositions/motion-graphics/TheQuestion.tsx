@@ -51,7 +51,20 @@ export const TheQuestion: React.FC<{
         fontFamily: font.family,
       }}
     >
-      <AbsoluteFill style={{display: 'grid', placeItems: 'center'}}>
+      {/*
+        Over the capture the app draws its own centred question and the coin
+        that grows out of it, so the film card drops to the lower third (clear
+        of the app's headline above and its ledger strip below) and loses a
+        little type size. On the pure motion-graphic path it stays centred at
+        full size, exactly as authored.
+      */}
+      <AbsoluteFill
+        style={{
+          display: 'grid',
+          placeItems: overCapture ? 'end center' : 'center',
+          paddingBottom: overCapture ? 190 : 0,
+        }}
+      >
         <div
           style={{
             width: 1100,
@@ -62,7 +75,7 @@ export const TheQuestion: React.FC<{
         >
           <div
             style={{
-              fontSize: 76,
+              fontSize: overCapture ? 60 : 76,
               fontWeight: 450,
               letterSpacing: -2,
               lineHeight: 1.15,
@@ -75,8 +88,8 @@ export const TheQuestion: React.FC<{
           </div>
           <div
             style={{
-              marginTop: 28,
-              fontSize: 42,
+              marginTop: overCapture ? 20 : 28,
+              fontSize: overCapture ? 34 : 42,
               fontWeight: 450,
               letterSpacing: -1,
               lineHeight: 1.35,
