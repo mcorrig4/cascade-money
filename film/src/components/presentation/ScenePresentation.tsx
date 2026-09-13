@@ -54,11 +54,10 @@ const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: Wi
   });
   const on = (start: number) => progress(start - 1, 1) === 1;
   const rise = progress(question, 6 * fps / 30);
-  const dissolve = progress(dollar, .35 * fps);
-  const slide = progress(dollar, .5 * fps);
-  const converge = progress(dollar + .5 * fps, .45 * fps);
+  // 'a dated dollar' and 'Not as cash' are 0.64 s apart: one motion fits, not three.
+  const dissolve = progress(dollar, .25 * fps);
+  const enter = progress(dollar, .4 * fps);
   const size = 170 * unit, lockupWidth = size * 462 / 170;
-  // The disc, rather than the wide SVG lockup, anchors the transformation.
   const discX = lockupWidth * .1775, discY = size * 82 / 170;
   return <>
     <div className="film-question-scrim" aria-hidden="true" style={{opacity: rise}}/>
@@ -68,17 +67,11 @@ const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: Wi
         transform: `translateY(${12 * unit * (1 - rise)}px)`,
       }}>What if that future payment<br/>could move today?</h2>
       <div className="film-question-object">
-        <div className="film-question-row" style={{
-          ...visibility(on(dollar) && converge < 1), opacity: 1 - converge,
-          top: discY, transform: `translateX(${120 * unit * (1 - slide)}px)`,
-        }}>
-          <strong className="film-question-amount" style={{left: 56 * unit * (1 - converge)}}>$100M</strong>
-          <span className="film-question-date" style={{left: 240 * unit * (1 - converge)}}>DEC 8</span>
-        </div>
+        {/* The lockup's own left edge sits on the gutter; the disc is its anchor point. */}
         <div className="film-question-token" style={{
-          left: -discX, width: lockupWidth, height: size, opacity: converge,
-          transformOrigin: `${discX}px ${discY}px`, transform: `scale(${.8 + .2 * converge})`,
-          ...visibility(on(dollar + .5 * fps)),
+          left: 0, width: lockupWidth, height: size, opacity: enter,
+          transformOrigin: `${discX}px ${discY}px`, transform: `scale(${.85 + .15 * enter})`,
+          ...visibility(on(dollar)),
         }}>
           <DatedDollar days={30} isoDate={illustrativeDate(30)} size={size}/>
         </div>
