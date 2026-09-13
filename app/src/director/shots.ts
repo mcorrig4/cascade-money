@@ -20,7 +20,19 @@ const openingOrbit={
 };
 type ShotDefinition={id:number;title:string;words:number;end:Pose;motion:string;overlay:string;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];openingOrbit?:typeof openingOrbit;orbitUntil?:number;pullOutAt?:number};
 const table:ShotDefinition[]=[
- {id:1,title:"The object of desire",words:14,openingOrbit,end:orbitAt(APPLE,openingOrbit.radius,openingOrbit.altitude,openingOrbit.bearing+32),motion:'orbit',overlay:'none',site:'apple-park' as const},
+ // Scene 1's camera is a recorded bookmark flight (dev-mac
+ // ~/cascade-3d/capture/record-scene1-v6b.mjs, used to shoot the
+ // scene-01 capture): cold load holds on the whole-Earth pose (alt 3),
+ // then a 3200ms flight into the Apple Park pose (APPLE, alt .0003),
+ // holding there. `path` overrides the orbit motion below via the
+ // engine's bookmarkOverride guard (playback/engine.ts) — the loading
+ // screen still runs first (AppFrame's own loading window), this only
+ // takes over the camera once the app is ready.
+ {id:1,title:"The object of desire",words:14,openingOrbit,end:orbitAt(APPLE,openingOrbit.radius,openingOrbit.altitude,openingOrbit.bearing+32),motion:'orbit',overlay:'none',site:'apple-park' as const,
+  path:[
+   {lat:0,lng:-122.009,altitude:3,sceneId:1,time:0,holdMs:900,travelMs:2500},
+   {lat:APPLE.lat,lng:APPLE.lng,altitude:.0003,sceneId:1,time:0,holdMs:2500,travelMs:3200},
+  ]},
  {id:2,title:"Apple Park",words:38,orbitUntil:10,pullOutAt:13.6,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
  {id:13,title:"Rewind",words:47,end:p(37.3349,-122.009,.35),motion:'reverse time-lapse + flash + push',overlay:'title'},
  {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'westward payment sweep',overlay:'none'},
@@ -56,7 +68,14 @@ export function buildShots(durations:NarrationDurations={}) {
  let time=0;
  return table.map((s,i)=>{
   const baseSeconds=Math.round((s.words*60/150+1)*10)/10;
-  const seconds=durations[String(i+1)]??baseSeconds,startTime=time;time+=seconds;
+  // A shot with a recorded bookmark `path` (currently shot 1's whole-Earth
+  // -> Apple Park flight) has a real-time floor on its duration: the film
+  // can't compress the flight below its own recorded length. Floor `seconds`
+  // here (not just at playback in playShot) so every later shot's startTime
+  // stays in sync with the engine's actual runtime clock even when narration
+  // durations would otherwise shrink this shot below the flight's length.
+  const pathFloor=s.path?Math.round(fromBookmarks(s.path).at(-1)!.t*10)/10:0;
+  const seconds=Math.max(durations[String(i+1)]??baseSeconds,pathFloor),startTime=time;time+=seconds;
   // The closing card is captured after its line-to-wordmark transition.
   const captureAt=seconds*(s.id===12?.9:s.id===11?.5:s.id===13?.55:.8);
   if(!(captureAt>0&&captureAt<seconds))throw new Error('Capture must be strictly inside scene');

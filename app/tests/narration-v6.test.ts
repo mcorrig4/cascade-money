@@ -40,7 +40,13 @@ test('recorded durations retime camera cues, reveals, captures and transitions t
    engine.tick(target-clock,'manual');clock=target;
    assert.equal(engine.state.shot,shot.id);
    assert.ok(Math.abs(engine.state.shotElapsed-shot.captureAt)<1e-7);
-   assert.ok(Math.abs(narrationTime(engine.state)-shot.captureAt/.6)<1e-7);
+   // Narration-scale factor is .6 for every shot in this synthetic run, EXCEPT
+   // a shot with a recorded `path` (shot 1's whole-Earth-to-Apple-Park bookmark
+   // flight): its playback duration floors at the flight's own real-time length
+   // (engine.beginShot's Math.max, exposed as state.shotDuration) rather than
+   // shrinking with the narration scale — so derive the expected value from
+   // shotDuration itself, which reduces to captureAt/.6 for every non-path shot.
+   assert.ok(Math.abs(narrationTime(engine.state)-shot.captureAt*shot.baseSeconds/engine.state.shotDuration)<1e-7);
    assert.ok(engine.state.camera.duration>0);
    if(shot.scene>1)assert.deepEqual(shot.start,SHOTS[shot.scene-2].end);
   }

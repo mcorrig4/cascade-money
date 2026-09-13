@@ -58,7 +58,7 @@ export const RemotionRoot: React.FC = () => {
         reviewLabels: false,
         narrationControls: DEFAULT_NARRATION_CONTROLS,
         fps: DEFAULT_FPS,
-        source: 'live',
+        source: 'captures',
       }}
       calculateMetadata={calculateMetadata}
     />

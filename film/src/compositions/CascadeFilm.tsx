@@ -49,6 +49,7 @@ import {ConservationLaws} from './motion-graphics/ConservationLaws';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
 import {Scene17Close} from './motion-graphics/Scene17Close';
 import {Hook} from './motion-graphics/Hook';
+import {RewindSequence} from './motion-graphics/RewindSequence';
 import {AppFrame} from '../live/AppFrame';
 
 ensureFontsLoaded();

@@ -33,6 +33,7 @@ FILM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$FILM_DIR"
 
 MODE="draft"
+SOURCE="live"
 POSITIONAL=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -49,6 +50,15 @@ while [[ $# -gt 0 ]]; do
       MODE="final"
       shift
       ;;
+    --source)
+      shift
+      if [[ "${1:-}" != "live" && "${1:-}" != "captures" ]]; then
+        echo "unknown source: ${1:-} (must be 'live' or 'captures')" >&2
+        exit 1
+      fi
+      SOURCE="$1"
+      shift
+      ;;
     *)
       POSITIONAL+=("$1")
       shift
@@ -60,14 +70,14 @@ set -- "${POSITIONAL[@]}"
 if [[ "$MODE" == "final" ]]; then
   OUT_DIR="$FILM_DIR/out/parts-final"
   SCALE_ARGS=()
-  PROPS_ARGS=(--props='{"reviewLabels":false,"fps":30,"source":"live"}')
+  PROPS_ARGS=(--props="{\"reviewLabels\":false,\"fps\":30,\"source\":\"$SOURCE\"}")
   RENDER_FPS=30
 else
   OUT_DIR="$FILM_DIR/out/parts"
   SCALE_ARGS=(--scale="0.3333333333333333")
   # Draft profile: 360p AND 15fps (product owner decision 2026-09-11 22:59
   # ET) — half the frames to encode for the same wall-clock preview.
-  PROPS_ARGS=(--props='{"reviewLabels":true,"fps":15,"source":"live"}')
+  PROPS_ARGS=(--props="{\"reviewLabels\":true,\"fps\":15,\"source\":\"$SOURCE\"}")
   RENDER_FPS=15
 fi
 mkdir -p "$OUT_DIR"

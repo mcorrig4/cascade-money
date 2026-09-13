@@ -99,16 +99,34 @@ test('capture offsets stay inside every scene and ignore intervening real-time f
  e.setClockMode('realtime');e.tick(SHOTS[0].seconds);assert.equal(e.state.shot,2);
 });
 
-test('opening orbit uses the authored Apple Park eye and fits the accepted tile radius',async()=>{
- const {appleParkShotCamera,siteFrame}=await import('../src/globe/site-math.ts');
- const authored=appleParkShotCamera(EARTH_METERS,0),e=new PlaybackEngine(index);playShot(e,1);
- const pose=sampleCamera(e.state.camera,0),eye=siteFrame(pose.lat,pose.lng,EARTH_METERS).position.multiplyScalar(1+pose.altitude);
- assert.ok(eye.distanceTo(authored.position)<.001,'Opening eye matches the site camera within a millimeter');
- assert.deepEqual(pose,SHOTS[0].start);
+test('opening shot cold-opens on the whole Earth then arrives and holds at Apple Park',async()=>{
+ // Shot 1's camera is now a recorded bookmark flight (director/shots.ts's
+ // `path`, sourced from dev-mac's record-scene1-v6b.mjs): a whole-Earth
+ // pose (alt 3) held for 900ms, a 3200ms flight, then holding at Apple
+ // Park (alt .0003) for 2500ms — 6.6s total, matching shot 1's default
+ // (narration-less) duration exactly. This replaces the old architectural
+ // orbit-from-the-start shot (appleParkShotCamera) — the bookmark flight
+ // is a plain overhead pose at Apple Park, not that framing, so this test
+ // only checks the pose (lat/lng/altitude), not the old eye-position match.
+ const {siteFrame}=await import('../src/globe/site-math.ts');
+ const e=new PlaybackEngine(index);playShot(e,1);
+ const openingPose=sampleCamera(e.state.camera,0);
+ assert.equal(openingPose.lat,0);assert.equal(openingPose.altitude,3);
+ // Arrival: holdMs(900ms)+travelMs(3200ms) into the flight, the camera lands
+ // on Apple Park and dwells there through the rest of the shot. sampleCamera
+ // takes elapsed in MILLISECONDS.
+ const arrivalElapsedMs=(900+3200);
+ const pose=sampleCamera(e.state.camera,arrivalElapsedMs);
+ assert.deepEqual({lat:pose.lat,lng:pose.lng,altitude:pose.altitude},{lat:37.3349,lng:-122.009,altitude:.0003});
+ const eye=siteFrame(pose.lat,pose.lng,EARTH_METERS).position.multiplyScalar(1+pose.altitude);
  const origin=siteFrame(37.3349,-122.009,EARTH_METERS).position;
  assert.ok(eye.distanceTo(origin)<2500,'Inside even the stricter 2.5 km gate, and therefore the accepted 5 km campus radius');
+ // Held at Apple Park through the end of the (default-duration) shot — the
+ // flight's own hold, not shot 2's orbit-authored start pose; scene 1 hard-cuts
+ // into scene 2 rather than continuing a single unbroken camera move.
  e.tick(SHOTS[0].seconds);
- assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),SHOTS[1].start);
+ const endPose=sampleCamera(e.state.camera,e.state.cameraElapsed);
+ assert.deepEqual({lat:endPose.lat,lng:endPose.lng,altitude:endPose.altitude},{lat:37.3349,lng:-122.009,altitude:.0003});
 });
 
 test('scene 2 stays in orbit for ten seconds, swoops, and pulls out only on the last clause',async()=>{
