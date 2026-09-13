@@ -123,7 +123,7 @@ test('scene 2 holds four fixed columns through the close, with independent sourc
       assert.equal(facts.props.className, 'film-hook-facts');
       const columns = children(facts);
       assert.equal(columns.length, 4, 'all four columns exist from frame zero through the end');
-      near(facts.props.style.opacity, 1 - .6 * Math.max(0, Math.min(1, (frame - at('payment-terms')) / (.4 * fps))));
+      near(facts.props.style.opacity, 1 - .75 * Math.max(0, Math.min(1, (frame - at('payment-terms')) / (.4 * fps))));
       columns.forEach((column, i) => {
         const [cue, figure, label, sourceCue, sourceName, fact] = expectedFacts[i];
         assert.equal(column.key, cue, 'stable column order and identity');
@@ -181,7 +181,14 @@ test('scene 2 grid, typography and centred scrim fit wholly below the projected 
   assert.equal(phrase['font-size'], 'calc(84 * var(--film-unit))');
   assert.equal(phrase['white-space'], 'pre', 'the hidden second span reserves its width, including the space');
   assert.equal(phrase.background, 'linear-gradient(90deg, transparent, #071019 12%, #071019 88%, transparent)');
-  assert.equal(phrase['justify-self'], 'center');
+  // The phrase and the close both stretch across the band so their scrim covers
+  // the dimmed figures behind them instead of only their own line box.
+  for (const entry of [phrase, rule('film-hook-close')]) {
+    assert.equal(entry['justify-self'], 'stretch');
+    assert.equal(entry['align-self'], 'stretch');
+    assert.equal(entry.background, 'linear-gradient(90deg, transparent, #071019 12%, #071019 88%, transparent)');
+    assert.equal(entry['align-items'], 'center');
+  }
   for (const entry of [facts, phrase, rule('film-hook-close')]) assert.equal(entry['grid-area'], '1 / 1');
   assert.equal(bandCSS.overflow, 'hidden'); assert.equal(bandCSS.contain, 'layout paint');
   assert.doesNotMatch(presentationSource, /film-hook-sources/);
@@ -190,7 +197,6 @@ test('scene 2 grid, typography and centred scrim fit wholly below the projected 
     + pixels(label['font-size']) * Number(label['line-height']) + pixels(citation['margin-top'])
     + pixels(citation['border-top']) + pixels(citation['padding-top']) + pixels(citation.gap)
     + 2 * pixels(citation['font-size']) * Number(citation['line-height']);
-  const scrimHeight = pixels(phrase['font-size']) * Number(phrase['line-height']) + 2 * pixels(phrase.padding);
   for (const width of [960, 1920, 3840]) {
     const {geometry, band} = renderHook(400, 30, width);
     const unit = width / 1920, top = band.props.style.top;
@@ -198,9 +204,11 @@ test('scene 2 grid, typography and centred scrim fit wholly below the projected 
     near(top - geometry.rect.bottom, 8 * unit);
     near(band.props.style.left, 32 * unit); near(band.props.style.right, 32 * unit);
     assert.ok(columnHeight * unit <= bottom - top, 'figure, label and both source lines fit');
-    const scrimTop = (top + bottom - scrimHeight * unit) / 2;
-    assert.ok(scrimTop > geometry.rect.bottom);
-    assert.ok(scrimTop + scrimHeight * unit <= bottom);
+    // The phrase scrim now stretches to the band box itself, so the band's own
+    // clearance from the projected window is the whole guarantee.
+    assert.ok(top > geometry.rect.bottom, 'the band, and so the scrim, clears the window');
+    assert.ok(pixels(phrase['font-size']) * Number(phrase['line-height']) * unit <= bottom - top,
+      'the phrase line fits inside the band it now spans');
   }
 });
 

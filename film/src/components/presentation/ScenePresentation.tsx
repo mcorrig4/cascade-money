@@ -42,7 +42,7 @@ const HookPresentation: React.FC<{at: (name: string) => number; geometry: Window
     left: 32 * unit, right: 32 * unit, top: geometry.rect.bottom + 8 * unit, bottom: 8 * unit,
     '--film-unit': `${unit}px`,
   } as React.CSSProperties}>
-    <section className="film-hook-facts" style={{opacity: 1 - .6 * progress(terms, .4 * fps)}}>
+    <section className="film-hook-facts" style={{opacity: 1 - .75 * progress(terms, .4 * fps)}}>
       {citations.map(c => <div className="film-hook-column" key={c.cue} style={reveal(at(c.cue))}>
         <strong className="film-hook-figure">{c.figure}</strong>
         <span className="film-hook-label">{c.label}</span>
