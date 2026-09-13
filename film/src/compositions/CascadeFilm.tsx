@@ -1134,7 +1134,20 @@ const Scene1AppWindow: React.FC<{
 const SCENE1_PHONE_HEIGHT_FRAC = 0.8; // of the 1080-tall frame
 const SCENE1_PHONE_ASPECT = 1429 / 1101; // public/assets/iphone-duo-hands.png
 const SCENE1_PHONE_FADE_MS = 700; // plain opacity fade-in, landing on the cue
-const SCENE1_LAND_SETTLE_MS = 120; // scale 1.03 -> 1.0 once landed
+/**
+ * Liam, 2026-09-13 14:12 (v5 scene-1 draft): "Scene 1 image entrance is ugly.
+ * Blur-mask the left edge so it isn't a hard line, and it seems to grow and
+ * shrink or move a little when appearing."
+ *
+ * Two causes, both removed here. The wobble was a 1.03 -> 1.0 scale settle
+ * played over the same 120ms the opacity was still ramping, so the phone
+ * appeared to breathe as it arrived; the entrance is now a single opacity ramp
+ * with one easing and no transform of its own. The hard line was the image's
+ * own left edge cutting straight across the app window it overlaps; the wrapper
+ * now carries a horizontal alpha mask that feathers that edge (and the
+ * drop-shadow with it, since the mask applies after the filter).
+ */
+const SCENE1_PHONE_EDGE_FEATHER_PX = 110; // at 1080p, ~10% of the phone's own width
 
 const PhoneRevealOverlay: React.FC<{cueFrame: number; swingProgress: number}> = ({cueFrame, swingProgress}) => {
   const frame = useCurrentFrame();
@@ -1142,12 +1155,10 @@ const PhoneRevealOverlay: React.FC<{cueFrame: number; swingProgress: number}> = 
   const ms = (frame / fps) * 1000;
   const cueMs = (cueFrame / fps) * 1000;
 
-  const opacity = interpolate(ms, [cueMs - SCENE1_PHONE_FADE_MS, cueMs], [0, 1], CLAMP) * (1 - swingProgress);
-  const settleP = interpolate(ms - cueMs, [0, SCENE1_LAND_SETTLE_MS], [0, 1], {
+  const opacity = interpolate(ms, [cueMs - SCENE1_PHONE_FADE_MS, cueMs], [0, 1], {
     ...CLAMP,
     easing: Easing.out(Easing.cubic),
-  });
-  const scale = 1.03 - 0.03 * settleP;
+  }) * (1 - swingProgress);
 
   const height = 1080 * SCENE1_PHONE_HEIGHT_FRAC;
   const width = height * SCENE1_PHONE_ASPECT;
@@ -1169,7 +1180,9 @@ const PhoneRevealOverlay: React.FC<{cueFrame: number; swingProgress: number}> = 
           width,
           height,
           opacity,
-          transform: `translateY(-50%) scale(${scale})`,
+          transform: 'translateY(-50%)',
+          maskImage: `linear-gradient(to right, rgba(0,0,0,0) 0px, rgba(0,0,0,1) ${SCENE1_PHONE_EDGE_FEATHER_PX}px)`,
+          WebkitMaskImage: `linear-gradient(to right, rgba(0,0,0,0) 0px, rgba(0,0,0,1) ${SCENE1_PHONE_EDGE_FEATHER_PX}px)`,
         }}
       >
         <Img
