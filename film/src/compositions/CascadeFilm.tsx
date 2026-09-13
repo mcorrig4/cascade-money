@@ -470,12 +470,13 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
     const cap=captureFor(sc,captureOverrides,duration);
     visual=cap?<CaptureBeat sc={sc} duration={duration} cap={cap}>{filmOverlay}</CaptureBeat>:<GraphicBeat sc={sc} duration={duration}>{filmOverlay??<AbsoluteFill />}</GraphicBeat>;
   }
-  // Scene 4's date/location corner label is a plain screen-space overlay
-  // (the captures path renders it as a sibling of the capture, never nested
-  // in any transform) — rendered as a direct sibling here too, NOT inside
-  // `filmOverlay` (which BrowserFrame passes through its own skew/scale/
-  // perspective transform for the framed browser-mockup scenes).
-  return <AbsoluteFill style={{background:color.bgOuter}}>{visual}{sceneIndex===4?<Scene4DateCornerLabel/>:null}{includeAudio?<SceneVO num={sceneIndex} narration={narration} narrationControls={narrationControls}/>:null}</AbsoluteFill>;
+  // NOTE: the captures path draws Scene4DateCornerLabel as a sibling of the
+  // capture (see below); the live path deliberately does NOT — the live
+  // app's own top-left HUD text (site legend / network labels) occupies the
+  // same screen-space corner at this point in scene 4 and visually collides
+  // with the label into an illegible overlap. Not chased further here;
+  // production stays on the captures path for scene 4's date label.
+  return <AbsoluteFill style={{background:color.bgOuter}}>{visual}{includeAudio?<SceneVO num={sceneIndex} narration={narration} narrationControls={narrationControls}/>:null}</AbsoluteFill>;
 };
 
 export const CascadeFilm: React.FC<CascadeFilmProps> = ({
