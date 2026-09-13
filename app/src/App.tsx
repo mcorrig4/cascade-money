@@ -26,7 +26,20 @@ function LoadedApp({ index }: { index: EventIndex }) {
   useEffect(() => {
     let last = performance.now(), raf = 0;
     const tick = (now: number) => {
-      if (now - last >= 32) { const elapsed = now - last; last = now; if (!document.hidden) engine.tick(elapsed / 1000); }
+      // Clamp the per-tick delta: a main-thread stall (GC pause, a heavy
+      // overlay mount — reproduced at the shot 19→12 "Beneath it"→"Close"
+      // cut, which mounts the close-card's five nav links for the first
+      // time) otherwise hands engine.tick() a multi-hundred-ms jump in one
+      // step. shotElapsed then leaps straight past FilmEffects' ending-line
+      // fade-in window, and because the screen recorder just repeats the
+      // last painted frame through the stall, that jumped, already-visible
+      // "global supply chains. settled." card gets baked into the END of
+      // the PRECEDING shot's captured clip (scene-16.mp4, world-os cascade
+      // round-3 note: text bled from scene 17 into scene 16). Capping the
+      // step at 100ms (~3x the normal ~32ms cadence) makes the sim fall
+      // behind during a stall instead of jumping — smooth for any real
+      // viewer, and it removes the artifact from screen captures too.
+      if (now - last >= 32) { const elapsed = Math.min(now - last, 100); last = now; if (!document.hidden) engine.tick(elapsed / 1000); }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
