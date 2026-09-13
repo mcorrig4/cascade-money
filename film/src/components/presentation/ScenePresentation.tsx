@@ -2,7 +2,8 @@ import React from 'react';
 import {interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {DatedDollar} from '@cascade-app/components/DatedDollar.ts';
 import {AppSurface, PresentationPane} from '../AppSurface';
-import {type WindowGeometry} from '../windowGeometry';
+import {presentationRect, type WindowGeometry} from '../windowGeometry';
+import {filmUnitFor} from '../appSurfaceGeometry';
 import {cueFrame, type SceneCues} from '../../cues';
 import {extensionState, illustrativeDate, swapPositions, YEAR_INVOICES, STRESS_OPERATIONS} from './presentationMath';
 import './presentation.css';
@@ -101,30 +102,94 @@ const TotalsPresentation: React.FC<{at: (name: string) => number; geometry: Wind
   </section>;
 };
 
-const CoinPresentation: React.FC<{shown: Beat; at: (name: string) => number; frame: number; fps: number; geometry: WindowGeometry}> = ({shown, at, frame, fps, geometry}) => {
+const CoinPresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
   const unit = geometry.width / 1920;
+  const pane = presentationRect(geometry, 'left', 32 * filmUnitFor(geometry.width, geometry.height));
+  const axisLeft = 24 * unit, axisRight = pane.width - 24 * unit;
+  const axisY = pane.height * .52;
+  const dayX = (day: number) => axisLeft + (axisRight - axisLeft) * day / 90;
+  const beat = {
+    coin: at('coin'), pair: at('coin-pair'), swap: at('swap'), principal: at('coin-principal'),
+    date: at('coin-date'), earlier: at('earlier-pays-later'), face: at('face-value'),
+    extend: at('extend'), yield: at('coin-yield'), final: at('final-card'), finalDate: at('final-date'),
+  };
+  const progress = (start: number, seconds: number) => interpolate(frame, [start, start + seconds * fps], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  // A one-frame step stamps copy on its cue, without a cross-fade or anticipation.
+  const on = (start: number) => interpolate(frame, [start - 1, start], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  }) === 1;
+  const enter = progress(beat.pair, .6);
+  const principal = progress(beat.principal, .5);
+  const payment = progress(beat.earlier, 1.2);
+  const finalProgress = progress(beat.final, .5);
+  const dim = 1 - finalProgress;
   const extension = extensionState(frame, at('extend'), at('coin-yield'));
-  const final = shown('final-card');
-  const extending = shown('extend') && !final;
-  const title = final ? 'One dollar.' : shown('coin-yield') ? 'Yield for exactly that time' : shown('extend') ? 'Extend farther' : shown('earlier-pays-later') ? 'Earlier pays later' : shown('coin-principal') ? 'One dollar' : shown('swap') ? 'Interchangeable' : 'Dollars';
-  const center = (geometry.rect.left - 64 * unit) / 2;
-  const poses = swapPositions((frame - at('swap')) / fps, center, 743 * unit, 151 * unit);
-  const pair = shown('coin-pair') && !shown('earlier-pays-later');
-  return <section className="overlay-card coin-layout film-coin" aria-label="Dated dollar">
-    <div className="coin-copy" style={visibility(shown('coin'))}>
-      <h2>{title}</h2>
-      {final ? shown('final-date') && <p>One date.</p> : <>
-        {!shown('earlier-pays-later') && <>{shown('coin-principal') && <p>One USDC{shown('coin-date') && <> on a calendar date.</>}</p>}</>}
-        {shown('earlier-pays-later') && !extending && <p>A dollar due earlier pays a bill due later{shown('face-value') && <> at face value.</>}</p>}
-        {extending && <div className="coin-extension"><div className="date-interval"><span>DAY 0</span><span>DAY 30</span><span>DAY 90</span></div>
-          <div className="extension-ticks" aria-label={`${extension.addedDays} added days of yield`}>{extension.ticks.map(tick => <i key={tick.day} data-day={tick.day} data-filled={tick.filled} style={{background: tick.filled ? '#69e6c0' : '#233c39'}}/>)}</div>
-          <div className="meter-label"><span>{extension.addedDays} added days</span></div>
-        </div>}
-      </>}
+  // Use only the outbound half-circle; rotate its starting diameter onto the
+  // vertical so the two tokens exchange the positions above/below DAY 30 once.
+  const arc = swapPositions(.75 * progress(beat.swap, .75), 0, 0, 52 * unit);
+  const pairPoses = arc.map((pose, i) => ({
+    x: (i === 0 ? axisLeft : axisRight) * (1 - enter) + (dayX(30) - pose.y) * enter,
+    y: axisY + pose.x * enter,
+  }));
+  const extending = on(beat.extend);
+  const maturityDay = extending ? extension.maturityDay : 30;
+  const paymentX = dayX(30 + 60 * payment);
+  // Extension starts a new interval example at DAY 30, as specified by its cue.
+  const soloX = extending ? dayX(maturityDay) : on(beat.earlier) ? paymentX : dayX(30);
+  const caption = on(beat.yield) ? 'Yield for the added interval only'
+    : on(beat.face) ? 'At face value'
+    : on(beat.earlier) ? 'Earlier pays later'
+    : on(beat.date) ? 'Redeemable on its calendar date'
+    : on(beat.principal) ? '1 USDC of principal'
+    : on(beat.pair) ? 'Same date' : '';
+  const coinStyle = (x: number, y: number, opacity = 1): React.CSSProperties => ({left: x, top: y, opacity});
+  return <section className="film-coin" aria-label="Dated dollar">
+    <div className="film-coin-kicker" style={{opacity: progress(beat.coin, .3) * dim}}>THE PRIMITIVE</div>
+    <div className="film-coin-axis" style={{left: axisLeft, width: axisRight - axisLeft, top: axisY, opacity: dim}}>
+      <div className="film-coin-hairline" style={{transform: `scaleX(${progress(beat.coin, .6)})`}}/>
+      <div className="film-coin-elapsed" style={{width: `${100 / 3}%`, transform: `scaleX(${Math.min(1, 3 * progress(beat.coin, .6))})`}}/>
+      {extending && <div className="film-coin-extension" style={{left: `${100 / 3}%`, width: `${extension.addedDays / 90 * 100}%`}}/>}
     </div>
-    <div className={pair ? 'same-date-stage' : 'coin-stage'} style={visibility(shown('coin'))}>
-      {(pair ? poses : [{x: center, y: 743 * unit}]).map((pose, i) => <div key={i} className="swap-coin" style={{left: pose.x, top: pose.y, transform: 'translate(-50%, -50%)'}}><DatedDollar days={pair || shown('coin-date') ? extension.maturityDay : null} isoDate={pair || shown('coin-date') ? illustrativeDate(extension.maturityDay) : undefined} size={100 * unit}/></div>)}
+    <div className="film-coin-annotations" style={{opacity: dim}}>
+      {[0, 30, 90].map(day => <div key={day} className="film-coin-tick" style={{
+        left: dayX(day), top: axisY,
+        visibility: on(beat.coin) && progress(beat.coin, .6) >= day / 90 ? 'visible' : 'hidden',
+      }}>
+        <i/>
+        <span className="film-coin-day" style={{transform: `translateX(${day === 0 ? 0 : day === 90 ? -100 : -50}%)`}}>DAY {day}</span>
+        {day === 30 && on(beat.date) && <span className="film-coin-redeemable">REDEEMABLE</span>}
+        {day !== 0 && on(beat.face) && <span className="film-coin-face">1.00</span>}
+      </div>)}
+      {on(beat.yield) && <span className="film-coin-yield" style={{left: (dayX(30) + dayX(maturityDay)) / 2, top: axisY - 102 * unit}}>
+        {extension.addedDays} days of yield
+      </span>}
     </div>
+    {on(beat.earlier) && !extending && payment < 1 && <div className="film-coin-token" style={coinStyle(dayX(90), axisY, 1 - payment)}>
+      <DatedDollar days={90} isoDate={illustrativeDate(90)} size={150 * unit}/>
+    </div>}
+    {on(beat.pair) && <>
+      {/* After the exchange, token 1 is above the line and token 0 is below it. */}
+      {principal < 1 && <div className="film-coin-token" style={coinStyle(pairPoses[1].x, pairPoses[1].y, 1 - principal)}>
+        <DatedDollar days={30} size={100 * unit}/>
+      </div>}
+      <div className="film-coin-token" style={coinStyle(
+        (pairPoses[0].x * (1 - principal) + soloX * principal) * dim + pane.width / 2 * finalProgress,
+        pairPoses[0].y * (1 - principal) + axisY * principal,
+      )}>
+        <DatedDollar days={maturityDay} isoDate={on(beat.date) ? illustrativeDate(maturityDay) : undefined} size={(100 + 50 * principal) * unit}/>
+      </div>
+    </>}
+    {/* SVG text supplies an exact baseline and keeps every caption to one line. */}
+    <svg className="film-coin-caption" width="100%" height="100%">
+      <text x={0} y={axisY + 120 * unit} opacity={dim}>{caption}</text>
+      {on(beat.final) && finalProgress === 1 && <text className="film-coin-final" x={0} y={axisY + 120 * unit}>
+        {on(beat.finalDate) ? 'One dollar. One date.' : 'One dollar.'}
+      </text>}
+    </svg>
   </section>;
 };
 
@@ -157,11 +222,11 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
   if (![2, 3, 4, 6, 7, 8, 9, 10].includes(scene)) return null;
   const inset = scene === 3 || scene === 4 || scene === 9;
   const content = scene === 3 ? <ExamplePresentation shown={shown}/> : scene === 4 ? <QuestionPresentation shown={shown}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
-    : scene === 7 ? <CoinPresentation shown={shown} at={at} frame={frame} fps={fps} geometry={geometry}/>
+    : scene === 7 ? <CoinPresentation at={at} geometry={geometry}/>
     : scene === 8 ? <BackingPresentation shown={shown}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
     {scene === 2 ? <HookPresentation shown={shown} geometry={geometry}/>
       : inset ? <div className="film-presentation-inset" style={{position: 'absolute', left: geometry.rect.left + 84 * unit, top: geometry.rect.top + 403 * unit, width: 980 * unit, height: 380 * unit}}>{content}</div>
-      : <PresentationPane side="left" geometry={geometry} verticalAlign={scene === 6 ? 'end' : scene === 7 ? 'start' : 'center'}>{content}</PresentationPane>}
+      : <PresentationPane side="left" geometry={geometry} verticalAlign={scene === 6 ? 'end' : 'center'}>{content}</PresentationPane>}
   </AppSurface>;
 };
