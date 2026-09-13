@@ -20,13 +20,15 @@
  * it) resolves to the right occurrence rather than the first.
  *
  * Numbers throughout this file are the NEW (post reorder-to-13,
- * 2026-09-13) numbering. Two scenes were deliberately left with fewer cues
- * than they have visual beats — not an oversight:
- *   - Scene 6's "four companies" counter and scene 10's closing "a second
- *     dimension to money" card are not spoken at all in this narration cut
- *     (docs/cascade/hackathon vs. the recorded v7 VO diverged) — their
- *     phrases are listed so a future re-narration picks them up
- *     automatically, but today they always fall back.
+ * 2026-09-13) numbering. One scene was deliberately left with fewer cues
+ * than it has visual beats — not an oversight:
+ *   - Scene 10's closing "a second dimension to money" card is not spoken
+ *     at all in this narration cut (docs/cascade/hackathon vs. the
+ *     recorded v7 VO diverged) — its phrase is listed so a future
+ *     re-narration picks it up automatically, but today it always falls
+ *     back. (Scene 6's counters, previously in the same boat under the v7
+ *     cut, are now keyed to the v9 narration's actual words — see the
+ *     scene 6 entry below.)
  *   - Scene 9's closing StressResultFlash and all of scene 13's close card
  *     are excluded entirely (no cue defined). The old scene 13 (The rules
  *     survive) footer this note used to describe is cut as a standalone
@@ -103,15 +105,34 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'example-labels', phrase: 'obligation'},
     {cue: 'example-labels-fallback', phrase: 'waits'},
   ],
-  // Scene 4 — The question (renumbered from old scene 6): one card, reveals on the opening line.
-  4: [{cue: 'question-card', phrase: 'So what if that future payment could move today'}],
-  // Scene 6 — Let it land (renumbered from old scene 8): the two dollar counters, the company counter (not
-  // spoken — see file header), then the tagline.
+  // Scene 4 — The question (renumbered from old scene 6): v9 narration
+  // reads "Cascade gives that value a form that can move. A dated dollar.
+  // Not as cash, as a dollar with a date." Three beats, each keyed to its
+  // own spoken word: the card itself reveals on "form" (fallback "move"
+  // for a re-narration that drops it), the headline on "dated" (fallback
+  // "dollar"), and the secondary line on "cash".
+  4: [
+    {cue: 'question-card', phrase: 'form'},
+    {cue: 'question-card-fallback', phrase: 'move'},
+    {cue: 'dated-dollar', phrase: 'dated'},
+    {cue: 'dated-dollar-fallback', phrase: 'dollar'},
+    {cue: 'not-cash', phrase: 'cash'},
+  ],
+  // Scene 6 — Let it land (renumbered from old scene 8): v9 narration reads
+  // "One hundred million dollars deposited. Four hundred fifty million
+  // dollars transacted. Nine invoices settled. The payments add up. The
+  // backing does not multiply. That's the cascade." Each counter and the
+  // tagline now resolve against the actual recorded words, with a fallback
+  // immediately after each primary for a future re-narration that drops it.
   6: [
-    {cue: 'committed-counter', phrase: '$100 million committed'},
-    {cue: 'settled-counter', phrase: '$400 million'},
-    {cue: 'companies-counter', phrase: 'four companies'},
-    {cue: 'tagline', phrase: 'that is the cascade'},
+    {cue: 'committed-counter', phrase: 'deposited'},
+    {cue: 'committed-counter-fallback', phrase: 'hundred'},
+    {cue: 'settled-counter', phrase: 'transacted'},
+    {cue: 'settled-counter-fallback', phrase: 'fifty'},
+    {cue: 'companies-counter', phrase: 'invoices'},
+    {cue: 'companies-counter-fallback', phrase: 'Nine'},
+    {cue: 'tagline', phrase: 'cascade'},
+    {cue: 'tagline-fallback', phrase: 'backing'},
   ],
   // Scene 9 — Run the year (renumbered from old scene 9 — unchanged number,
   // but now plays AFTER scenes 7/8 instead of before): three rostrum-camera
