@@ -5,7 +5,7 @@ import {AppSurface, PresentationPane} from '../AppSurface';
 import {presentationRect, type WindowGeometry} from '../windowGeometry';
 import {filmUnitFor} from '../appSurfaceGeometry';
 import {cueFrame, type SceneCues} from '../../cues';
-import {extensionState, illustrativeDate, swapPositions, YEAR_INVOICES, STRESS_OPERATIONS} from './presentationMath';
+import {extensionState, illustrativeDate, swapPositions, STRESS_OPERATIONS, STRESS_ACCEPTED, STRESS_REJECTED} from './presentationMath';
 import './presentation.css';
 
 type Beat = (name: string) => boolean;
@@ -409,12 +409,48 @@ const BackingPresentation: React.FC<{at: (name: string) => number; geometry: Win
   </section>;
 };
 
-const StressPresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('stress-flash') || shown('stress-end') ? null :
-  <section className="overlay-card film-inset-card film-stress" aria-label="Year simulation and separate adversarial test">
-    <p><strong>{YEAR_INVOICES.toLocaleString('en-US')} simulated invoices.</strong></p>
-    <p>Every invariant held under adversarial conditions.</p>
-    {shown('stress-operations') && <p className="fine-print">Separate adversarial test · {STRESS_OPERATIONS.toLocaleString('en-US')} operations</p>}
-  </section>;
+const StressPresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const unit = geometry.width / 1920;
+  const flash = at('stress-flash'), operations = at('stress-operations');
+  const violations = at('zero-violations'), end = at('stress-end');
+  const split = operations + .3 * fps;
+  const progress = (start: number, duration: number) => interpolate(frame, [start, start + duration], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  const on = (start: number) => progress(start - 1, 1) === 1;
+  const reveal = (start: number): React.CSSProperties => ({
+    ...visibility(on(start)), opacity: progress(start, .2 * fps),
+  });
+  const hold = 1 - progress(end, .4 * fps);
+  return <>
+    <div className="film-question-scrim film-example-scrim" aria-hidden="true"
+      style={{opacity: progress(flash, .2 * fps) * hold}}/>
+    <section className="film-stress" aria-label="Separate adversarial test"
+      style={{left: 48 * unit, width: 620 * unit, opacity: hold}}>
+      <div className="film-stress-eyebrow" style={reveal(flash)}>SEPARATE ADVERSARIAL TEST</div>
+      <div className="film-stress-heading" style={reveal(operations)}>
+        <strong className="film-stress-figure">{STRESS_OPERATIONS.toLocaleString('en-US')}</strong>
+        <span className="film-stress-label">operations</span>
+      </div>
+      <div className="film-stress-split" style={visibility(on(split))}>
+        <div className="film-stress-bar" role="img" aria-label="7,002 accepted; 2,998 expected rejections" style={{
+          clipPath: `inset(0 ${(1 - progress(split, .7 * fps)) * 100}% 0 0)`,
+        }}>
+          <div className="film-stress-accepted" style={{width: `${STRESS_ACCEPTED / STRESS_OPERATIONS * 100}%`}}/>
+          <div className="film-stress-rejected" style={{width: `${STRESS_REJECTED / STRESS_OPERATIONS * 100}%`}}/>
+          <i className="film-stress-divider" style={{left: `${STRESS_ACCEPTED / STRESS_OPERATIONS * 100}%`}}/>
+        </div>
+        <div className="film-stress-split-labels" style={reveal(split)}>
+          <span>{STRESS_ACCEPTED.toLocaleString('en-US')} accepted</span>
+          <span>{STRESS_REJECTED.toLocaleString('en-US')} expected rejections</span>
+        </div>
+      </div>
+      <p className="film-stress-violations" style={reveal(violations)}><strong>0</strong> invariant violations</p>
+    </section>
+  </>;
+};
 
 const ComposablePresentation: React.FC<{shown: Beat}> = ({shown}) => {
   if (shown('money-plus-time')) return <section className="overlay-card film-money-time"><h2>Money{shown('money-plus') && <> plus</>}{shown('money-time') && <> time</>}</h2></section>;
@@ -432,7 +468,7 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
   const inset = scene === 3 || scene === 4 || scene === 9;
   const content = scene === 3 ? <ExamplePresentation at={at} geometry={geometry}/> : scene === 4 ? <QuestionPresentation at={at} geometry={geometry}/> : scene === 5 ? <CascadePresentation at={at} geometry={geometry}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
     : scene === 7 ? <CoinPresentation at={at} geometry={geometry}/>
-    : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
+    : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation at={at} geometry={geometry}/> : <ComposablePresentation shown={shown}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
     {scene === 2 ? <HookPresentation at={at} geometry={geometry}/>
       : inset ? scene === 3 ? <div className="film-presentation-inset" style={{
@@ -447,7 +483,12 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
         position: 'absolute', left: 0, width: geometry.width,
         top: geometry.rect.top + geometry.scale * (65 + 90 * (1080 - 65) / 1080) * unit + 2 * unit,
         bottom: geometry.height - (geometry.rect.top + geometry.scale * (65 + 830 * (1080 - 65) / 1080) * unit) + 2 * unit,
-      }}>{content}</div> : <div className="film-presentation-inset" style={{position: 'absolute', left: geometry.rect.left + 84 * unit, top: geometry.rect.top + 403 * unit, width: 980 * unit, height: 380 * unit}}>{content}</div>
+      }}>{content}</div> : <div className="film-presentation-inset" style={{
+        // Match scene 3's seat; clip the scrim and copy above the app footer.
+        position: 'absolute', left: 0, width: geometry.width, height: 255 * unit,
+        bottom: geometry.height * (252 / 1080), overflow: 'hidden',
+        '--film-unit': `${unit}px`,
+      } as React.CSSProperties}>{content}</div>
       : <PresentationPane side="left" geometry={geometry} verticalAlign={scene === 6 ? 'end' : 'center'}>{content}</PresentationPane>}
   </AppSurface>;
 };

@@ -1,5 +1,7 @@
 export const YEAR_INVOICES = 12_029;
 export const STRESS_OPERATIONS = 10_000;
+export const STRESS_ACCEPTED = 7_002;
+export const STRESS_REJECTED = 2_998;
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const smooth = (v: number) => v * v * (3 - 2 * v);

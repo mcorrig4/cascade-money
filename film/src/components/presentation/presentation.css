@@ -165,6 +165,49 @@
   font-size: calc(34 * var(--film-unit)); line-height: 1.25; font-weight: 400;
   color: #abc0bd; white-space: nowrap;
 }
+.app.film-app-surface.film-presentation .film-stress {
+  position: absolute; bottom: 0; text-align: left;
+}
+.app.film-app-surface.film-presentation .film-stress-eyebrow {
+  margin-bottom: calc(16 * var(--film-unit)); line-height: calc(17 * var(--film-unit));
+  font-size: calc(14 * var(--film-unit)); letter-spacing: calc(2.6 * var(--film-unit));
+  font-weight: 500; color: #8297a5;
+}
+.app.film-app-surface.film-presentation .film-stress-heading {
+  display: flex; align-items: baseline; gap: calc(20 * var(--film-unit)); white-space: nowrap;
+}
+.app.film-app-surface.film-presentation .film-stress-figure {
+  font-size: calc(76 * var(--film-unit)); letter-spacing: calc(-3 * var(--film-unit));
+  line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums;
+}
+.app.film-app-surface.film-presentation .film-stress-label {
+  font-size: calc(20 * var(--film-unit)); line-height: 1.2; color: #8297a5;
+}
+.app.film-app-surface.film-presentation .film-stress-split {
+  margin-top: calc(16 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-stress-bar {
+  position: relative; display: flex; width: calc(620 * var(--film-unit));
+  height: calc(22 * var(--film-unit)); overflow: hidden;
+}
+.app.film-app-surface.film-presentation .film-stress-accepted {background: var(--money);}
+.app.film-app-surface.film-presentation .film-stress-rejected {background: #8297a5;}
+.app.film-app-surface.film-presentation .film-stress-divider {
+  position: absolute; top: 0; bottom: 0; width: calc(3 * var(--film-unit));
+  transform: translateX(-50%); background: #071019;
+}
+.app.film-app-surface.film-presentation .film-stress-split-labels {
+  display: flex; justify-content: space-between; margin-top: calc(8 * var(--film-unit));
+  font-size: calc(20 * var(--film-unit)); line-height: 1.2; font-variant-numeric: tabular-nums;
+  color: #8297a5; white-space: nowrap;
+}
+.app.film-app-surface.film-presentation .film-stress-split-labels > :first-child {color: var(--money);}
+.app.film-app-surface.film-presentation .film-stress-violations {
+  margin: calc(16 * var(--film-unit)) 0 0;
+  font-size: calc(34 * var(--film-unit)); line-height: 1.25; font-weight: 400;
+  font-variant-numeric: tabular-nums; color: #abc0bd; white-space: nowrap;
+}
+.app.film-app-surface.film-presentation .film-stress-violations strong {font-weight: 400; color: var(--money);}
 /* Scene 4 shares the app ground. Gradient stops are frame-relative; clipping
    at 46% leaves the native events sidebar untouched. The inset owns Y clearance. */
 .app.film-app-surface.film-presentation .film-question-scrim {

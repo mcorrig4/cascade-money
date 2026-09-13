@@ -80,6 +80,7 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'stress-flash', phrase: 'Separately'},
     {cue: 'stress-flash-fallback', phrase: 'tested'},
     {cue: 'stress-operations', phrase: '10 000'},
+    {cue: 'zero-violations', phrase: 'zero violations'},
     {cue: 'stress-end', phrase: "That's where"},
     {cue: 'ui-origin', phrase: 'interface'},
   ],
