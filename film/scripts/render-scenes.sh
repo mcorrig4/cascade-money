@@ -99,6 +99,9 @@ fi
 echo "Refreshing narration word-timestamp cues..." >&2
 node "$FILM_DIR/scripts/cues-from-words.mjs" >&2
 
+echo "Checking cues are not stale against the installed narration..." >&2
+node "$FILM_DIR/scripts/check-cues.mjs" >&2
+
 echo "Reading scene frame ranges..." >&2
 # node directly, not `pnpm scene-frames -- <fps>` — pnpm's `--dir` flag
 # leaves the literal "--" in argv (verified: without --dir it's stripped,

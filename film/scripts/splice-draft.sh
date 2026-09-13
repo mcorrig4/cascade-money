@@ -28,6 +28,9 @@ set -euo pipefail
 FILM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$FILM_DIR"
 
+echo "Checking cues are not stale against the installed narration..." >&2
+node "$FILM_DIR/scripts/check-cues.mjs" >&2
+
 MODE="draft"
 TAG=""
 if [[ "${1:-}" == "--final" ]]; then

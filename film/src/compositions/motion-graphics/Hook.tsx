@@ -10,21 +10,31 @@
  *   "You know what's crazy? Nearly two hundred billion dollars of product
  *   costs. Two hundred suppliers, thousands of factories, fifty countries.
  *   All of it running on payment terms and promises. Cascade Money settles
- *   those terms on Arc. Let me show you, with Apple."
+ *   those terms on Arc."
  *
  * Text beats, each keyed to a cues.ts phrase (see cues.ts's scene-2 block),
  * with an even fixed-fraction fallback for the rare case a future
  * re-narration drops one of these words entirely:
- *   A "$200B of product costs"                    <- 'hook-open' ("crazy")
+ *   A "$200B of product costs"                    <- 'hook-open'
  *   B1 "200 suppliers"                             <- 'stat-suppliers'
  *   B2 "thousands of factories"                    <- 'stat-factories'
  *   B3 "50 countries"                              <- 'stat-countries'
  *   C "payment terms and promises"                 <- 'promises'
  *   D Cascade wordmark + "on Arc"                  <- 'wordmark' ("Cascade")
- *   E "Let me show you. Apple."                     <- 'apple-cta' ("Apple")
  * A and C occupy exclusive slots (fade+rise in, fade+rise out before the
- * next enters, per ConservationLaws' pattern); D and E are the closing pair
- * and simply hold once in (no exit — the scene ends on E).
+ * next enters, per ConservationLaws' pattern); D is the closing beat and
+ * simply holds once in for the rest of the scene (no exit).
+ *
+ * Round 6 (Liam 2026-09-13 07:13 EDT): the old closing "Let me show you.
+ * Apple." card (beat E, 'apple-cta') is CUT entirely — removed below and
+ * from cues.ts. D now holds to the end of the scene instead of yielding to
+ * E. Liam also ruled A/B1/B2/B3 may not appear until the first CONSONANT of
+ * their own number word is audible ("not a second sooner, not a second
+ * later") — cueFrame() alone (whisper word boundary) isn't precise enough
+ * for this, so their reveal frames come from a hand-measured onset override
+ * (cues-from-words.mjs's MANUAL_ONSET_OVERRIDES, RMS-envelope method, pinned
+ * to scene-02.wav's md5) rather than a fixed lead/delay — see cues.ts's
+ * scene-2 header for the measured deltas.
  *
  * Round 5 (Liam, reply 21910, verbatim: "don't show all three facts in a
  * single reveal. They should appear as I say them, why would we combine?"):
@@ -104,8 +114,15 @@ const CITATIONS: Citation[] = [
   {cue: 'stat-factories', source: 'Apple Supply Chain 2025 Progress Report', fact: 'thousands of facilities, 50+ countries'},
 ];
 
-/** Citation chips land 150ms after their own figure's cue, never before it (Liam round 5, reply 21910: "the delay is too long"). */
-const CHIP_DELAY_SECONDS = 0.15;
+/**
+ * Citation chips land exactly on their own figure's cue — no added delay
+ * (Liam round 6, 2026-09-13 07:13 EDT: "set the chip delay to 0ms, not
+ * +150ms, so the text appears at the consonant"). Was 150ms (round 5, down
+ * from 350ms); round 6 supersedes that with a hard 0 now that the figure
+ * cues themselves resolve to the measured consonant onset (see
+ * MANUAL_ONSET_OVERRIDES in cues-from-words.mjs).
+ */
+const CHIP_DELAY_SECONDS = 0;
 
 const CitationChip: React.FC<{citation: Citation; appearAt: number}> = ({citation, appearAt}) => {
   const frame = useCurrentFrame();
@@ -148,14 +165,14 @@ export const Hook: React.FC<{
   const {fps} = useVideoConfig();
   const exitDur = at30(EXIT_DUR_AT_30, fps);
 
-  // A/B/C/D/E fixed-fraction fallback slots — used only if a future
+  // A/B/C/D fixed-fraction fallback slots — used only if a future
   // re-narration drops one of these cue phrases entirely (see file header).
-  const slot = dur / 5;
+  // Beat E ('apple-cta') is cut (round 6); D now takes the whole tail.
+  const slot = dur / 4;
   const fallbackA = 0;
   const fallbackB = slot;
   const fallbackC = slot * 2;
   const fallbackD = slot * 3;
-  const fallbackE = slot * 4;
 
   const startA = cueFrame(cues, 'hook-open', fps, fallbackA);
   // B1/B2/B3 — the three facts, each on its own word (round 5, reply
@@ -166,7 +183,6 @@ export const Hook: React.FC<{
   const startB3 = cueFrame(cues, 'stat-countries', fps, fallbackB + slot * 0.66);
   const startC = cueFrame(cues, 'promises', fps, fallbackC);
   let startD = cueFrame(cues, 'wordmark', fps, fallbackD);
-  const startE = cueFrame(cues, 'apple-cta', fps, fallbackE);
 
   // (4) The wordmark must never land before 10.5s of FILM time.
   const minWordmarkFilmFrame = Math.round(WORDMARK_MIN_FILM_SECONDS * fps);
@@ -184,8 +200,7 @@ export const Hook: React.FC<{
   const beatB2 = frame < exitBAt ? enter(frame, fps, startB2, 'rise') : exitUp(frame, exitBAt, exitDur);
   const beatB3 = frame < exitBAt ? enter(frame, fps, startB3, 'rise') : exitUp(frame, exitBAt, exitDur);
   const beatC = frame < exitCAt ? enter(frame, fps, startC, 'rise') : exitUp(frame, exitCAt, exitDur);
-  const beatD = enter(frame, fps, startD, 'settle'); // holds — D/E are the closing pair, no exit
-  const beatE = enter(frame, fps, startE, 'settle');
+  const beatD = enter(frame, fps, startD, 'settle'); // holds to the end of the scene — no exit (round 6: E is cut)
 
   const showA = frame >= startA && frame < Math.min(startB1, exitAAt + exitDur);
   const bGroupEnd = Math.min(startC, exitBAt + exitDur);
@@ -194,8 +209,7 @@ export const Hook: React.FC<{
   const showB3 = frame >= startB3 && frame < bGroupEnd;
   const showB = showB1 || showB2 || showB3;
   const showC = frame >= startC && frame < Math.min(startD, exitCAt + exitDur);
-  const showD = frame >= startD && frame < startE;
-  const showE = frame >= startE;
+  const showD = frame >= startD; // holds to the end of the scene (round 6: E is cut)
 
   // Once the group starts exiting, all three fade+rise out together (no
   // more dimming distinction). Before that, only the LATEST-appeared line
@@ -236,7 +250,7 @@ export const Hook: React.FC<{
       <AbsoluteFill
         style={{
           background: `linear-gradient(180deg, transparent 0%, ${scrim} 38%, ${scrim} 62%, transparent 100%)`,
-          opacity: showA || showB || showC || showD || showE ? 1 : 0,
+          opacity: showA || showB || showC || showD ? 1 : 0,
         }}
       />
 
@@ -341,21 +355,6 @@ export const Hook: React.FC<{
           </div>
         )}
 
-        {showE && (
-          <div
-            style={{
-              opacity: beatE.opacity,
-              transform: beatE.transform,
-              textAlign: 'center',
-              color: color.fg,
-              fontSize: 56,
-              fontWeight: 550,
-              letterSpacing: -1,
-            }}
-          >
-            Let me show you. Apple.
-          </div>
-        )}
       </AbsoluteFill>
 
       <AbsoluteFill style={{display: 'grid', placeItems: 'end start', padding: '0 0 48px 48px'}}>

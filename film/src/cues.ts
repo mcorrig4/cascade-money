@@ -103,7 +103,24 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
   //   "You know what's crazy? Nearly two hundred billion dollars of product
   //   costs. Two hundred suppliers, thousands of factories, fifty
   //   countries. All of it running on payment terms and promises. Cascade
-  //   Money settles those terms on Arc. Let me show you, with Apple."
+  //   Money settles those terms on Arc."
+  //
+  // Round 6 (Liam 2026-09-13 07:13 EDT): the closing "Let me show you.
+  // Apple." card (old 'apple-cta' cue, phrase "Apple") is CUT from the Hook
+  // overlay entirely — removed below and from Hook.tsx. Liam also ruled
+  // that 'hook-open', 'stat-suppliers', 'stat-factories' and
+  // 'stat-countries' may not appear until the first CONSONANT of their own
+  // number word is actually audible ("not a second sooner, not a second
+  // later") — whisper's word boundary is measured tens of ms off for this
+  // (verified: whisper puts the second "200" at 5.20s, the real /t/ burst
+  // measured on the waveform envelope is 5.416s, 216ms later). Those four
+  // cues are therefore driven by a hand-measured onset override
+  // (MANUAL_ONSET_OVERRIDES in cues-from-words.mjs, method: 8ms/2ms-hop
+  // RMS envelope, 12dB rise-from-local-minimum), pinned to scene-02.wav's
+  // md5 so a re-narration silently falls back to this phrase-based
+  // resolution instead of shipping a stale onset. The phrases below stay
+  // as that fallback (and as the SOURCE the override was measured against)
+  // — do not delete them.
   2: [
     {cue: 'hook-open', phrase: 'crazy'},
     {cue: 'stat-cost', phrase: 'billion'},
@@ -118,7 +135,6 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'stat-countries', phrase: 'countries'},
     {cue: 'promises', phrase: 'promises'},
     {cue: 'wordmark', phrase: 'Cascade'},
-    {cue: 'apple-cta', phrase: 'Apple'},
   ],
   // Scene 1 — The object of desire (round 3, product owner's brief
   // 2026-09-13 v2): the phone strobes in and lands on the word "foldable"
