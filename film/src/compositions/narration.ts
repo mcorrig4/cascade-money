@@ -36,6 +36,15 @@ export interface NarrationEntry {
    */
   tailFile?: string;
   tailDuration?: number; // seconds
+  /**
+   * Optional per-scene override of the silence between `file` and
+   * `tailFile` (seconds). Defaults to SCENE1_NARRATION_GAP_SECONDS when a
+   * tail is present and this is omitted — added so scenes other than 1 can
+   * carry their own breath length before their Kokoro tail (e.g. a longer
+   * pause for the "echo of a thought" effect) without changing the shared
+   * default.
+   */
+  tailGapSec?: number;
 }
 
 export type NarrationMap = Record<
@@ -52,7 +61,9 @@ export type NarrationMap = Record<
 >;
 
 export const NARRATION_SETTLE_SECONDS = 0.4;
-/** Scene 1 two-part narration only: silence between Liam's take and the Kokoro tail. */
+/** Default silence between a scene's `file` and its `tailFile` when the
+ * entry does not specify its own `tailGapSec` (originally scene-1-only, now
+ * the fallback for every two-part scene). */
 export const SCENE1_NARRATION_GAP_SECONDS = 0.25;
 
 export const loadNarration = async (fps: number): Promise<NarrationMap> => {
@@ -64,15 +75,17 @@ export const loadNarration = async (fps: number): Promise<NarrationMap> => {
     for (const e of data) {
       if (e.tailFile !== undefined && e.tailDuration !== undefined) {
         // Two-part scene (scene 1, round 4): total raw length is `file` +
-        // the fixed gap + `tailFile`, both fed through the same
-        // fps-rounding path as the single-file case below.
-        const rawTotalSeconds = e.duration + SCENE1_NARRATION_GAP_SECONDS + e.tailDuration;
+        // the gap (per-scene tailGapSec, defaulting to
+        // SCENE1_NARRATION_GAP_SECONDS) + `tailFile`, both fed through the
+        // same fps-rounding path as the single-file case below.
+        const gapSeconds = e.tailGapSec ?? SCENE1_NARRATION_GAP_SECONDS;
+        const rawTotalSeconds = e.duration + gapSeconds + e.tailDuration;
         map[e.scene] = {
           file: e.file,
           durationInFrames: Math.round((rawTotalSeconds + NARRATION_SETTLE_SECONDS) * fps),
           rawDurationInFrames: Math.round(rawTotalSeconds * fps),
           tailFile: e.tailFile,
-          tailOffsetInFrames: Math.round((e.duration + SCENE1_NARRATION_GAP_SECONDS) * fps),
+          tailOffsetInFrames: Math.round((e.duration + gapSeconds) * fps),
           tailRawDurationInFrames: Math.round(e.tailDuration * fps),
         };
         continue;
