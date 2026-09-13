@@ -461,3 +461,21 @@ test('W1 Stage4 preservation: exiting recording permits disabling the interactiv
  assert.equal(engine.state.recording,false);assert.equal(engine.state.hud,false);
  engine.update({recording:true});engine.update({recording:false,hud:false});assert.equal(engine.state.hud,false);
 });
+
+// Scene 7's ledger (Director frame check of take v11, 2026-09-13): shot 6's
+// day-0 reset existed for the app-drawn coin card's DAY 0/30/90 meter, which is
+// film-drawn from v5 on. In a recording the reset only emptied the right-hand
+// ledger, which the product owner requires populated wherever the simulation is
+// running. Interactive playback keeps the reset.
+test('shot 6 keeps the simulation day while recording and still resets it interactively',()=>{
+ const recorded=new PlaybackEngine(index);
+ recorded.setPosition(120);
+ recorded.update({recording:true});
+ playShot(recorded,6);
+ assert.notEqual(recorded.state.day,0,'a recorded shot 6 must not rewind the ledger to day 0');
+
+ const interactive=new PlaybackEngine(index);
+ interactive.setPosition(120);
+ playShot(interactive,6);
+ assert.equal(interactive.state.day,0,'interactive shot 6 still anchors the coin beat at day 0');
+});

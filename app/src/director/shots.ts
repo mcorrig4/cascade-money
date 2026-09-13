@@ -329,7 +329,13 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  }else if(id===6){
   fly(shot.end,ms,'west');
   // The primitive extends a maturity while its simulation day stays fixed.
-  engine.setPosition(0,true);
+  // The day-0 reset existed only for the app-drawn coin card, whose maturity
+  // meter reads DAY 0 / 30 / 90 against it. That card is film-drawn now (v5,
+  // Liam 2026-09-13), so in a recording the reset has no remaining consumer and
+  // its only effect is to empty the right-hand ledger — which must stay
+  // populated wherever the simulation is running (scenes 3, 5-10). Interactive
+  // use keeps the reset so the coin beat still reads correctly on the site.
+  if(!engine.state.recording)engine.setPosition(0,true);
  }else if(id===18){
   fly(shot.end,ms,'east');engine.setPosition(364.999,true);
   at(15.6,()=>engine.update({onchainGlimpse:true}));
