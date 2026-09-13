@@ -22,7 +22,7 @@ function LedgerRow({ event, index, compact, inspect, waiting, amount, date }: { 
     {detail && <p className="ledger-annotation" title={detail}>{detail}</p>}</> }
   </article>;
 }
-export function DayLedger({ index, day, cursor, running=false, rate=1, waiting=false, presentation, rewindPosition }: { index: EventIndex; day: number; cursor: number; running?:boolean; rate?:number; waiting?:boolean; presentation?:{events:Event[];amount:bigint;date:number|null}; rewindPosition?:number }) {
+export function DayLedger({ index, day, cursor, running=false, rate=1, waiting=false, presentation, rewindPosition }: { index: EventIndex; day: number; cursor: number; running?:boolean; rate?:number; waiting?:boolean; presentation?:{events:Event[];amount?:bigint;date:number|null}; rewindPosition?:number }) {
   const [viewport,setViewport]=useState(()=>({width:innerWidth,height:innerHeight}));
   useEffect(()=>{
     const resize=()=>setViewport({width:innerWidth,height:innerHeight});

@@ -1,4 +1,4 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import { mkdir, rename, rm } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { createWriteStream, statSync } from 'node:fs';
@@ -8,6 +8,11 @@ import { collectCameraAccounts, keepEvent, capPerDay, INTERNAL_FOUR, PER_DAY_CAP
 const source = new URL('../../events.ndjson', import.meta.url);
 const temporary = new URL('../public/events.ndjson.tmp', import.meta.url);
 const destination = new URL('../public/events.ndjson', import.meta.url);
+// Isolated app worktrees may receive the already baked live fixture directly.
+if (!existsSync(source) && existsSync(destination)) {
+  console.log('Using supplied public/events.ndjson; root simulation is absent.');
+  process.exit(0);
+}
 const TARGET_BYTES = 25 * 1000 * 1000;
 await mkdir(new URL('../public/', import.meta.url), { recursive: true });
 

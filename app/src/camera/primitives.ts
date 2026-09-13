@@ -35,14 +35,24 @@ export function clampCamera(pose:Pose,reference=cameraGround(pose)):Pose {
   const cosine=(info.actualMeters+reference.groundMeters+EARTH_METERS)/((1+pose.altitude)*EARTH_METERS);
   return {...pose,altitude:(1+(reference.groundMeters+reference.minimumMeters)/EARTH_METERS)/cosine-1};
 }
-export type Ease={kind:'cubic'}|{kind:'bezier';points:[number,number,number,number]};
+export type Ease={kind:'cubic'}|{kind:'cubic-out';handoff?:number}|{kind:'bezier';points:[number,number,number,number]};
 export type Route='shortest'|'west'|'east';
 export type Keyframe=Pose & {t:number;tangent?:Pose};
 export type Primitive={kind:'orbit';center:Center;radius:number;angularSpeed:number;bearing:number}|{kind:'spline';keyframes:Keyframe[]}|{kind:'fly'};
-export type CameraCommand=Pose & {landmarkPath?:'apple-park-arch';id:number;duration:number;bookmarkPath?:boolean;site?:'apple-park'|'fifth-avenue';ease?:Ease;route?:Route;from?:Pose;primitive?:Primitive};
+export type CameraCommand=Pose & {velocity?:Pose;landmarkPath?:'apple-park-arch';id:number;duration:number;bookmarkPath?:boolean;site?:'apple-park'|'fifth-avenue';ease?:Ease;route?:Route;from?:Pose;primitive?:Primitive};
 export const clamp=(n:number)=>Math.max(0,Math.min(1,n));
 export function easeAt(t:number,ease:Ease={kind:'cubic'}) {
   t=clamp(t);
+  if(ease.kind==='cubic-out'){
+    const h=clamp(ease.handoff??0);
+    if(h>0&&t<h){
+      // C1 Hermite entrance joins the unmodified cubic ease-out at h.
+      // Its zero initial slope leaves room for the incoming camera velocity.
+      const u=t/h,end=1-(1-h)**3,slope=3*(1-h)**2;
+      return (-2*u**3+3*u*u)*end+(u**3-u*u)*h*slope;
+    }
+    return 1-(1-t)**3;
+  }
   if(ease.kind==='cubic')return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
   const [x1,y1,x2,y2]=ease.points;
   const curve=(u:number,a:number,b:number)=>3*(1-u)**2*u*a+3*(1-u)*u*u*b+u**3;
@@ -78,7 +88,11 @@ export function sampleCamera(command:CameraCommand,elapsedMs:number):Pose {
   if(p?.kind==='orbit')return orbitAt(p.center,p.radius,command.altitude,p.bearing+p.angularSpeed*Math.min(elapsedMs,command.duration)/1000);
   if(p?.kind==='spline')return splineAt(p.keyframes,t*p.keyframes.at(-1)!.t);
   const eased=easeAt(t,command.ease);
-  return clampCamera({lat:from.lat+(command.lat-from.lat)*eased,lng:from.lng+longitudeDelta(from.lng,command.lng,command.route)*eased,altitude:from.altitude+(command.altitude-from.altitude)*eased});
+  const h=command.ease?.kind==='cubic-out'?clamp(command.ease.handoff??0):0,u=h>0?t/h:1;
+  const carry=u<1?(u**3-2*u*u+u)*h*command.duration:0;
+  return clampCamera({lat:from.lat+(command.lat-from.lat)*eased+(command.velocity?.lat??0)*carry,
+    lng:from.lng+longitudeDelta(from.lng,command.lng,command.route)*eased+(command.velocity?.lng??0)*carry,
+    altitude:from.altitude+(command.altitude-from.altitude)*eased+(command.velocity?.altitude??0)*carry});
 }
 /** Deliberately named extension point: no underground geometry/camera is fabricated. */
 export const SUBSURFACE_INTERIOR_CAMERA_HOOK='subsurface-interior-camera';

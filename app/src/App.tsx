@@ -83,13 +83,13 @@ function LoadedApp({ index }: { index: EventIndex }) {
     <section className="scene-heading" aria-label="Cascade introduction"><span className="eyebrow">MONEY THAT MOVES THROUGH TIME</span><h1>One dollar.<br />Many payments.</h1><p>Money with a date.</p></section>
     <div className="globe-coordinate" aria-hidden="true"><span>CASCADE</span><span>GLOBAL PAYMENT NETWORK</span></div>
     <button className="ledger-toggle" aria-expanded={ledgerOpen} aria-controls="daily-ledger" onClick={() => setLedgerOpen(v => !v)}>{ledgerOpen ? 'Close transactions' : 'Transactions'}<span aria-hidden="true">{ledgerOpen ? '−' : '+'}</span></button>
-    <DayLedger rewindPosition={state.timelapse?.direction===-1&&state.timelapse.elapsed<2000?state.position:undefined} index={index} day={state.day} cursor={state.cursor} running={state.playing || state.shotRunning} rate={speedRate(state.speed)} waiting={state.paymentPresentation==='waiting'} presentation={state.paymentAmount!==null&&engine.storyEvents!==null?{events:engine.storyEvents,amount:state.paymentAmount,date:state.paymentMaturity}:undefined} />
+    <DayLedger rewindPosition={state.timelapse?.direction===-1&&state.timelapse.elapsed<2000?state.position:undefined} index={index} day={state.day} cursor={state.cursor} running={state.playing || state.shotRunning} rate={speedRate(state.speed)} waiting={state.paymentPresentation==='waiting'} presentation={engine.storyEvents!==null?{events:engine.storyEvents,amount:state.paymentAmount??undefined,date:state.paymentMaturity}:undefined} />
     <Timeline engine={engine} state={state} />
 
     {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
     {state.caption && <p className="year-caption">illustrative global supply chain</p>}
     <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
-    <SceneLabels shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
+    <SceneLabels payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?engine.storyEvents?.filter(e=>e.type==='issue')??[]:[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
     {(onchain || state.onchainGlimpse) && <OnchainPanel tMs={state.tMs} onClose={() => {setOnchain(false);engine.update({onchainGlimpse:false});}} />}
     {director && visibility.director && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;

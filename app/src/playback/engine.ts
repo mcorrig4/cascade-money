@@ -120,15 +120,15 @@ export class PlaybackEngine {
     this.update({camera:{...this.state.camera,bookmarkPath:true,from:keys[0]}});
     this.bookmarkOverride=override;return duration;
   }
-  snapAndPullOut(center:Center,snapAltitude:number,pullOutAltitude:number,duration:number) {
+  snapAndPullOut(center:Center,_snapAltitude:number,pullOutAltitude:number,duration:number,ease:Ease={kind:'cubic'}) {
     if(this.bookmarkOverride)return;
-    // The spline lands here first. Re-centering is a short continuous settle
-    // when invoked elsewhere, never a zero-duration teleport.
-    const now=this.currentCamera();
-    if(Math.abs(now.lat-center.lat)+Math.abs(now.lng-center.lng)+Math.abs(now.altitude-snapAltitude)>.000001){
-      this.fly(center.lat,center.lng,snapAltitude,300);
-      this.after(this.state.shotElapsed+.3,()=>this.fly(center.lat,center.lng,pullOutAltitude,duration));
-    }else this.fly(center.lat,center.lng,pullOutAltitude,duration);
+    // Start at the live spline endpoint. A second settle would change both its
+    // position and its velocity, and steal time from the declared shot duration.
+    const now=this.currentCamera(),dt=Math.min(.01,this.state.cameraElapsed);
+    const before=sampleCamera(this.state.camera,this.state.cameraElapsed-dt);
+    const velocity:Pose={lat:dt?(now.lat-before.lat)/dt:0,lng:dt?(now.lng-before.lng)/dt:0,altitude:dt?(now.altitude-before.altitude)/dt:0};
+    this.fly(center.lat,center.lng,pullOutAltitude,duration,{ease});
+    this.update({camera:{...this.state.camera,velocity}});
   }
   timelapse(center:Center|'global',days:number,direction:'forward'|'reverse',duration:number) {
     if(center!=='global')this.fly(center.lat,center.lng,this.currentCamera().altitude,Math.min(600,duration));

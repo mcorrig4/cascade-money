@@ -211,3 +211,81 @@ constant. See SCENES.md for the mapping and optional narration JSON contract.
 > 2026-09-13 00:54 EDT: tiles served on cascade.vellum.network too (key referrer-restricted to the domain + localhost); local-only gate retired.
 
 The Earth readiness gate covers its day/night maps and a complete frame only. Site tiles refine over the GLB view and never block this gate or playback. The main globe renderer already enabled logarithmic depth before Stage 16; its setting is unchanged.
+
+## Post-stage-16 — Apple orders and label ownership — September 13, 2026 (EDT)
+
+Scene 4 (stable shot ID 3) juxtaposes three existing story-marked Apple orders:
+`story:0` to Samsung Display ($100M, due day 90 / December 8, 2025), `story:10`
+to TSMC ($80M, due day 100 / December 18, 2025), and `story:17` to Foxconn
+($50M, due day 210 / April 7, 2026). Their destination sites are respectively
+`samsung-display-asan`, `tsmc-hsinchu`, and `foxconn-zhengzhou`. These identifiers,
+amounts, dates and sites were checked directly in `public/events.ndjson`.
+TSMC and Foxconn replace the proposed Sony example: the supplied fixture inventory
+has no Apple → Sony order. Do not fabricate that arc. The three orders actually
+originate on simulation days 0, 10 and 120; simultaneous presentation does not
+change their event dates, sequence, amounts or the explorer's accounting.
+
+Corrected ownership: film owns the scene-opening “September 9, 2025 · Cupertino”
+corner card through `Scene4DateCornerLabel` in `film/src/compositions/CascadeFilm.tsx`.
+The authoritative change is origin/main commit `e97fda2` (“film: cut scene 3;
+scene 4 date corner label”), following the product-owner decision at
+2026-09-13 02:13 ET, reply 21837. Film holds the card for about four seconds,
+then fades it over 400 ms. That commit also cuts Rewind (scene 3) from the film,
+which now goes directly from scene 2 to scene 4.
+
+The app draws no scene-opening date/location card for scene 4 (stable ID 3);
+`SCENE_LOCATIONS` retains only IDs 1/2/13/10. App `SceneLabels` owns only the
+three persistent per-order due-date tags for this scene, so overlapping geographic
+amount labels cannot hide an order's amount or due date. The Samsung Display
+branch continues through Corning and its descendants. The ledger uses the
+revealed original events with their individual amounts and maturities. Held
+arcs keep their complete geometry and the existing dashed convention.
+
+## Post-stage-16 — Branched default — September 13, 2026 (EDT)
+
+Scene 7 (ID 4) now reveals the connected Corning tree, `story:0..9`: the initial
+issue plus nine payments. Existing generation grouping produces 1, 1, 2, 4, 2
+edges, revealed at 0.4, 5.2, 9.6, 13.8 and 17.4 provisional seconds, scaled with
+narration duration. Previously revealed arcs stay visible as siblings fan out.
+The checked source breakdown is $100M + $100M + $60M + $40M + $40M + $20M +
+$25M + $15M + $30M + $20M = $450M, from $100M committed. Eight distinct payees
+are Samsung Display, Corning, Great Lakes Silica, Ohio Valley Chemicals,
+Superior Sands Refining, Pacific Freight, Dow and Great Plains Rail.
+
+`USE_EXTENDED_FIGURES=true` in both app `shots.ts` and film `Scene08Counters.tsx`
+selects the existing branched figures. Scene 8 (ID 17) consequently displays
+$100M / $450M / 8. Setting both switches to false restores the connected
+straight-line selection and its director-only $100M-per-hop / $400M / 4 metadata.
+Neither mode changes the indexed events. Narration copy is unchanged; the spoken
+eight-company figure awaits Liam's separate re-recording.
+
+## Post-stage-16 — Camera handoff and verification limits — September 13, 2026 (EDT)
+
+The opening orbit and rendered arch waypoints are retained. The calibrated arch
+positions formerly resolved only inside GlobeScene now populate the engine's
+spline too, so `currentCamera()` and the renderer sample the same path. Pull-out
+starts at that exact endpoint and carries its incoming velocity. The reusable
+`Ease` cubic-out option permits a C1 Hermite entrance (first 25% of this move,
+650 ms at provisional timing), joining the unmodified cubic ease-out with equal
+position and velocity. This removes the extra 300 ms recentering move and keeps
+the final camera boundary inside the existing scene duration.
+
+The end altitude is provisionally 1.72 Earth radii above the surface. **The
+requested rendered 85% framing measurement remains unverified.** Chrome launch
+was attempted and failed with `setsockopt: Operation not permitted` / SIGTRAP
+before any page opened. No screenshot, browser console acceptance, or visual
+motion acceptance is claimed. `node app/scripts/check-post16.mjs` provides a
+focused static-hosting check at 1920×1080: screenshot plus pixel-ray silhouette
+measurement using the live camera and globe radius, three-order tags, branch
+reveal counts and final counters. Its scene-number lookup resolves stable IDs
+because the existing `__cascade.playScene` API takes IDs (3 / 4 / 17).
+No 40-frame transition burst, deploy, film recapture or film render was attempted.
+
+Fixture-backed tests check event identity, amounts, dates, sites, generation
+reveals and camera position/velocity continuity. Server rendering of the actual
+SceneLabels and ShotOverlays components checks the absence of an app date/location card,
+three fully dated orders, and visible $100M / $450M / 8 text; this is not a browser
+visual check. Data preparation preserves an already supplied public fixture when
+an isolated worktree has no root simulation file. The public and built streams
+have identical SHA-256:
+`146c1255a863e593cbba8d620151d5fb28141796359bbb776b06b5c659925288`.

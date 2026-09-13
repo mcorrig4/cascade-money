@@ -46,11 +46,15 @@ test('new display chain drives proof counters and Asan camera without unrelated 
   ids.forEach((id, i) => index.firms.set(id, { id, name: id, role: 'supplier', named: true, lat: lat[i], lng: lng[i] }));
   index.payments.forEach((p, i) => { p.from = ids[i]; p.to = ids[i + 1]; });
   assert.deepEqual(proofPayments(index).map(e => e.to), ids.slice(1));
-  const engine = new PlaybackEngine(index); playShot(engine, 3); engine.tick(0.5);
-  assert.equal(engine.state.camera.lng, 127.057);
-  engine.tick(11.5); assert.equal(engine.totals().settled, 0n);
-  assert.equal(engine.state.paymentPresentation,'waiting');
-  assert.equal(engine.storyEvents?.length,2);
+  // A non-branching chain reveals as 4 single-event generations; the branched
+  // cascade's shot-4 camera flies to the two fixed Pacific/US anchors it uses
+  // for every real cascade (not to each synthetic firm's own coordinates).
+  const settled = index.payments.slice(0, 4).reduce((sum, e) => sum + e.amount, 0n);
+  const engine = new PlaybackEngine(index); playShot(engine, 4); engine.tick(0.5);
+  assert.equal(engine.state.camera.lng, -170);
+  engine.tick(19.5); assert.equal(engine.totals().settled, settled);
+  assert.equal(engine.state.paymentPresentation,'settled');
+  assert.equal(engine.storyEvents?.length,4);
 });
 test('all overlay shots start independently, pause and cancel scheduled flights', () => {
   const engine = new PlaybackEngine(makeIndex()); assert.equal(SHOTS.length, 17);

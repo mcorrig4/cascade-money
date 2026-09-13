@@ -88,3 +88,12 @@
 .recording-hud .bottom-panel{z-index:21}
 .recording-hud .topbar,.recording-hud .bottom-panel{z-index:28}
 .recording-hud .ending-line{inset:var(--film-top) 0 calc(var(--film-bottom) + var(--film-log) + 8px)}
+
+/* App-owned per-order tags stay legible when routes overlap; film owns the opening corner card. */
+.scene-orders{position:absolute;z-index:14;left:calc(48 * var(--film-unit,1px));top:20%;display:flex;flex-direction:column;gap:12px;pointer-events:none;text-shadow:0 2px 10px #000;color:#edf6f2}
+.scene-orders>div{display:flex;flex-direction:column;gap:4px;padding:10px 14px;border-left:2px dashed #69e6c0;background:#071019cc}
+.scene-orders strong{font-size:clamp(14px,1.4vw,27px);font-weight:500}.scene-orders span{font-size:clamp(12px,1.15vw,22px);color:#c9dcd5}
+
+.scene-cascade{position:absolute;z-index:14;left:calc(48 * var(--film-unit,1px));top:calc(120 * var(--film-unit,1px));width:calc(420 * var(--film-unit,1px));display:flex;flex-direction:column;gap:calc(8 * var(--film-unit,1px));pointer-events:none;color:#edf6f2}
+.scene-cascade>div{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10 * var(--film-unit,1px));border-left:2px solid #69e6c0;background:#071019e8;font-size:calc(20 * var(--film-unit,1px));line-height:1.25}
+.scene-cascade span{max-width:80%}.scene-cascade strong{white-space:nowrap;color:#69e6c0;font-weight:500}

@@ -141,9 +141,9 @@ test('scene 2 stays in orbit for ten seconds, swoops, and pulls out only on the 
    assert.equal(e.state.camera.landmarkPath,'apple-park-arch');
    e.tick(3.599*scale);assert.equal(e.state.camera.primitive?.kind,'spline');
    e.tick(.001*scale);assert.equal(e.state.camera.primitive?.kind,'fly');
-   assert.equal(e.state.camera.altitude,2.5);
+   assert.equal(e.state.camera.altitude,SHOTS[1].end.altitude);
    e.tick(2.6*scale);
-   assert.ok(Math.abs(sampleCamera(e.state.camera,e.state.cameraElapsed).altitude-2.5)<1e-7);
+   assert.ok(Math.abs(sampleCamera(e.state.camera,e.state.cameraElapsed).altitude-SHOTS[1].end.altitude)<1e-7);
    assert.equal(e.state.shotRunning,false);
   }
  }finally{applyNarrationDurations({});}

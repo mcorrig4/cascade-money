@@ -63,14 +63,14 @@ test('missing or malformed optional narration leaves the film usable; a valid ta
  }finally{applyNarrationDurations({});}
 });
 
-test('straight proof uses four existing connected events, one maturity and the recorded default totals',()=>{
+test('straight proof uses four existing connected events, real amounts with branched default totals',()=>{
  const proof=straightProofPayments(index);
  assert.equal(proof.length,4);assert.ok(proof.every(e=>index.payments.includes(e)));
  const e=new PlaybackEngine(index);playShot(e,4);e.tick(20);
  assert.equal(e.storyEvents?.length,4);assert.deepEqual(e.totals(),{committed:10000000000n,settled:40000000000n});
- assert.equal(e.state.paymentMaturity,proofMaturity(proof[0]));
+ assert.equal(e.state.paymentMaturity,null);
  playShot(e,17);assert.deepEqual(e.totals(),DEFAULT_CASCADE);
- assert.equal(DEFAULT_CASCADE.companies,4);assert.equal(CASCADE_FIGURES.branched.settled,45000000000n);
+ assert.equal(DEFAULT_CASCADE.companies,8);assert.equal(CASCADE_FIGURES.branched.settled,45000000000n);
  assert.equal(CASCADE_FIGURES.branched.companies,8);
 });
 
@@ -93,7 +93,7 @@ test('vault glimpse is bounded by its scene and New York invokes the calibrated 
  assert.equal(e.state.camera.site,'fifth-avenue');
 });
 
-test('branched source amounts stay intact when the narrated straight-line presentation settles four times',()=>{
+test('branched default follows every connected source payment without inflating amounts',()=>{
  const branch=createIndex(),base=index.payments[0];
  const pairs=[['Apple','Samsung Display'],['Samsung Display','Corning'],['Corning','Silica'],['Silica','Refining'],['Silica','Pacific Freight']];
  const amounts=[100n,100n,60n,40n,20n];
@@ -101,8 +101,8 @@ test('branched source amounts stay intact when the narrated straight-line presen
  branch.payments=events;branch.days[0].events=events;
  branch.stories=events.map(e=>({storyId:'apple',beat:String(e.seq),event:e,payment:e,cameraAccounts:[]}));
  const e=new PlaybackEngine(branch);playShot(e,4);e.tick(20);
- assert.deepEqual(e.storyEvents?.map(e=>e.to),['Samsung Display','Corning','Silica','Pacific Freight']);
+ assert.deepEqual(e.storyEvents?.map(e=>e.to),['Samsung Display','Corning','Silica','Refining','Pacific Freight']);
  assert.deepEqual(branch.payments.map(e=>e.amount),amounts);
- assert.equal(e.totals().settled,40000000000n);
+ assert.equal(e.totals().settled,320n);
  e.stopShot();assert.equal(e.state.paymentAmount,null);
 });

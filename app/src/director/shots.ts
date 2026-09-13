@@ -33,7 +33,10 @@ const table:ShotDefinition[]=[
    {lat:0,lng:-122.009,altitude:3,sceneId:1,time:0,holdMs:900,travelMs:2500},
    {lat:APPLE.lat,lng:APPLE.lng,altitude:.0003,sceneId:1,time:0,holdMs:2500,travelMs:3200},
   ]},
- {id:2,title:"Apple Park",words:38,orbitUntil:10,pullOutAt:13.6,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
+ // Pull-out end altitude 1.72 (was 2.5): measured to fill ~85% of frame
+ // height (post16 pass, 2026-09-13) — see DECISIONS.md for the render-
+ // verified fraction (0.848) and the cubic-out handoff from the arch spline.
+ {id:2,title:"Apple Park",words:38,orbitUntil:10,pullOutAt:13.6,end:p(37.3349,-122.009,1.72),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
  // Reorder-to-13 pass (2026-09-13, product owner + Director/wingman 03:33
  // ET): old shots 13 (Rewind) and 15 (The contradiction) are CUT, and old
  // shots 9 (Stress test) and 8 (The rules survive) are CUT as standalone
@@ -112,7 +115,9 @@ export const CASCADE_FIGURES={
  straight:{committed:100_000_00000n,settled:400_000_00000n,companies:4},
  branched:{committed:100_000_00000n,settled:450_000_00000n,companies:8},
 };
-export const DEFAULT_CASCADE=CASCADE_FIGURES.straight;
+// Keep this switch aligned with film Scene08Counters for a future straight-line re-cut.
+export const USE_EXTENDED_FIGURES=true;
+export const DEFAULT_CASCADE=USE_EXTENDED_FIGURES?CASCADE_FIGURES.branched:CASCADE_FIGURES.straight;
 export const VERIFIED_YEAR_INVOICES=12028;
 export const STRESS_FIGURES={operations:10000,violations:0};
 export const COMPOSABLE_BEATS=[
@@ -201,6 +206,29 @@ export function straightProofPayments(index:EventIndex,story='apple') {
  }
  return chain;
 }
+/** Keep only descendants of the first order, even if a story contains other roots. */
+export function branchedProofPayments(index:EventIndex,story='apple') {
+ const all=proofPayments(index,story),chain:Event[]=[],reached=new Set<string>();
+ for(const event of all){
+  if(!chain.length || (event.type==='pay'&&reached.has(event.from!))){
+   chain.push(event);reached.add(event.to!);
+  }
+ }
+ return chain;
+}
+export const ORDER_SITES:Record<string,string>={
+ 'story:0':'samsung-display-asan','story:1':'corning-harrodsburg',
+ 'story:10':'tsmc-hsinchu','story:17':'foxconn-zhengzhou',
+};
+/** Presentation juxtaposes orders issued on days 0, 10 and 120; events keep their dates. */
+export function appleOrders(index:EventIndex) {
+ if(index.schema===1)return proofPayments(index).slice(0,1);
+ const marked=new Set(index.stories.flatMap(s=>s.payment?[s.payment.seq]:[]));
+ return ['story:0','story:10','story:17'].flatMap(id=>{
+  const event=index.payments.find(e=>e.invoiceId===id&&e.type==='issue'&&e.from==='Apple'&&marked.has(e.seq));
+  return event?[event]:[];
+ });
+}
 export function shotAvailable(_engine:PlaybackEngine,id:number){return SHOTS.some(s=>s.id===id);}
 const chase:Ease={kind:'bezier',points:[.12,.65,.18,1]};
 export function nextShot(id:number,direction=1){return SHOTS[Math.max(0,Math.min(SHOTS.length-1,SHOTS.findIndex(s=>s.id===id)+direction))].id;}
@@ -214,36 +242,51 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const at=(seconds:number,run:()=>void)=>engine.after(seconds*scale,run);
  const fly=(target:Pose,duration:number,route:'west'|'east'|'shortest'='shortest')=>engine.fly(target.lat,target.lng,target.altitude,duration,{route,ease:chase});
  if(id!==12)engine.fadeFromWhite(Math.min(400,ms*.1));
- const all=straightProofPayments(engine.index,engine.state.story);
  const show=(event:Event)=>{engine.reveal(event);engine.setPosition(position(engine,event,true));};
- const focus=()=>{engine.storyEvents=[];engine.update({focusInvoices:all.map(e=>e.invoiceId!),paymentMaturity:proofMaturity(all[0]),paymentAmount:DEFAULT_CASCADE.committed});};
+ const focus=(events:Event[],straight=false)=>{engine.storyEvents=[];engine.update({focusInvoices:events.map(e=>e.invoiceId!),paymentMaturity:straight?proofMaturity(events[0]):null,paymentAmount:straight?CASCADE_FIGURES.straight.committed:null});};
  if(id===1){engine.setPosition(0,true);engine.orbit(APPLE,openingOrbit.radius,openingOrbit.altitude,32/shot.seconds,ms,openingOrbit.bearing);}
  else if(id===2){
   const orbitUntil=table[1].orbitUntil!,pullOutAt=table[1].pullOutAt!;
   engine.orbit(APPLE,openingOrbit.radius,openingOrbit.altitude,18/(orbitUntil*scale),orbitUntil*scale*1000,openingOrbit.bearing+32);
-  at(orbitUntil,()=>engine.splinePath([
-   {...engine.currentCamera(),t:0},{lat:37.3355,lng:-122.0085,altitude:.0006,t:.5,tangent:{lat:0,lng:0,altitude:0}},
-   {...APPLE,altitude:.00005,t:1.2,tangent:{lat:0,lng:0,altitude:0}}],(pullOutAt-orbitUntil)*scale*1000,'apple-park-arch'));
-  at(pullOutAt,()=>engine.snapAndPullOut(APPLE,.00005,2.5,(shot.baseSeconds-pullOutAt)*scale*1000));
+  at(orbitUntil,()=>{
+   // These are the same calibrated points previously resolved in GlobeScene.
+   // Sampling them here gives the engine and renderer one exact handoff state.
+   const geo=(v:ReturnType<typeof appleParkShotCamera>['position'],t:number)=>({lat:Math.asin(v.y/v.length())*180/Math.PI,lng:Math.atan2(v.x,v.z)*180/Math.PI,altitude:v.length()/EARTH_METERS-1,t});
+   engine.splinePath([{...engine.currentCamera(),t:0},geo(appleParkShotCamera(EARTH_METERS,10).position,.5),
+    geo(appleParkShotCamera(EARTH_METERS,13.7).position,1.2)],(pullOutAt-orbitUntil)*scale*1000,'apple-park-arch');
+  });
+  at(pullOutAt,()=>engine.snapAndPullOut(APPLE,.00005,shot.end.altitude,(shot.baseSeconds-pullOutAt)*scale*1000,{kind:'cubic-out',handoff:.25}));
  }else if(id===13){
   engine.timelapse('global',365,'reverse',2000);
   engine.playRange(364.999,0,2);
   engine.after(2,()=>engine.flashToWhite(250));
   engine.after(2.25,()=>{engine.fadeFromWhite(300);engine.update({timelapse:null});engine.setPosition(0,true);});
   at(12.3,()=>fly(shot.end,(shot.baseSeconds-12.3)*scale*1000));
- }else if(id===3||id===4){
-  focus();engine.update({paymentPresentation:id===3?'waiting':'settled'});
-  const cues=id===3?[4.4,9.2]:[.4,8.4,13.6,17.2];
-  const chain=id===3?all.slice(0,2):all;
-  // Destinations come from the baked stream; v1 keeps its presentation lookup.
-  chain.forEach((event,i)=>{
-   const firm=engine.index.firms.get(event.to??'');
-   const cue=cues[i];
-   at(Math.max(0,cue-(i?2.4:4.4)),()=>{if(firm?.lat!=null&&firm.lng!=null)fly(p(firm.lat,firm.lng,1.5+i*.13),scale*(i?2400:4400),'west');});
-   at(cue,()=>show(event));
+ }else if(id===3){
+  const orders=appleOrders(engine.index),branch=branchedProofPayments(engine.index,engine.state.story);
+  const downstream=branch.slice(1);
+  focus([...orders,...downstream]);engine.setPosition(0,true);engine.update({paymentPresentation:'waiting'});
+  // A Pacific view keeps the three complete outbound arcs in one composition.
+  fly(p(42,-170,1.8),4400*scale,'west');
+  at(4.4,()=>orders.forEach(event=>engine.reveal(event)));
+  cascadeBeats(downstream).forEach((generation,i)=>at(9.2+i*2.2,()=>generation.forEach(event=>engine.reveal(event))));
+  at(16.4,()=>fly(shot.end,ms-16400*scale,'east'));
+ }else if(id===4){
+  const chain=USE_EXTENDED_FIGURES?branchedProofPayments(engine.index,engine.state.story):straightProofPayments(engine.index,engine.state.story);
+  focus(chain,!USE_EXTENDED_FIGURES);
+  engine.update({paymentPresentation:'settled'});
+  const beats=cascadeBeats(chain),cues=USE_EXTENDED_FIGURES?[.4,5.2,9.6,13.8,17.4]:[.4,8.4,13.6,17.2];
+  beats.forEach((generation,i)=>{
+   const cue=cues[i]??17.4;
+   const firm=engine.index.firms.get(generation[0].to??'');
+   at(Math.max(0,cue-(i?2.4:.4)),()=>{
+    if(USE_EXTENDED_FIGURES)fly(i<2?p(42,-170,1.8):p(39,-99,.65),scale*(i?2400:400));
+    else if(firm?.lat!=null&&firm.lng!=null)fly(p(firm.lat,firm.lng,1.5+i*.1),scale*(i?2400:400),'west');
+   });
+   // Siblings light together, then the next generation fans out.
+   at(cue,()=>generation.forEach(show));
   });
-  // No cut: finish the sweep at the declared boundary after the final hop.
-  at(id===3?14:19.2,()=>fly(shot.end,ms-(id===3?14:19.2)*scale*1000,'west'));
+  at(19.2,()=>fly(shot.end,ms-19200*scale,'west'));
  }else if(id===15||id===16||id===17){fly(shot.end,ms,'east');if(id===17)engine.update({presentationTotals:DEFAULT_CASCADE});}
  else if(id===5){
   engine.update({speed:'year',caption:true});engine.playRange(0,365,shot.seconds);

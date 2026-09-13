@@ -1,8 +1,8 @@
 import { sampleRewindEvents } from './rewind-events.ts';
 import { companyCues } from '../director/company-cues.ts';
 import { CameraBookmarks } from '../director/bookmarks.ts';
-import { SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
-import { easeAt, sampleCamera, splineAt, EARTH_METERS, SITE_CLEARANCE_METERS, clampCamera, cameraClearance, cameraGround } from '../camera/primitives.ts';
+import { ORDER_SITES, proofMaturity, SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
+import { easeAt, sampleCamera, EARTH_METERS, SITE_CLEARANCE_METERS, clampCamera, cameraClearance, cameraGround } from '../camera/primitives.ts';
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 import type { GlobeInstance } from 'globe.gl';
@@ -189,6 +189,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           local: !!state.camera.site };
       } else if (state.camera.id !== cameraId) {
         cameraId = state.camera.id;
+        if(state.camera.velocity&&flight?.to.landmarkPath==='apple-park-arch'){
+          const end=appleParkShotCamera(globe.getGlobeRadius(),13.7);
+          controls.target.copy(end.target);camera.up.copy(end.up);camera.fov=end.fov;
+        }
         flight = { from: globe.pointOfView(), to: state.camera, elapsed: 0,
           eye: camera.position.clone(), target: controls.target.clone(), up: camera.up.clone(),
           fromFov: camera.fov, targetFov: state.camera.site ? siteCamera(state.camera.site, globe.getGlobeRadius()).fov : globeFov,
@@ -207,12 +211,8 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         } else if(primitive?.kind==='spline' && flight.to.landmarkPath==='apple-park-arch') {
           // Resolve the landmark against the other lane's calibrated camera
           // functions, not the script's approximate kilometre-scale altitudes.
-          const radius=globe.getGlobeRadius();
-          const entry=appleParkShotCamera(radius,10),exit=appleParkShotCamera(radius,13.7);
-          const geo=(v:Vector3,t:number)=>({lat:Math.asin(v.y/v.length())*180/Math.PI,lng:Math.atan2(v.x,v.z)*180/Math.PI,altitude:v.length()/radius-1,t});
-          const frame=splineAt([geo(flight.eye,0),geo(entry.position,.5),geo(exit.position,1.2)],t*1.2);
-          camera.position.copy(globe.getCoords(frame.lat,frame.lng,frame.altitude));
-          const look=appleParkShotCamera(radius,6.5+t*7.2);
+          camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
+          const look=appleParkShotCamera(globe.getGlobeRadius(),6.5+t*7.2);
           controls.target.lerpVectors(flight.target,look.target,eased);camera.up.copy(look.up);camera.fov=look.fov;camera.updateProjectionMatrix();camera.lookAt(controls.target);
         } else if(primitive?.kind==='spline') {
           camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
@@ -222,7 +222,8 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           const pose = flight.to.site ? siteCamera(flight.to.site, globe.getGlobeRadius()) : {
             position: new Vector3().copy(globe.getCoords(flight.to.lat, flight.to.lng, flight.to.altitude)), target: new Vector3(), up: new Vector3(0, 1, 0) };
           controls.minDistance = 0.000005;
-          camera.position.lerpVectors(flight.eye, pose.position, eased);
+          if(flight.to.velocity)camera.position.copy(globe.getCoords(sampled.lat,sampled.lng,sampled.altitude));
+          else camera.position.lerpVectors(flight.eye, pose.position, eased);
           controls.target.lerpVectors(flight.target, pose.target, eased);
           camera.up.lerpVectors(flight.up, pose.up, eased).normalize();
           camera.fov = flight.fromFov + (flight.targetFov - flight.fromFov) * eased; camera.updateProjectionMatrix();
@@ -355,7 +356,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       // Admission is bounded even for a scrub directly into an extremely dense day.
       for (const event of incoming.filter(isPayment).slice(-200)) {
         const life = arcLifetime(moving ? speedRate(state.speed) : 1, state.shot === 3 || state.shot === 4);
-        pool.add(event, engine.index, time - (moving ? 0 : 750), life, state.paymentMaturity??undefined,state.paymentAmount??undefined);
+        pool.add(event, engine.index, time - (moving ? 0 : 750), life, state.paymentMaturity??(engine.storyEvents!==null?proofMaturity(event)??undefined:undefined),state.paymentAmount??undefined,engine.storyEvents!==null?ORDER_SITES[event.invoiceId??'']:undefined);
       }
       for (const event of incoming.slice(-40)) {
         if (!isPayment(event) && event.type !== 'extend') continue;
@@ -372,7 +373,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         arcIds='\0';
       }
       cursor = state.cursor;
-      pool.tick(time,state.paymentPresentation==='waiting');
+      pool.tick(time,state.paymentPresentation==='waiting'||state.shot===4);
       }
       const nextArcIds = pool.arcs.map(arc => arc.id).join(',');
       if(frameDriven)deterministicArcs.update(pool.arcs);
@@ -387,10 +388,10 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const landscape=root.clientWidth/root.clientHeight>=4/3;
       const filmScale=landscape?Math.min(root.clientWidth/1920,root.clientHeight/1080):1;
       const ledgerLeft = !landscape?root.clientWidth-12:state.recording?root.clientWidth-24*filmScale:root.clientWidth-760*filmScale;
-      layer.update(globe, pool.arcs, time, ledgerLeft, root.clientHeight - 330*filmScale,filmScale);
+      layer.update(globe, state.shot===3||state.shot===4?[]:pool.arcs, time, ledgerLeft, root.clientHeight - 330*filmScale,filmScale);
       companyLayer.update(globe, named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
         root.clientHeight - 330*filmScale, close, !landscape,filmScale);
-      companyLayer.updateCallouts(globe,named,companyCues(state),state.shot===null?state.tMs:state.shotElapsed*1000,landscape?filmScale:root.clientWidth/1920,root.clientHeight-330*filmScale);
+      companyLayer.updateCallouts(globe,named,state.shot===3||state.shot===4?[]:companyCues(state),state.shot===null?state.tMs:state.shotElapsed*1000,landscape?filmScale:root.clientWidth/1920,root.clientHeight-330*filmScale);
       if (schedule) raf = requestAnimationFrame(frame);
     };
     if (!frameDriven) raf = requestAnimationFrame(frame);
@@ -423,7 +424,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
             const hit = earth && new Raycaster(origin, origin.clone().negate().normalize()).intersectObject(earth)[0];
             return { ...site, expected: atlasUv(site.lat, site.lng), uv: hit?.uv ? { u: hit.uv.x, v: hit.uv.y } : null };
           });
-        }, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time,engine.state.paymentPresentation==='waiting'); updateArcMaterials(pool.arcs, globe.getGlobeRadius()); },
+        }, ageArcs: (milliseconds: number) => { time += milliseconds; pool.tick(time,engine.state.paymentPresentation==='waiting'||engine.state.shot===4); updateArcMaterials(pool.arcs, globe.getGlobeRadius()); },
         geometry: () => pool.arcs.map(a => {
           const group = (a as LiveArc & { __threeObjArc?: Group }).__threeObjArc;
           const mesh = group?.children[0] as Mesh | undefined;

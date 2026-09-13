@@ -20,9 +20,10 @@ export function midpoint(lat1: number, lng1: number, lat2: number, lng2: number)
 export class ArcPool {
   arcs: LiveArc[] = [];
   clear() { this.arcs = []; }
-  add(event: Event, index: EventIndex, time: number, life = 1800, maturity?:number, displayAmount?:bigint) {
+  add(event: Event, index: EventIndex, time: number, life = 1800, maturity?:number, displayAmount?:bigint, destinationSite?:string) {
     if (!isPayment(event) || event.amount <= 0n || this.arcs.some(a => a.id === event.seq)) return;
-    const from = index.firms.get(event.from ?? ''), to = index.firms.get(event.to ?? '');
+    const from = index.firms.get(event.from ?? ''), firm = index.firms.get(event.to ?? '');
+    const to = firm?.sites?.find(site=>site.id===destinationSite)??firm;
     if (from?.lat == null || from.lng == null || to?.lat == null || to.lng == null) return;
     const mid = midpoint(from.lat, from.lng, to.lat, to.lng);
     // Begin retirement before the hard cap. All retiring arcs count toward 200.
