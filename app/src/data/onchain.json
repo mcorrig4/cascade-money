@@ -1,4 +1,9 @@
 {
+  "owner": "0x9C2069b5b510E548963E98474CA08F72E26Fe3f4",
+  "deploymentTransaction": "0x5eddc93f8088e2262d420e184f2347c87b21cd0fcdc0d928fd95ac842811527f",
+  "sourceRevision": "b177dda9c0ae61d5925dc774aad4d632ed1080a6",
+  "contractSourceUrl": "https://github.com/mcorrig4/cascade-money/blob/b177dda9c0ae61d5925dc774aad4d632ed1080a6/contracts/src/CascadeVault.sol",
+  "metadataSourceUrl": "https://github.com/mcorrig4/cascade-money/blob/b177dda9c0ae61d5925dc774aad4d632ed1080a6/contracts/src/DateMetadata.sol",
   "chainId": 5042002,
   "vault": "0x4e7d5b438d38b93b811f7f847613100023d7dafe",
   "usdc": "0x3600000000000000000000000000000000000000",
@@ -247,6 +252,7 @@
     }
   ],
   "recorded": {
+    "day": 20709,
     "usdc": "10000000",
     "principal": "10000000",
     "settled": "40000000",
@@ -255,10 +261,12 @@
     "supplies": [
       {
         "offset": 90,
+        "id": 20799,
         "amount": "0"
       },
       {
         "offset": 120,
+        "id": 20829,
         "amount": "10000000"
       }
     ]

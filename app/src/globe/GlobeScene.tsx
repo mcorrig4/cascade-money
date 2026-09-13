@@ -1,6 +1,8 @@
+import { sampleRewindEvents } from './rewind-events.ts';
+import { companyCues } from '../director/company-cues.ts';
 import { CameraBookmarks } from '../director/bookmarks.ts';
 import { SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
-import { easeAt, sampleCamera, splineAt } from '../camera/primitives.ts';
+import { easeAt, sampleCamera, splineAt, EARTH_METERS, SITE_CLEARANCE_METERS, clampCamera, cameraClearance, cameraGround } from '../camera/primitives.ts';
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'globe.gl';
 import type { GlobeInstance } from 'globe.gl';
@@ -22,11 +24,12 @@ import { atlasUv, GEO_REFERENCES } from './geography.ts';
 import { createSiteModels } from './site-models.ts';
 import { appleParkShotCamera, fifthAvenueShotCamera, nearSite, SITES, siteCamera, siteFrame, sitePoint, siteSun } from './site-math.ts';
 import type { SiteSceneController, SiteSceneStatus } from './site-scene.ts';
-import { shouldHoldForTiles } from './tiles-policy.ts';
+import { canUseTiles } from './tiles-policy.ts';
+import { EARTH_BACKGROUND } from './readiness.ts';
 import parkUrl from '../assets/apple-park.svg';
 
 const MONEY = '#69e6c0';
-const LOCAL_TILES = import.meta.env.VITE_ENABLE_TILES === '1';
+const TILES_ENABLED = import.meta.env.VITE_ENABLE_TILES === '1';
 export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
   const host = useRef<HTMLDivElement>(null), siteHost = useRef<HTMLDivElement>(null), siteAttribution = useRef<HTMLDivElement>(null);
   const amounts = useRef<HTMLDivElement>(null), companies = useRef<HTMLDivElement>(null);
@@ -36,7 +39,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const root = host.current;
     let globe: GlobeInstance;
     try { globe = new Globe(root, { animateIn: false, rendererConfig: { antialias: true, alpha: true, logarithmicDepthBuffer: true } }); }
-    catch { setError('A WebGL-capable browser is needed to open the globe.'); return; }
+    catch { const message='A WebGL-capable browser is needed to open the globe.'; engine.prepareScene().fail(new Error(message)); setError(message); return; }
     // Every named firm label reads "Name · City" consistently: the firm's own HQ/plant entry
     // gets its city suffixed exactly like the per-site entries below (previously only the extra
     // site entries did, so single-site firms — Apple, Corning, Glencore's own HQ row — showed a
@@ -44,12 +47,13 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const firms = [...engine.index.firms.values()].flatMap(f => [f.named && f.city ? { ...f, name: `${f.name} · ${f.city}` } : f, ...(f.named ? (f.sites ?? []).filter(site => site.lat !== f.lat || site.lng !== f.lng).map(site => ({ ...f, id: `${f.id}:${site.id}`, name: `${f.name} · ${site.city ?? site.id}`, lat: site.lat, lng: site.lng })) : [])]).filter(f => f.lat != null && f.lng != null);
     const named = firms.filter(f => f.named), pool = new ArcPool(), layer = new AmountLayer(amounts.current);
     const companyLayer = new CompanyLayer(companies.current, named);
+    let localFocus:Vector3|undefined;
     let arcIds = '', cinematic=false, campusFraming=0;
     let time = 250, last = performance.now(), lastColor = 0, raf = 0;
     let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false, previousShot: number | null = null;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
     let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
-    let tileGatePaused = false, tileGateWallMs = 0, tileGateShot: number | null = null, tileFallbackShot: number | null = null;
+
     const sceneTransitions:{sceneIndex:number;sceneId:number;tMs:number}[]=[];
     let filmStartMs:number|null=null,lastTransitionShot:number|null=null;
     const unsubscribeTransitions=engine.subscribe(()=>{
@@ -67,7 +71,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     // window the director schedules, independent of scene numbering.
     let interiorDescent: { start: number; shot: number | null; duration: number; eye: Vector3; target: Vector3; fov:number } | undefined;
     engine.subsurfaceInteriorCameraHook = (durationMs) => { interiorDescent = { start: engine.state.shotElapsed, shot: engine.state.shot, duration: durationMs, eye: camera.position.clone(), target: controls.target.clone(), fov:camera.fov }; return true; };
-    globe.backgroundColor('#00000000')
+    globe.backgroundColor(EARTH_BACKGROUND)
       .pointsData(firms).pointLat('lat').pointLng('lng').pointAltitude(0.001)
       .pointRadius((d: object) => (d as Firm).named ? 0.19 : 0.045)
       .pointColor((d: object) => (d as Firm).role === 'anchor' ? '#f4f4e7' : MONEY).pointResolution(6).pointsMerge(true)
@@ -83,11 +87,26 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       .ringColor((d: object) => (t: number) => (d as { color: string }).color === 'extension' ? `rgba(232,183,104,${1 - t})` : `rgba(105,230,192,${1 - t})`)
 ;
     globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-    const effects = createEarthEffects(globe), fifth = createFifthAvenueCube(globe);
+    root.style.visibility = 'hidden';
+    const readinessGate = engine.prepareScene();
+    let effects: ReturnType<typeof createEarthEffects>;
+    try { effects = createEarthEffects(globe); }
+    catch (reason) {
+      readinessGate.fail(reason instanceof Error ? reason : new Error(String(reason)));
+      setError('Earth could not be prepared. Reload to retry.'); unsubscribeTransitions();
+      engine.subsurfaceInteriorCameraHook = undefined; globe._destructor(); return;
+    }
+    const fifth = createFifthAvenueCube(globe);
+    void effects.ready().then(() => {
+      if (disposed) return;
+      root.style.visibility = 'visible'; readinessGate.finish();
+    }).catch(reason => { if(!disposed){readinessGate.fail(reason);setError('Earth textures could not be prepared. Reload to retry.');} });
+    let clearance = cameraClearance(engine.state.camera);
     let interacting = false;
     const idle = new IdleMotion();
     const interact = () => {
-      interacting = true;
+      interacting = true; localFocus=undefined;
+      if(engine.state.camera.site)engine.update({camera:{...engine.state.camera,site:undefined}});
       if (engine.state.shot !== null) engine.stopShot();
       flight = undefined; cameraId = engine.state.camera.id;
       globe.controls().target.set(0, 0, 0); globe.camera().up.set(0, 1, 0);
@@ -104,8 +123,15 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const camera = globe.camera() as PerspectiveCamera;
     const globeFov = camera.fov;
     camera.near = 0.000005; camera.updateProjectionMatrix();
-    globe.controls().minDistance = globe.getGlobeRadius() * (1 + 0.00001);
+    globe.controls().minDistance = globe.getGlobeRadius() * (1 + SITE_CLEARANCE_METERS/EARTH_METERS);
     globe.controls().maxDistance = globe.getGlobeRadius() * 5;
+    const maintainSiteControls=()=>{
+      // globe.gl's earlier change listener resets the target and shrinks zoom
+      // speed toward zero at site scale. Keep the authored focus until drag.
+      if(localFocus&&!interacting){controls.target.copy(localFocus);camera.lookAt(localFocus);}
+      controls.zoomSpeed=Math.max(.4,Math.min(1.2,Math.sqrt(Math.max(0,globe.pointOfView().altitude))*.5));
+    };
+    controls.addEventListener('change',maintainSiteControls);
 
     // A curved, geographically registered local SVG decal: no tile service or satellite dependency.
     const texture = new TextureLoader().load(parkUrl);
@@ -119,7 +145,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     }
     geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('uv', new Float32BufferAttribute(uv, 2)); geometry.setIndex(indices); geometry.computeVertexNormals();
-    const material = new MeshBasicMaterial({ map: texture, transparent: true, depthTest: true, depthWrite: false, toneMapped: false, side: 2 });
+    const material = new MeshBasicMaterial({ map: texture, transparent: true, depthTest: true, depthWrite: false, polygonOffset:true, polygonOffsetFactor:4, polygonOffsetUnits:4, toneMapped: false, side: 2 });
     const park = new Mesh(geometry, material); park.visible = false; park.renderOrder = 2; park.name = 'Apple Park ring decal'; park.userData.skipBloom = true; globe.scene().add(park);
     const models = createSiteModels(globe, { 'apple-park': park, 'fifth-avenue': fifth.group });
     const resize = () => {
@@ -133,7 +159,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       const state = engine.state, moving = state.playing || state.shotRunning;
       if(state.shot!==previousShot){
         previousShot=state.shot;
-        tileGatePaused=false;tileGateWallMs=0;tileGateShot=null;tileFallbackShot=null;
+
         // A URL/director entry has no preceding scene to provide its camera.
         // Start from the authored pose; continuous film transitions still inherit.
         if(state.shot!==null&&!state.film&&state.shotElapsed<.1){
@@ -141,10 +167,11 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           if(authored){flight=undefined;globe.pointOfView(state.camera.bookmarkPath?state.camera.from!:authored.start,0);cameraId=-1;}
         }
       }
-      if(cinematic!==(state.shot!==null)){cinematic=state.shot!==null;if(cinematic)globe.globeOffset([0,0]);else resize();}
+      if(cinematic!==(state.shot!==null||!!state.camera.site)){cinematic=state.shot!==null||!!state.camera.site;if(cinematic)globe.globeOffset([0,0]);else resize();}
       const desiredPixelRatio = state.recording ? 1 : Math.min(window.devicePixelRatio, 1.5);
       if (globe.renderer().getPixelRatio() !== desiredPixelRatio) globe.renderer().setPixelRatio(desiredPixelRatio);
-      if (moving) time += elapsed;
+      if (state.shot !== null) time = 250 + ((SHOTS.find(s=>s.id===state.shot)?.startTime??0)+state.shotElapsed)*1000;
+      else if (moving) time += elapsed;
       if (state.camera.id !== cameraId) {
         cameraId = state.camera.id;
         flight = { from: globe.pointOfView(), to: state.camera, elapsed: 0,
@@ -153,7 +180,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           local: !!state.camera.site || controls.target.lengthSq() > 0 };
       }
       if (flight) {
-        flight.elapsed = state.shot === null ? flight.elapsed + elapsed : state.cameraElapsed;
+        flight.elapsed = state.cameraElapsed;
         const t = flight.to.duration === 0 ? 1 : Math.min(1, flight.elapsed / flight.to.duration), eased = easeAt(t,flight.to.ease);
         const sampled=sampleCamera({...flight.to,from:flight.to.from??flight.from},flight.elapsed);
         const primitive=flight.to.primitive;
@@ -193,12 +220,12 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       }
       // Ring center at 60% of the frame, easing back to center for the arch.
       const framingTarget=state.camera.primitive?.kind==='orbit'?.1:0;
-      campusFraming+=(framingTarget-campusFraming)*Math.min(1,elapsed/350);
+      campusFraming = framingTarget * easeAt(Math.min(1,state.cameraElapsed/350));
       if(campusFraming>.00001)camera.setViewOffset(root.clientWidth,root.clientHeight,-root.clientWidth*campusFraming,0,root.clientWidth,root.clientHeight);
       else if(camera.view?.enabled)camera.clearViewOffset();
-      const idleDelta = idle.update(elapsed,globe.pointOfView().altitude,(!!flight && moving) || interacting,state.shot === 6);
+      const idleDelta = state.shot !== null || state.camera.site ? {lng:0,lat:0,altitude:0,orbit:0} : idle.update(elapsed,globe.pointOfView().altitude,(!!flight && moving) || interacting);
       if(interiorDescent && (state.shot===null || state.camera.site!=='fifth-avenue'))interiorDescent=undefined;
-      if (!flight && state.camera.site && state.shot !== null && state.camera.primitive?.kind!=='orbit') {
+      if (!flight && state.camera.site && !interacting && state.camera.primitive?.kind!=='orbit') {
         const progress=interiorDescent?(state.shot===interiorDescent.shot
           ?Math.min(1,Math.max(0,(state.shotElapsed-interiorDescent.start)*1000/interiorDescent.duration)):1):0;
         const pose = interiorDescent
@@ -218,32 +245,40 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       if((!flight || !moving) && state.camera.primitive?.kind==='orbit') {
         const normal=controls.target.clone().normalize();camera.position.sub(controls.target).applyAxisAngle(normal,idleDelta.lng*Math.PI/180).add(controls.target);camera.lookAt(controls.target);
       }
-      controls.minDistance = controls.target.lengthSq() > 0 ? 0.000005 : globe.getGlobeRadius() * (1 + 0.0000002);
+      controls.minDistance = controls.target.lengthSq() > 0 ? 0.000005 : globe.getGlobeRadius() * (1 + SITE_CLEARANCE_METERS/EARTH_METERS);
       globe.controls().enabled = true;
       globe.controls().autoRotate = false;
-      if (!flight && !interacting && !(state.camera.site && state.shot !== null)) {
+      if (!flight && !interacting && !state.camera.site) {
         const view=globe.pointOfView();
         // Scale motion down near the surface so a close site never drifts out of view.
         const scale=Math.min(1,view.altitude/.1);
         globe.pointOfView({lat:Math.max(-85,Math.min(85,view.lat+idleDelta.lat*scale)),lng:view.lng+idleDelta.lng*scale,
           altitude:Math.max(.0000002,Math.min(4,view.altitude+idleDelta.altitude))},0);
       }
-      if(flight && !moving && state.shot!==null && !interacting){
-        const offset=Math.sin(idle.seconds/15)*.001;
-        camera.position.applyAxisAngle(camera.up,offset);camera.lookAt(controls.target);
-      }
+      // Last guard covers Cartesian interpolation, site paths, idle poses and
+      // bookmark paths as well as the geographic primitives themselves.
+      const eye = {lat:Math.asin(camera.position.y/camera.position.length())*180/Math.PI,
+        lng:Math.atan2(camera.position.x,camera.position.z)*180/Math.PI,
+        altitude:camera.position.length()/globe.getGlobeRadius()-1};
+      const hasInterior = !!interiorDescent && models.status().some(m=>m.id==='fifth-avenue'&&m.loaded);
+      const reference = cameraGround(eye, hasInterior);
+      const safeEye = clampCamera(eye,reference);
+      camera.position.copy(globe.getCoords(safeEye.lat,safeEye.lng,safeEye.altitude));camera.lookAt(controls.target);
+      clearance = cameraClearance(safeEye,reference);
+      localFocus=state.camera.site&&!interacting?controls.target.clone():undefined;
+      effects.setInterior(reference.site==='fifth-avenue'&&reference.minimumMeters<12);
       const isClose = globe.pointOfView().altitude < 0.02;
       if (close !== isClose) { close = isClose; globe.pointsData(close ? [] : firms); }
       const pov = globe.pointOfView();
       if(!flight)engine.observeCamera(pov);
       models.update(pov.lat, pov.lng, pov.altitude, elapsed);
       const nearHero = (['apple-park', 'fifth-avenue'] as const).some(id => nearSite(id, pov.lat, pov.lng, Math.min(pov.altitude, 0.001)));
-      const wantsSite = shotSite(state.shot)!==null || (state.shot === null && pov.altitude < 0.008 && nearHero);
-      if (LOCAL_TILES && import.meta.env.VITE_GOOGLE_TILES_KEY && wantsSite && !siteScene && !siteScenePromise) {
+      const wantsSite = !!state.camera.site || shotSite(state.shot)!==null || (state.shot === null && pov.altitude < 0.008 && nearHero);
+      if (TILES_ENABLED && canUseTiles(true,import.meta.env.VITE_GOOGLE_TILES_KEY) && wantsSite && !siteStatus.failed && !siteScene && !siteScenePromise) {
         siteScenePromise = import('./site-scene.ts').then(module => {
           if (disposed || !siteHost.current || !siteAttribution.current) return;
           siteScene = module.createSiteScene(siteHost.current, siteAttribution.current, import.meta.env.VITE_GOOGLE_TILES_KEY!);
-          if(tileFallbackShot===engine.state.shot)siteScene.releaseFallback();
+
         }).catch(() => { siteStatus = { ...siteStatus, failed: true }; }).finally(() => { siteScenePromise = undefined; });
       }
       if (siteScene) {
@@ -251,28 +286,6 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
           cameraPosition: camera.position, cameraTarget: controls.target, cameraUp: camera.up, fov: camera.fov, recording: state.recording }, elapsed);
         siteIdle = wantsSite || siteStatus.opacity > 0 ? 0 : siteIdle + elapsed;
         if (siteIdle > 1800) { siteScene.dispose(); siteScene = undefined; siteStatus = { site: null, ready: false, failed: false, progress: 0, visibleTiles: 0, opacity: 0, ground: null, modelSize: null, tileBounds: null }; }
-      }
-      const tileFrameReady = siteStatus.ready && siteStatus.ground !== null;
-      const tilesConfigured = LOCAL_TILES && !!import.meta.env.VITE_GOOGLE_TILES_KEY;
-      if (!tileGatePaused && shouldHoldForTiles(state, tileFrameReady, siteStatus.failed, tilesConfigured)) {
-        tileGatePaused = true;tileGateWallMs=0;tileGateShot=state.shot;
-        engine.update({ shotRunning: false });
-      } else if(tileGatePaused){
-        tileGateWallMs+=elapsed;
-        const changed=state.shot!==tileGateShot,expired=tileGateWallMs>=12_000;
-        if(!changed){
-          // Hold narration/cues at a clean frame, but keep the authored camera
-          // moving so refinement sees the real path and the picture never dies.
-          engine.update({cameraElapsed:engine.state.cameraElapsed+elapsed});
-        }
-        if(expired&&!changed&&tileFallbackShot!==state.shot){
-          tileFallbackShot=state.shot;siteScene?.releaseFallback();
-          console.warn(`[Cascade tiles] scene ${state.shot} exceeded the 12s readiness budget; continuing with the local GLB fallback.`);
-        }
-        if(tileFrameReady||siteStatus.failed||expired||changed){
-          tileGatePaused=false;
-          if(!changed&&state.shot!==null)engine.update({shotRunning:true});
-        }
       }
       const fullSiteShot = shotSite(state.shot)!==null && siteStatus.opacity > 0.985;
       if (fullSiteShot !== globePaused) {
@@ -282,13 +295,14 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       globe.renderer().toneMappingExposure=1+state.exposure*5;
       effects.update(state.position, elapsed, isClose, !moving || state.shot === 1 || (state.shot === 10 && state.stage === 'cube') || (state.shot !== null && isClose),
         isClose && (state.shot === 1 || state.shot === 2) ? siteSun('apple-park', globe.getGlobeRadius()) :
-          state.camera.site === 'fifth-avenue' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.camera.site === 'fifth-avenue',state.timelapse);
+          state.camera.site === 'fifth-avenue' ? siteSun('fifth-avenue', globe.getGlobeRadius()) : undefined, state.camera.site === 'fifth-avenue',state.timelapse,state.shot !== null);
+      const reversing = state.timelapse?.direction===-1 && state.timelapse.elapsed<2000;
       const incoming = [] as typeof engine.index.days[number]['events'];
       if (revision !== state.revision || state.day < day) {
         pool.clear(); arcIds = '\0'; pulseRings = []; globe.ringsData([]); cursor = 0; day = state.day;
       }
       // Preserve retiring arcs across forward day boundaries; scrubs still reset the scene.
-      for (let d = Math.max(0, day); d <= state.day; d++) {
+      for (let d = Math.max(0, day); !reversing && d <= state.day; d++) {
         const bucket = engine.index.days[d].events;
         const lo = d === day ? cursor : 0, hi = d === state.day ? state.cursor : bucket.length;
         for (let i = lo; i < hi; i++) {
@@ -314,6 +328,15 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         const firm = engine.index.firms.get(event.to ?? event.accounts[0]);
         if (firm?.lat != null && firm.lng != null) pulseRings.push({ lat: firm.lat, lng: firm.lng, born: time, color: event.type === 'extend' ? 'extension' : 'money' });
       }
+      if(reversing) {
+        pool.clear(); pulseRings=[]; globe.ringsData([]);
+        for(const sample of sampleRewindEvents(engine.index,state.position,state.timelapse!.elapsed,{windowDays:50,maxEvents:80})) {
+          pool.add(sample.event,engine.index,time-sample.age,sample.life);
+          const arc=pool.arcs.find(a=>a.id===sample.event.seq);if(arc)arc.reverse=true;
+        }
+        // Newly sampled objects need to replace three-globe's cached data too.
+        arcIds='\0';
+      }
       cursor = state.cursor;
       pool.tick(time,state.paymentPresentation==='waiting');
       const nextArcIds = pool.arcs.map(arc => arc.id).join(',');
@@ -325,17 +348,20 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         if (nextRings.length !== pulseRings.length || incoming.length) globe.ringsData(nextRings);
         pulseRings = nextRings;
       }
-      const ledgerLeft = root.clientWidth <= 600 ? root.clientWidth - 12 : root.clientWidth > 1100 ? root.clientWidth - 450 : root.clientWidth - 330;
-      layer.update(globe, pool.arcs, time, ledgerLeft, root.clientHeight - (root.clientWidth <= 600 ? 330 : 230));
+      const landscape=root.clientWidth/root.clientHeight>=4/3;
+      const filmScale=landscape?Math.min(root.clientWidth/1920,root.clientHeight/1080):1;
+      const ledgerLeft = !landscape?root.clientWidth-12:state.recording?root.clientWidth-24*filmScale:root.clientWidth-760*filmScale;
+      layer.update(globe, pool.arcs, time, ledgerLeft, root.clientHeight - 330*filmScale,filmScale);
       companyLayer.update(globe, named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
-        root.clientHeight - (root.clientWidth <= 600 ? 350 : 270), close, root.clientWidth <= 600);
+        root.clientHeight - 330*filmScale, close, !landscape,filmScale);
+      companyLayer.updateCallouts(globe,named,companyCues(state),state.shot===null?state.tMs:state.shotElapsed*1000,landscape?filmScale:root.clientWidth/1920,root.clientHeight-330*filmScale);
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     {
       const bookmarks=new CameraBookmarks();
-      window.__cascade = { bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
-        playScene:(id)=>playShot(engine,id),playFilm:()=>{sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
+      window.__cascade = { ready:()=>engine.ready(),cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:effects.readiness,cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
+        playScene:(id)=>playShot(engine,id),playFilm:async()=>{await engine.ready();sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
         tiles: () => siteStatus,
         siteView: (site, orbit = 0) => {
           engine.stopShot(); flight = undefined;
@@ -374,6 +400,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       models.dispose();
       if (globePaused) globe.resumeAnimation(); siteScene?.dispose();
       globe.scene().remove(park); geometry.dispose(); material.dispose(); texture.dispose();
+      controls.removeEventListener('change',maintainSiteControls);
       globe.controls().removeEventListener('start', interact); globe.controls().removeEventListener('end', interactionEnd); effects.dispose(); fifth.dispose();
       unsubscribeTransitions();globe._destructor(); root.replaceChildren(); delete window.__cascade;
       delete engine.subsurfaceInteriorCameraHook;

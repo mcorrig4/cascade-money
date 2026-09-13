@@ -16,13 +16,13 @@ The vault is a Solidity contract on Arc. It holds USDC and is built to hold
 USYC, Circle's tokenized money market fund, as its yield source — a mock USYC
 variant backs the local yield demonstration until Circle allowlists the vault
 for the real asset. The vault is deployed and verified on Arc testnet at
-`0x57838A35f05a43aD519204D7A6Ce63F52d7C1987`, where a four-invoice chain
-(Apple to Foxconn to TSMC to Corning to a glass supplier, with a thirty-day
+[`0x4E7D5b438d38b93b811F7f847613100023d7DafE`](https://testnet.arcscan.app/address/0x4E7D5b438d38b93b811F7f847613100023d7DafE#code), where a four-invoice chain
+(Apple → Samsung Display → Corning → Silica supplier → Freight carrier, with a thirty-day
 extension from day ninety to day one hundred twenty) has already been executed
 and linked on chain, demonstrating the mechanism end to end across sixteen
 transactions. The app's Verify on Arc panel reads that chain live from the
-testnet — actors, transactions, and explorer links — rather than embedding a
-static copy of it. A Python reference implementation runs the same protocol,
+testnet for balances, per-date supplies, and date-token metadata. Actors,
+transaction receipts, and recorded fallback balances come from the tracked run-2 manifest. A Python reference implementation runs the same protocol,
 asserting every invariant after every operation, and generates a separate,
 larger illustrative run — a full year of the display chain (Apple to Samsung
 Display to Corning to a silica supplier to a freight carrier) — served to the
@@ -33,12 +33,12 @@ expands on pause, and scene labels naming each location. Two illustrative
 runs, clearly named: the on-chain run proves the mechanism, the globe plays
 the year.
 
-Apple Park and the Fifth Avenue store appear on the globe as modeled 3D
-landmarks at the shots that visit them. A separate, local-only photorealistic
-tiles scene exists purely as a recording environment for the submission
-film: it requires a local Google Maps Tiles API key, is gated behind the
-`VITE_ENABLE_TILES` build flag, and is off — and absent from the built
-bundle — in production. The film itself lives under [`film/`](film/): a
+Apple Park and the Fifth Avenue store appear as modeled 3D landmarks, reached
+by zooming or the Apple Park / Fifth Avenue HUD buttons. Production builds also
+include Google photorealistic tiles using the referrer-restricted browser key in
+`app/.env.local`. Missing keys or unavailable tiles leave the globe's GLB landmarks
+visible. `pnpm --dir app build:no-tiles` explicitly excludes the tile module.
+The film itself lives under [`film/`](film/): a
 Remotion package that composites captured app footage inside an animated
 browser-frame treatment alongside motion-graphic title and data scenes.
 
@@ -88,9 +88,9 @@ cd contracts && forge test
 pnpm --dir app install && pnpm --dir app dev
 ```
 
-The local-only photorealistic tiles scene needs a Google Maps Tiles API key in
-`app/.env.local` and `VITE_ENABLE_TILES=1`; without them the build gate keeps
-it out entirely, which is how the production build ships.
+`pnpm --dir app build` enables the optional tile renderer (`VITE_ENABLE_TILES=1`)
+and reads `VITE_GOOGLE_TILES_KEY` from the ignored `app/.env.local`. Google attribution
+remains visible while tiles render; tiles are not cached beyond the browser session.
 
 **Run the film (Remotion Studio):**
 

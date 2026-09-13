@@ -204,23 +204,23 @@ The worker incrementally parses and indexes the stream, then hands off one day a
 
 After baking real data, run `pnpm --dir app check:browser --static --real-data` (set `CHROME_PATH` if necessary). This requires schema 2, payments on every day 1–30, and at least four Apple proof hops within days 0–29; it checks current-day arcs and reports seek timings. The small version-1 fixture cannot pass this strict check. Plain `pnpm --dir app check:browser --static` remains the fixture-compatible visual regression check.
 
-Site models live at `public/models/apple-park.glb` and `public/models/fifth-avenue.glb`. Export real meters with +Y up, +X east and −Z north; retain the site-center origin. Placement uses radius / 6,371,000, with no artistic scale correction. The glTF and Draco loaders are a separate lazy chunk; GLBs and local `public/draco/` decoders are requested only below altitude 0.002 within 0.15° of the corresponding site. Missing or invalid files retain the local fallback for the session. Successful models fade in over 300 ms; retreat fades out and disposes geometry, materials, textures and instances. Draco workers are disposed after each decode. Return visits reload through the browser's HTTP cache.
+Site models live at `public/models/apple-park.glb` and `public/models/fifth-avenue.glb`. Export real meters with +Y up, +X east and −Z north; retain the site-center origin. Placement uses radius / 6,371,000, with no artistic scale correction. The glTF and Draco loaders are a separate lazy chunk; GLBs and local `public/draco/` decoders are requested only below altitude 0.002 within 0.15° of the corresponding site. Missing or invalid files retain the local fallback for the session. Successful models blend with camera altitude; retreat disposes geometry, materials, textures and instances. Draco workers are disposed after each decode. Return visits reload through the browser's HTTP cache.
 
 Shot 1 uses a 608 m-high oblique campus camera with a gentle six-degree orbit and southwest sun at 32° elevation. Shot 10 approaches the cube from the southeast at 8 m above the site, 35 m from its center, with a two-second hold, with a 3° dusk sun, then returns to the globe. Both use the same sun vector for the Earth texture and directional model lighting, plus soft ambient. Run `pnpm --dir app check:browser --static` outside restricted sandboxes to capture `app/artifacts/shot1-apple-park.png` and `app/artifacts/shot10-cube.png`. The check requires bundled GLBs to decode, accepts fallbacks when files are absent, and checks model release after the pullback.
 
 Model URLs include a SHA-256 content hash computed by Vite at build time, so replacing a GLB invalidates browser/CDN cache keys on the next deployment.
 
-“On-chain” in the top bar and “Verify on Arc” on the close card open the Arc evidence panel. `pnpm --dir app prepare:onchain` generates `src/data/onchain.json` from the deployment manifest, the complete demo manifest referenced by the recorded report, and the contracts README. Build and dev run this automatically. Only public evidence is copied; no actor keys or environment secrets are read. The recorded receipts retain Apple → Foxconn → TSMC → Corning → Glass supplier, even though the current demo script follows the updated display chain.
+“On-chain” in the top bar and “Verify on Arc” on the close card open the Arc evidence panel. `pnpm --dir app prepare:onchain` generates `src/data/onchain.json` from the deployment manifest, the complete demo manifest referenced by the recorded report, and the contracts README. Build and dev run this automatically. Only public evidence is copied; no actor keys or environment secrets are read. The 16 run-2 receipts follow Apple → Samsung Display → Corning → Silica supplier → Freight carrier at vault [`0x4E7D5b438d38b93b811F7f847613100023d7DafE`](https://testnet.arcscan.app/address/0x4E7D5b438d38b93b811F7f847613100023d7DafE#code). The generator prefers the tracked `src/data/demo-run.json` fixture so clean checkouts reproduce the same evidence.
 
-Opening the panel makes read-only JSON-RPC calls, with a 12-second timeout. It verifies the chain, recovers the two absolute date IDs from the recorded extension calldata, and reads USDC `balanceOf`, vault `totalSupply`, and `supplyByDate` at one block. Failure retains recorded balances. The recorded final deficit/principal check is always labeled separately from live balances. The Circle faucet link follows the [Arc connection documentation](https://docs.arc.io/integrate/connect-to-arc). `check:browser --static` exercises the recorded fallback and saves `artifacts/verify-on-arc-1920x1080.png` and `artifacts/verify-on-arc-panel.png`.
+Opening the panel makes read-only JSON-RPC calls, with a 12-second timeout. It verifies the chain, recovers the two absolute date IDs from the recorded extension calldata, and reads USDC `balanceOf`, vault `totalSupply`, `supplyByDate`, and `uri(id)` for the current UTC day, +1, +30, and +90 at one block. The token section decodes the metadata `name`, shows the UTC rollover countdown, and draws the demo maturity ladder. The backing statement distinguishes the deployed USDC vault from the planned USYC yield reserve and local mock variant. Issue/pay/extend link to run-2 receipts; maturity and withdrawal link to the deployed source revision. All time presentation derives from the chain timestamp and the explicit playback `tMs`. Failure retains recorded balances. The recorded final deficit/principal check is always labeled separately from live balances. The Circle faucet link follows the [Arc connection documentation](https://docs.arc.io/integrate/connect-to-arc). `check:browser --static` exercises the recorded fallback and saves `artifacts/verify-on-arc-1920x1080.png` and `artifacts/verify-on-arc-panel.png`.
 
-Stage 10 recording controls: the ledger becomes a 30 px live log during playback, with cursor-synchronous admission and a shorter insertion animation at higher speeds. Hover a row, focus it, or tap to inspect expanded cards; leave the ledger or choose “Resume log” to return. Dates in the log are source calendar dates and maturity IDs, not invented intraday timestamps.
+Recording controls: the landscape ledger uses a 54-design-pixel live row in the shared 1920×1080 coordinate space, with cursor-synchronous admission. Rewind removes rows as the playhead passes their posting times; film rows have no mount-time animation. Hover a row, focus it, or tap to inspect expanded cards; leave the ledger or choose “Resume log” to return. Dates in the log are source calendar dates and maturity IDs, not invented intraday timestamps.
 
 Narration cues live in `src/director/shots.ts`: `COIN_BEATS` and `COMPOSABLE_BEATS` scale with the duration of each recorded scene. The coin scene advances the actual payment stream throughout its narration. Camera idle motion uses wall-clock time, continues under overlays and while paused, and yields to camera flights and touch/mouse gestures.
 
-Run `pnpm --dir app check:browser --static --legibility` to capture the HUD and overlay beats at 640×360 and 426×240 in `app/artifacts/legibility/`, including a font/overflow audit JSON. This mode uses landscape layouts; portrait phone controls retain their bottom sheets. Review these captures before recording; software GL and the smallest output size still warrant a visual check. Public copy now reads “Money with a date.”; the close begins “global supply chains. settled.” above the Cascade Money wordmark.
+Run `pnpm --dir app check:browser --static --legibility` to render the HUD and overlay beats at 1920×1080 and downsample those frames to 640×360 and 426×240 in `app/artifacts/legibility/`, including a font/overflow audit JSON. This mode uses landscape layouts; portrait phone controls retain their bottom sheets. Review these captures before recording; software GL and the smallest output size still warrant a visual check. Public copy now reads “Money with a date.”; the close begins “global supply chains. settled.” above the Cascade Money wordmark.
 
-Scene captions are location-only: Apple Park / Cupertino, California and Apple Store NYC / Fifth Avenue, New York City. `SCENE_TEXT_BEATS` controls the centered “September 2025” flashback, supplier statistics and “Money plus time” reframe, with animated entrances and exits. See `SCENES.md` for current capture paths.
+Scene captions are location-only: Apple Park / Cupertino, California and Apple Store NYC / Fifth Avenue, New York City. `SCENE_TEXT_BEATS` controls the centered “September 9, 2025” flashback, supplier statistics and “Money plus time” reframe, with animated entrances and exits. See `SCENES.md` for current capture paths.
 
 Ledger inspection latches on the persistent scroll area’s pointer entry/movement or touch press. The displayed transactions and day remain fixed during inspection while the globe continues playback; the selected transaction stays visible. Leave the panel with the mouse or select “Resume log” to catch up to the current playback cursor. Keyboard focus also inspects a row. The real-data browser check moves the pointer into the running log, advances across a day boundary, and checks that inspection remains stable.
 
@@ -228,7 +228,7 @@ Stage 12 follows Liam's final narration in 17 scenes. Open Shift+D (or long-pres
 the logo) and choose **Play full film**. The provisional cut is **4:18.2**:
 603 words at 150 wpm plus one second per scene. The director displays scene numbers
 01–17; URL `?shot=` and inspector APIs use stable IDs. Previous/Next follows scene
-order. Space pauses narration/playback; baseline camera drift remains active.
+order. Space pauses narration/playback and the scripted camera. Free exploration retains its idle motion.
 Escape cancels the film and clears exposure effects.
 
 Optional recorded durations load from `public/narration/narration.json`, using
@@ -239,8 +239,55 @@ relationship to the branched baked run, and capture commands.
 
 `pnpm --dir app check:browser --static --scenes` captures all 17 scenes at
 1920×1080 and 640×360 under `app/artifacts/scenes/`; the full browser check
-includes this pass. `--legibility` captures 640×360 and 426×240 under
+includes this pass. `--legibility` downscales 1920×1080 captures to 640×360 and 426×240 under
 `app/artifacts/legibility/`. Manifests are produced only by a successful Chrome
 run; old captures are not verification of the new cut. The existing site-camera
 descent carries New York into the hall, which remains beneath the payment graph
 and the closing exposure ramp.
+
+
+Stage 16 startup waits for `await window.__cascade.ready()`: both Earth shader maps
+(the selected 5400/4K day map and the night map) are decoded, uploaded, and rendered
+through a complete frame with the final `#071019` background. No bump or cloud map
+is sampled. Full-film and recording controls wait for this gate. Texture failure
+rejects readiness and displays a retry message instead of releasing a partial scene.
+
+Scene 3 rewinds exactly 2,000 ms, with backward date/time, reverse payment trails,
+and ledger rows un-posting; its default date card starts at 2,250 ms after the flash.
+All added visual motion is sampled from explicit playback time. Site camera floors
+are local tangent planes: 12 m above exterior ground, including Apple Park's lifted
+3.2 m floor. The Apple Park low pass is reframed to 29 m above its site origin.
+The modeled Fifth Avenue hall keeps its descent with 1.5 m eye clearance above
+its -6.45 m floor; only that loaded interior opens the base globe surface.
+
+`window.__cascade.cue(name, value?, atMs?)` reveals at the current scene time, or
+at an exact scene-relative millisecond timestamp supplied as the third argument.
+Preload overrides after `playScene(id)` to suppress their authored default times;
+starting another shot resets the cue overrides. Example:
+
+```js
+await window.__cascade.ready();
+window.__cascade.playScene(13);
+window.__cascade.cue('date-card', undefined, 5000);
+window.__cascade.cue('company', 'Samsung Display');
+```
+
+Cue names are exported by `src/director/cues.ts`: `date-card`, `stat-suppliers`,
+`stat-factories`, `stat-countries`, `stat-cost`, `system-recreated`, `payment-layer`,
+`rows-in`, `dates-line`, `question-card`, `committed-counter`, `settled-counter`,
+`companies-counter`, `tagline`, `coin`, `coin-date`, `coin-fungibility`, `coin-claim`,
+`coin-extend`, `coin-yield`, `coin-return`, `backing-card`, `kicker`, `op-extensions`,
+`op-transfers`, `op-redemptions`, `op-sales`, `law-ownership`, `law-yield`,
+`word-loans`, `word-forwards`, `word-bonds`, `word-derivatives`, `money-plus-time`,
+`final-line`, `promises`, `before-cash`, `close-line`, `wordmark`, and `company`.
+The `company` value names a mapped firm with an official local logo. Narration
+schedules Apple, Samsung Display, and Corning; explicit Foxconn/TSMC support remains.
+
+After building, `node app/scripts/check-stage16.mjs` produces `app/artifacts/stage16-*.png`
+proof frames, a 40-frame orbit burst, and 360p/240p downscales. Inspect all frames;
+the burst's contact sheet alone cannot certify absence of flicker. This script and
+all three standard browser modes require a host where Chrome can launch.
+
+### Production site navigation
+
+The Apple Park, Fifth Avenue, and Globe HUD buttons use three-second camera flights. Manual zoom shares the authored paths’ local ground clearance. The production build enables Google tiles and reads the ignored `.env.local` browser key. Tile readiness never blocks Earth readiness or playback; missing credentials and failed tile requests preserve the GLB-on-globe view. Google attribution remains visible over tile scenes. `pnpm build:no-tiles` builds and verifies an explicitly tile-free bundle.

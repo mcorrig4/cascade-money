@@ -1,7 +1,7 @@
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 const address = /^0x[0-9a-fA-F]{40}$/, hash = /^0x[0-9a-fA-F]{64}$/;
-type Deployment = {chainId:number; vault:string; usdc:string; rpcUrl:string; explorer:string};
+type Deployment = {chainId:number; vault:string; usdc:string; rpcUrl:string; explorer:string;owner:string;transactionHash:string;sourceRevision:string};
 type Run = {chainId:number;vault:string;amount:string;actors:{name:string;address:string}[];transactions:{label:string;hash:string;status:string}[]};
 export function parseOnchain(deployment:Deployment, runs:Run[], report:string, readme:string, vaultSource:string) {
   if(deployment.chainId!==5042002 || !address.test(deployment.vault) || !address.test(deployment.usdc)) throw Error('Invalid Arc deployment');
@@ -26,13 +26,23 @@ export function parseOnchain(deployment:Deployment, runs:Run[], report:string, r
     && run.transactions[14].label===`${a3} extends +90 to +120`
     && run.transactions[15].label===`${a3} pays ${a4}`;
   if(!labelsOk || !report.includes('5 × 0.1')) throw Error('Recorded story shape changed; review amount/date mapping');
-  return { chainId:deployment.chainId,vault:deployment.vault,usdc:deployment.usdc,rpcUrl:deployment.rpcUrl,
+  // Metadata examples are recorded in the same report section as this run's receipts.
+  // Retain absolute fallback dates only when the two recorded reads corroborate each other.
+  const runReport=report.split(/^## Run /m).find(section=>run.transactions.every(t=>section.includes(t.hash)))??report;
+  const spotDate=runReport.match(/`uri\(today\)`[^\n]*Maturity: (\d{4}-\d{2}-\d{2}) \(UTC\)/)?.[1];
+  const forwardDate=runReport.match(/`uri\(today\+30\)`[^\n]*Maturity: (\d{4}-\d{2}-\d{2}) \(UTC\)/)?.[1];
+  const recordedDay=spotDate&&forwardDate&&Date.parse(`${forwardDate}T00:00:00Z`)-Date.parse(`${spotDate}T00:00:00Z`)===30*86400000?Math.floor(Date.parse(`${spotDate}T00:00:00Z`)/86400000):null;
+  if(!address.test(deployment.owner)||!hash.test(deployment.transactionHash)||!/^([0-9a-f]{40})$/i.test(deployment.sourceRevision)) throw Error('Invalid deployment source evidence');
+  return { owner:deployment.owner,deploymentTransaction:deployment.transactionHash,sourceRevision:deployment.sourceRevision,
+    contractSourceUrl:`https://github.com/mcorrig4/cascade-money/blob/${deployment.sourceRevision}/contracts/src/CascadeVault.sol`,
+    metadataSourceUrl:`https://github.com/mcorrig4/cascade-money/blob/${deployment.sourceRevision}/contracts/src/DateMetadata.sol`,
+    chainId:deployment.chainId,vault:deployment.vault,usdc:deployment.usdc,rpcUrl:deployment.rpcUrl,
     sourceUrl:`${deployment.explorer}/address/${deployment.vault}#code`,
     actors:run.actors.map((a,i)=>({...a,role:i===0?'Principal depositor / buyer':`Supplier ${i}`,url:`${deployment.explorer}/address/${a.address}`})),
     transactions:run.transactions.map((t,i)=>({...t,step:i+1,amount:i<5?'0.1':'10',unit:'USDC',
       date:i<7?null:i===14?'Run day +90 → +120':i===10||i===15?'Run day +120':'Run day +90',url:`${deployment.explorer}/tx/${t.hash}`})),
-    recorded:{usdc:'10000000',principal:'10000000',settled:'40000000',deficit:'0',principalMatched:true,supplies:[{offset:90,amount:'0'},{offset:120,amount:'10000000'}]},
-    // Absolute date IDs are absent from the manifests: recover them from the extension calldata on live read.
+    recorded:{day:recordedDay,usdc:'10000000',principal:'10000000',settled:'40000000',deficit:'0',principalMatched:true,supplies:[{offset:90,id:recordedDay===null?null:recordedDay+90,amount:'0'},{offset:120,id:recordedDay===null?null:recordedDay+120,amount:'10000000'}]},
+    // Live reads recover and verify exact date IDs from the recorded extension calldata.
     supplyView:vaultSource.includes('public supplyByDate')?'eb274347':null,
     extensionTransaction:run.transactions[14].hash,
     command:`cd contracts\n${command}`,faucet:'https://faucet.circle.com/',

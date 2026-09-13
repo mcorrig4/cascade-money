@@ -5,7 +5,7 @@ export const ARC_CAP = 200;
 export interface LiveArc {
   id: number; event: Event; startLat: number; startLng: number; endLat: number; endLng: number;
   altitude: number; midLat: number; midLng: number; born: number; life: number; alpha: number;
-  groundKm: number; clipStart: number; clipEnd: number; phaseKm: number; annotation?: string; maturity?:number; displayAmount?:bigint; held?:boolean;
+  groundKm: number; clipStart: number; clipEnd: number; phaseKm: number; annotation?: string; maturity?:number; displayAmount?:bigint; held?:boolean; reverse?:boolean;
 }
 export function midpoint(lat1: number, lng1: number, lat2: number, lng2: number) {
   const r = Math.PI / 180, a = lat1 * r, b = lat2 * r, delta = (lng2 - lng1) * r;
@@ -37,6 +37,7 @@ export class ArcPool {
     for (const a of this.arcs) {
       a.held=held;
       Object.assign(a, arcLifecycle(held?Math.min(time-a.born,a.life*.5):time-a.born, a.life));
+      if(a.reverse) { const start=a.clipStart; a.clipStart=1-a.clipEnd; a.clipEnd=1-start; a.phaseKm=-a.phaseKm; }
     }
   }
 }

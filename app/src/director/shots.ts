@@ -112,18 +112,23 @@ export const SCENE_LOCATIONS=[
  {shot:10,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
 ];
 export const SCENE_TEXT_BEATS=[
- {shot:13,id:'flashback',at:1.6,until:3.4,text:'September 2025'},
- {shot:13,id:'suppliers',at:3.6,until:5.3,text:'nearly 200 suppliers'},
- {shot:13,id:'factories',at:5.5,until:7.2,text:'thousands of factories'},
- {shot:13,id:'countries',at:7.4,until:9.1,text:'50+ countries'},
- {shot:13,id:'costs',at:9.3,until:12.2,text:'~$200B'},
- {shot:11,id:'money-time',at:12.4,until:15,text:'Money plus time'},
- {shot:11,id:'reframe',at:15.2,until:17.7,text:'a second dimension to money'},
+ {shot:13,id:'date-card',at:2.25,until:3.4,text:'September 9, 2025'},
+ {shot:13,id:'stat-suppliers',at:3.6,until:5.3,text:'nearly 200 suppliers'},
+ {shot:13,id:'stat-factories',at:5.5,until:7.2,text:'thousands of factories'},
+ {shot:13,id:'stat-countries',at:7.4,until:9.1,text:'50+ countries'},
+ {shot:13,id:'stat-cost',at:9.3,until:12.2,text:'~$200B'},
+ {shot:13,id:'system-recreated',at:12.5,until:15.4,text:'We recreated that system.'},
+ {shot:13,id:'payment-layer',at:15.7,until:19.6,text:'What if its payment layer ran onchain?'},
+ {shot:11,id:'money-plus-time',at:12.4,until:15,text:'Money plus time'},
+ {shot:11,id:'final-line',at:15.2,until:17.7,text:'a second dimension to money'},
 ];
-export function sceneTextAt(shot:number|null,elapsed:number){
- const scene=SHOTS.find(s=>s.id===shot),t=scene?elapsed*scene.baseSeconds/scene.seconds:elapsed;
- const cue=SCENE_TEXT_BEATS.find(c=>c.shot===shot&&t>=c.at&&t<c.until);if(!cue)return null;
- const opacity=Math.min(1,(t-cue.at)/.35,(cue.until-t)/.35);return {...cue,opacity,offset:(1-opacity)*12};
+export function sceneTextAt(shot:number|null,elapsed:number,cues:Record<string,number>={}){
+ const scene=SHOTS.find(s=>s.id===shot),scale=scene?scene.seconds/scene.baseSeconds:1,t=elapsed*1000;
+ const beats=SCENE_TEXT_BEATS.filter(c=>c.shot===shot).map(c=>({...c,start:cues[c.id]??c.at*1000*(c.id==='date-card'?1:scale),end:c.until*1000*scale})).sort((a,b)=>a.start-b.start);
+ const cue=beats.findLast(c=>t>=c.start);if(!cue)return null;
+ const next=beats.find(c=>c.start>cue.start),end=cues[cue.id]===undefined?Math.min(cue.end,next?.start??Infinity):Math.min(cue.start+1800,next?.start??Infinity);
+ if(t>=end)return null;
+ const opacity=Math.max(0,Math.min(1,(t-cue.start)/250,(end-t)/250));return {...cue,opacity,offset:(1-opacity)*12};
 }
 export function position(engine: PlaybackEngine, event: Event, after = false) {
   const events = engine.index.days[event.day].events;
@@ -180,11 +185,11 @@ export function straightProofPayments(index:EventIndex,story='apple') {
 export function shotAvailable(_engine:PlaybackEngine,id:number){return SHOTS.some(s=>s.id===id);}
 const chase:Ease={kind:'bezier',points:[.12,.65,.18,1]};
 export function nextShot(id:number,direction=1){return SHOTS[Math.max(0,Math.min(SHOTS.length-1,SHOTS.findIndex(s=>s.id===id)+direction))].id;}
-export function playFilm(engine:PlaybackEngine){playShot(engine,SHOTS[0].id,true);}
+export function playFilm(engine:PlaybackEngine):void|Promise<void>{if(!engine.isReady)return engine.ready().then(()=>playFilm(engine));engine.update({tMs:0});playShot(engine,SHOTS[0].id,true);}
 export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const shot=SHOTS.find(s=>s.id===id);if(!shot)return;
  const duration=shot.path?Math.max(shot.seconds,fromBookmarks(shot.path).at(-1)!.t):shot.seconds;
- engine.beginShot(id,duration);engine.update({film:continuous});
+ engine.beginShot(id,duration);engine.update({film:continuous,tMs:shot.startTime*1000});
  if(shot.path)engine.playBookmarkPath(shot.path,true);
  const ms=shot.seconds*1000,scale=shot.seconds/shot.baseSeconds;
  const at=(seconds:number,run:()=>void)=>engine.after(seconds*scale,run);
@@ -202,9 +207,10 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
    {...APPLE,altitude:.00005,t:1.2,tangent:{lat:0,lng:0,altitude:0}}],(pullOutAt-orbitUntil)*scale*1000,'apple-park-arch'));
   at(pullOutAt,()=>engine.snapAndPullOut(APPLE,.00005,2.5,(shot.baseSeconds-pullOutAt)*scale*1000));
  }else if(id===13){
-  engine.timelapse('global',365,'reverse',scale*1000);
-  at(1,()=>engine.flashToWhite(scale*250));
-  at(1.4,()=>{engine.fadeFromWhite(scale*500);engine.update({timelapse:null});engine.setPosition(0,true);});
+  engine.timelapse('global',365,'reverse',2000);
+  engine.playRange(364.999,0,2);
+  engine.after(2,()=>engine.flashToWhite(250));
+  engine.after(2.25,()=>{engine.fadeFromWhite(300);engine.update({timelapse:null});engine.setPosition(0,true);});
   at(12.3,()=>fly(shot.end,(shot.baseSeconds-12.3)*scale*1000));
  }else if(id===3||id===4){
   focus();engine.update({paymentPresentation:id===3?'waiting':'settled'});

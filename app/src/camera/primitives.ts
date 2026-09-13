@@ -1,6 +1,40 @@
 export const EARTH_METERS=6_371_000;
 export type Pose={lat:number;lng:number;altitude:number};
 export type Center=Pick<Pose,'lat'|'lng'>;
+export const SITE_CLEARANCE_METERS = 12;
+export const CAMPUS_GROUND_METERS = 3.2;
+export const HALL_FLOOR_METERS = -6.45;
+export type GroundReference={site:string|null;lat:number;lng:number;groundMeters:number;minimumMeters:number};
+/** Exterior floors are local tangent planes, not a sea-level altitude constant.
+ * The modeled NYC interior is the only below-sphere exception, explicitly enabled
+ * by its renderer after the model has loaded. Its 5.4m room uses 1.5m eye clearance.
+ */
+export function cameraGround(pose:Pose, interior=false):GroundReference {
+  const candidates=[{site:'apple-park',lat:37.3349,lng:-122.009,groundMeters:CAMPUS_GROUND_METERS},
+    {site:'fifth-avenue',lat:40.7638,lng:-73.973,groundMeters:0}];
+  for(const site of candidates){
+    const north=(pose.lat-site.lat)*Math.PI/180*EARTH_METERS;
+    const east=longitudeDelta(site.lng,pose.lng)*Math.PI/180*EARTH_METERS*Math.cos(site.lat*Math.PI/180);
+    if(Math.hypot(north,east)>2500)continue;
+    const hall=interior&&site.site==='fifth-avenue'&&Math.abs(east)<24&&Math.abs(north)<21;
+    return {...site,groundMeters:hall?HALL_FLOOR_METERS:site.groundMeters,minimumMeters:hall?1.5:SITE_CLEARANCE_METERS};
+  }
+  // Globe markers are removed before the camera enters close range; only the
+  // sphere remains there. An explicit reference can add a terrain envelope.
+  return {site:null,lat:pose.lat,lng:pose.lng,groundMeters:0,minimumMeters:SITE_CLEARANCE_METERS};
+}
+export function cameraClearance(pose:Pose,reference=cameraGround(pose)) {
+  const a=pose.lat*Math.PI/180,b=reference.lat*Math.PI/180,d=(pose.lng-reference.lng)*Math.PI/180;
+  const cosine=Math.sin(a)*Math.sin(b)+Math.cos(a)*Math.cos(b)*Math.cos(d);
+  const height=((1+pose.altitude)*cosine-1)*EARTH_METERS;
+  return {...reference,actualMeters:height-reference.groundMeters};
+}
+export function clampCamera(pose:Pose,reference=cameraGround(pose)):Pose {
+  const info=cameraClearance(pose,reference);
+  if(info.actualMeters>=reference.minimumMeters)return pose;
+  const cosine=(info.actualMeters+reference.groundMeters+EARTH_METERS)/((1+pose.altitude)*EARTH_METERS);
+  return {...pose,altitude:(1+(reference.groundMeters+reference.minimumMeters)/EARTH_METERS)/cosine-1};
+}
 export type Ease={kind:'cubic'}|{kind:'bezier';points:[number,number,number,number]};
 export type Route='shortest'|'west'|'east';
 export type Keyframe=Pose & {t:number;tangent?:Pose};
@@ -24,7 +58,7 @@ export function orbitAt(center:Center,radius:number,altitude:number,bearing:numb
   const a=radius/EARTH_METERS,phi=center.lat*Math.PI/180,theta=bearing*Math.PI/180;
   const lat=Math.asin(Math.sin(phi)*Math.cos(a)+Math.cos(phi)*Math.sin(a)*Math.cos(theta));
   const lng=center.lng+Math.atan2(Math.sin(theta)*Math.sin(a)*Math.cos(phi),Math.cos(a)-Math.sin(phi)*Math.sin(lat))*180/Math.PI;
-  return {lat:lat*180/Math.PI,lng,altitude};
+  return clampCamera({lat:lat*180/Math.PI,lng,altitude});
 }
 export function splineAt(keys:Keyframe[],t:number):Pose {
   t=Math.max(keys[0].t,Math.min(keys.at(-1)!.t,t));
@@ -37,14 +71,14 @@ export function splineAt(keys:Keyframe[],t:number):Pose {
     const m1=b.tangent?.[field]??(next[field]-a[field])/(next.t-a.t);
     result[field]=(2*u**3-3*u*u+1)*a[field]+(u**3-2*u*u+u)*span*m0+(-2*u**3+3*u*u)*b[field]+(u**3-u*u)*span*m1;
   }
-  result.altitude=Math.max(.0000002,result.altitude);return result;
+  return clampCamera(result);
 }
 export function sampleCamera(command:CameraCommand,elapsedMs:number):Pose {
   const t=command.duration<=0?1:clamp(elapsedMs/command.duration),from=command.from??command,p=command.primitive;
   if(p?.kind==='orbit')return orbitAt(p.center,p.radius,command.altitude,p.bearing+p.angularSpeed*Math.min(elapsedMs,command.duration)/1000);
   if(p?.kind==='spline')return splineAt(p.keyframes,t*p.keyframes.at(-1)!.t);
   const eased=easeAt(t,command.ease);
-  return {lat:from.lat+(command.lat-from.lat)*eased,lng:from.lng+longitudeDelta(from.lng,command.lng,command.route)*eased,altitude:from.altitude+(command.altitude-from.altitude)*eased};
+  return clampCamera({lat:from.lat+(command.lat-from.lat)*eased,lng:from.lng+longitudeDelta(from.lng,command.lng,command.route)*eased,altitude:from.altitude+(command.altitude-from.altitude)*eased});
 }
 /** Deliberately named extension point: no underground geometry/camera is fabricated. */
 export const SUBSURFACE_INTERIOR_CAMERA_HOOK='subsurface-interior-camera';

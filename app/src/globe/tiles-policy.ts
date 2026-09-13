@@ -15,15 +15,34 @@ export function canUseTiles(enabled: boolean, key: string | undefined, failed = 
   return enabled && !!key?.trim() && !failed;
 }
 
-export function shouldHoldForTiles(state: Pick<PlaybackState, 'shot' | 'shotElapsed' | 'shotRunning'>, ready: boolean, failed: boolean, configured: boolean) {
-  if (!configured || failed || ready || !state.shotRunning) return false;
-  if(state.shot===10)return state.shotElapsed>=3.2;
-  if(state.shot===19)return state.shotElapsed>=1;
-  return shotSite(state.shot) !== null && state.shotElapsed >= .25;
+/** Fail closed without exposing signed tile URLs, and preserve ordinary LOD aborts. */
+export async function fetchOptionalTile(fetchTile:(url:string,options:RequestInit)=>Promise<Response>,url:string,options:RequestInit={},onFailure:()=>void) {
+  try {
+    const timeout=AbortSignal.timeout(12000);
+    const response=await fetchTile(url,{...options,cache:'no-store',signal:options.signal?AbortSignal.any([options.signal,timeout]):timeout});
+    if(!response.ok)throw new Error('Optional imagery unavailable');
+    return response;
+  } catch {
+    if(!options.signal?.aborted)onFailure();
+    throw new DOMException('Optional imagery unavailable','AbortError');
+  }
 }
 
-export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'>, lat: number, lng: number, altitude: number): TilePlan {
+/** Optional photorealistic imagery never gates the film or Earth readiness. */
+export function shouldHoldForTiles(_state: Pick<PlaybackState, 'shot' | 'shotElapsed' | 'shotRunning'>, _ready: boolean, _failed: boolean, _configured: boolean) {
+  return false;
+}
+
+/** Readiness may change the available layer; opacity has no accumulated animation phase. */
+export function tileOpacity(plan: TilePlan, ready: boolean, failed: boolean, forcedFallback: boolean, ground: number | null) {
+  return ready && !failed && !forcedFallback && ground !== null ? plan.blend : 0;
+}
+
+export function tilePlan(state: Pick<PlaybackState, 'shot' | 'shotElapsed'> & Partial<Pick<PlaybackState, 'camera'>>, lat: number, lng: number, altitude: number): TilePlan {
   const authoredSite=shotSite(state.shot);
+  // HUD jumps name their destination before the camera reaches its proximity radius.
+  const jumpSite=state.shot===null?state.camera?.site:null;
+  if(jumpSite && jumpSite in SITES)return {site:jumpSite,prefetch:true,blend:1-smoothstep(0.0012,0.0035,altitude)};
   if(state.shot===1)return {site:'apple-park',prefetch:true,blend:1-smoothstep(14,14.8,state.shotElapsed)};
   if(state.shot===10){
     const enter=smoothstep(.8,1.6,state.shotElapsed),leave=1-smoothstep(8.3,9,state.shotElapsed);

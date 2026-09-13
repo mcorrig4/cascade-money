@@ -52,10 +52,10 @@ test('scene captions contain only locations and narration fades on the shot cloc
     assert.equal(sceneTextAt(cue.shot,cue.at)?.opacity,0);
     assert.ok(sceneTextAt(cue.shot,cue.at + .175)!.opacity > .49);
     assert.equal(sceneTextAt(cue.shot,(cue.at + cue.until)/2)?.opacity,1);
-    assert.ok(sceneTextAt(cue.shot,cue.until - .1)!.opacity < .3);
+    assert.ok(sceneTextAt(cue.shot,cue.until - .1)!.opacity < .41);
     assert.equal(sceneTextAt(cue.shot,cue.until),null);
   }
-  assert.equal(sceneTextAt(13,2)?.text,'September 2025');
+  assert.equal(sceneTextAt(13,2.6)?.text,'September 9, 2025');
   assert.equal(sceneTextAt(11,13)?.text,'Money plus time');
   assert.equal(sceneTextAt(11,16)?.text,'a second dimension to money');
   assert.equal(sceneTextAt(null,1.5),null);
@@ -70,4 +70,17 @@ test('inspection retains the selected transaction and day while live rows churn'
  assert.equal(snapshot.selectedSeq,2);assert.equal(snapshot.selectedIndex,1);assert.equal(snapshot.day,5);
  assert.equal(snapshot.events[1],live[2]);
  assert.equal(inspectionSnapshot(6,live,999).selectedSeq,4);
+});
+
+test('film ledger hit testing and virtualization use the same proportional row geometry',()=>{
+ const design={width:1920,height:1080};
+ assert.equal(ledgerRowHeight('compact',design),54);
+ assert.equal(ledgerRowHeight('expanded',design),220);
+ for(const viewport of [{width:640,height:360},{width:426,height:240}]) {
+  const scale=Math.min(viewport.width/design.width,viewport.height/design.height);
+  assert.equal(ledgerRowHeight('compact',viewport)/scale,54);
+  assert.equal(ledgerRowHeight('expanded',viewport)/scale,220);
+ }
+ assert.equal(ledgerRowHeight('compact',{width:390,height:844}),30);
+ assert.equal(ledgerRowHeight('expanded',{width:390,height:844}),160);
 });

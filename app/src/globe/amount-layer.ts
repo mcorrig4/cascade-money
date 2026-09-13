@@ -20,7 +20,7 @@ export class AmountLayer {
   private spare: HTMLElement[] = [];
   private host: HTMLElement;
   constructor(host: HTMLElement) { this.host = host; }
-  update(globe: GlobeInstance, arcs: LiveArc[], now: number, ledgerLeft: number, footerTop: number) {
+  update(globe: GlobeInstance, arcs: LiveArc[], now: number, ledgerLeft: number, footerTop: number, scale=1) {
     const ids = new Set(arcs.map(a => a.id));
     for (const [id, element] of this.active) {
       if (!ids.has(id)) { element.hidden = true; this.spare.push(element); this.active.delete(id); }
@@ -40,10 +40,10 @@ export class AmountLayer {
       }
       const { x, y: projectedY } = globe.getScreenCoords(arc.midLat, arc.midLng, arc.altitude);
       const motion = pickup(arc.held?Math.min(now-arc.born,arc.life*.5):now-arc.born, arc.life);
-      const y = projectedY - motion.rise;
-      const width = arc.annotation || arc.maturity!=null ? 280 : 115, height = arc.annotation ? 120 : arc.maturity!=null ? 78 : 44;
+      const y = projectedY - motion.rise*scale;
+      const width = (arc.annotation || arc.maturity!=null ? 280 : 115)*scale, height = (arc.annotation ? 120 : arc.maturity!=null ? 78 : 44)*scale;
       const collision = boxes.some(b => Math.abs(b.x - x) < (b.width + width) / 2 && Math.abs(b.y - y) < (b.height + height) / 2);
-      element.hidden = collision || x < width / 2 + 24 || x + width / 2 > ledgerLeft - 24 || y < 110 || y + height > footerTop || !visibleFromCamera(globe, arc.midLat, arc.midLng, arc.altitude);
+      element.hidden = collision || x < width / 2 + 24*scale || x + width / 2 > ledgerLeft - 24*scale || y < 110*scale || y + height > footerTop || !visibleFromCamera(globe, arc.midLat, arc.midLng, arc.altitude);
       if (!element.hidden) {
         boxes.push({ x, y, width, height });
         element.style.transform = `translate3d(${x}px,${y}px,0) translate(-50%,-100%) scale(${motion.scale})`;

@@ -12,14 +12,15 @@ import type { PlaybackState } from '../playback/engine.ts';
 import { disposeModel, loadSiteModel } from './load-site-model.ts';
 import { globeDirectionToSite, globePointToSite, SITES } from './site-math.ts';
 import type { SiteId } from './site-math.ts';
-import { canUseTiles, enoughTiles, tilePlan } from './tiles-policy.ts';
+import { canUseTiles, enoughTiles, fetchOptionalTile, tileOpacity, tilePlan } from './tiles-policy.ts';
+import { EARTH_BACKGROUND } from './readiness.ts';
+import { CAMPUS_LIFT_METERS, separateSiteSurfaces } from './site-surfaces.ts';
 
 const ROOT_TILESET = 'https://tile.googleapis.com/v1/3dtiles/root.json';
 const MODEL_LIFT: Record<SiteId, number> = { 'apple-park': 0.18, 'fifth-avenue': 0.08 };
 const SITE_GRADE: Record<SiteId, number> = { 'apple-park': 12.5, 'fifth-avenue': 2.56 };
 // Both final exports are authored in metres and registered to their ENU origins.
 const SITE_MODEL_SCALE: Record<SiteId, number> = { 'apple-park': 587 / 571, 'fifth-avenue': 1 };
-const SKY: Record<SiteId, string> = { 'apple-park': '#a9bbc1', 'fifth-avenue': '#263640' };
 const FIFTH_CLIP_HALF_EXTENT = 6.15;
 
 export interface SiteSceneFrame {
@@ -96,7 +97,7 @@ function tuneModel(root: Object3D, environment: Texture, site: SiteId) {
         // Signed edge distance keeps the authored surface opaque under the site,
         // then feathers inward over 24 metres into Google's surrounding tiles.
         material.transparent = true;
-        material.depthWrite = false;
+        material.depthWrite = true;
         material.onBeforeCompile = shader => {
           shader.vertexShader = shader.vertexShader
             .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeGroundPosition;')
@@ -126,7 +127,7 @@ function tuneModel(root: Object3D, environment: Texture, site: SiteId) {
         physical.emissive.set('#33452b');
         physical.emissiveIntensity = Math.max(physical.emissiveIntensity, 0.7);
         material.transparent = true;
-        material.depthWrite = false;
+        material.depthWrite = true;
         material.onBeforeCompile = shader => {
           shader.vertexShader = shader.vertexShader
             .replace('#include <common>', '#include <common>\nvarying vec3 vCascadeExtendedGroundPosition;')
@@ -244,7 +245,7 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
   let failed = false, ready = false, forcedFallback = false, opacity = 0, ground: number | null = null;
   let modelSize: [number, number, number] | null = null;
   let tileBounds: [number, number, number, number, number, number] | null = null;
-  let request = 0, attributionClock = 0;
+  let request = 0, attributionFrame = -1;
   let modelAbort: AbortController | null = null;
   const resolution = new Vector2();
   const localPosition = new Vector3(), localTarget = new Vector3(), localUp = new Vector3();
@@ -257,12 +258,19 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     modelAbort?.abort(); modelAbort = null;
     if (model) { disposeModel(model); model = null; }
     if (tiles) { scene.remove(tiles.group); tiles.dispose(); tiles = null; }
-    site = null; failed = false; ready = false; forcedFallback = false; ground = null; modelSize = null; tileBounds = null;
+    site = null; failed = false; ready = false; forcedFallback = false; opacity = 0; ground = null; modelSize = null; tileBounds = null; attributionFrame = -1;
+  }
+
+  function fallback() {
+    failed = true; ready = false; opacity = 0;
+    if (tiles) tiles.group.visible = false;
+    host.style.opacity = '0'; host.style.visibility = 'hidden';
+    attribution.style.opacity = '0'; attribution.hidden = true;
   }
 
   async function mount(nextSite: SiteId) {
     clearSite(); site = nextSite;
-    scene.background = new Color(SKY[nextSite]);
+    scene.background = new Color(EARTH_BACKGROUND);
     renderer.toneMappingExposure = nextSite === 'fifth-avenue' ? 0.82 : 1.02;
     scene.fog = null;
     const currentRequest = request, coords = SITES[nextSite];
@@ -271,7 +279,12 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     // global hierarchy before reaching a city block; small cache caps silently
     // evict those ancestors and strand refinement at the planet-scale parents.
     nextTiles.maxTilesProcessed = nextSite === 'fifth-avenue' ? 360 : 240;
-    nextTiles.registerPlugin(new GoogleCloudAuthPlugin({ apiToken: apiKey, autoRefreshToken: true, useRecommendedSettings: true }));
+    const auth = new GoogleCloudAuthPlugin({ apiToken: apiKey, autoRefreshToken: true, useRecommendedSettings: true }) as GoogleCloudAuthPlugin & { fetchData(url:string, options:RequestInit):Promise<Response> };
+    const fetchTile = auth.fetchData.bind(auth);
+    auth.fetchData = (url, options) => fetchOptionalTile(fetchTile,url,options,()=>{
+      if(currentRequest === request) fallback();
+    });
+    nextTiles.registerPlugin(auth);
     nextTiles.registerPlugin(new TileCompressionPlugin({ generateNormals: false, disableMipmaps: false }));
     nextTiles.registerPlugin(new ReorientationPlugin({ lat: coords.lat * Math.PI / 180, lon: coords.lng * Math.PI / 180, azimuth: Math.PI }));
     nextTiles.errorTarget = nextSite === 'fifth-avenue' ? 3 : 8;
@@ -280,7 +293,7 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
       nextTiles.parseQueue.maxJobs = 8;
     }
     nextTiles.setCamera(camera);
-    nextTiles.addEventListener('load-error', () => { failed = true; ready = false; });
+    nextTiles.addEventListener('load-error', () => { if(currentRequest === request) fallback(); });
     if (nextSite === 'fifth-avenue') nextTiles.addEventListener('load-model', event => clipGoogleStore(event.scene));
     else if (!registrationMode) nextTiles.addEventListener('load-model', event => clipGoogleAppleGround(event.scene));
     tiles = nextTiles; scene.add(nextTiles.group);
@@ -289,14 +302,15 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     const version = __SITE_MODEL_VERSIONS__[file];
     const url = `${import.meta.env.BASE_URL}models/${file}.glb?v=${version}`;
     modelAbort = new AbortController();
-    const loaded = await loadSiteModel(url, modelAbort.signal);
+    const loaded = await loadSiteModel(url, modelAbort.signal).catch(()=>null);
     modelAbort = null;
     if (currentRequest !== request || site !== nextSite) { if (loaded) disposeModel(loaded); return; }
-    if (!loaded) { failed = true; return; }
+    if (!loaded) { fallback(); return; }
     loaded.name = `Local site model: ${nextSite}`;
     loaded.visible = false;
     loaded.scale.setScalar(SITE_MODEL_SCALE[nextSite]);
     if (nextSite === 'fifth-avenue') loaded.rotation.y = -Math.PI / 2;
+    separateSiteSurfaces(loaded, nextSite);
     tuneModel(loaded, environment, nextSite);
     if (nextSite === 'apple-park' && registrationMode === 'overlay') {
       loaded.traverse(object => {
@@ -314,16 +328,16 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
   }
 
   return {
-    update(frame, elapsed) {
+    update(frame, _elapsed) {
       const plan = tilePlan(frame.state, frame.lat, frame.lng, frame.altitude);
-      if (plan.prefetch && plan.site && site !== plan.site) void mount(plan.site);
+      if (plan.prefetch && plan.site && site !== plan.site) void mount(plan.site).catch(()=>fallback());
       const ratio = frame.recording ? 1 : Math.min(devicePixelRatio, 1.5);
       const width = Math.max(1, host.clientWidth), height = Math.max(1, host.clientHeight);
       renderer.getSize(resolution);
       if (resolution.x !== width || resolution.y !== height || renderer.getPixelRatio() !== ratio) {
         renderer.setPixelRatio(ratio); renderer.setSize(width, height, false);
       }
-      if (site && tiles) {
+      if (site && tiles && !failed && !forcedFallback) {
         localPosition.copy(globePointToSite(site, frame.globeRadius, frame.cameraPosition));
         localTarget.copy(globePointToSite(site, frame.globeRadius, frame.cameraTarget));
         localUp.copy(globeDirectionToSite(site, frame.cameraUp));
@@ -350,15 +364,14 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
           // surrounding tiles. The source is absent over Apple Park and has
           // malformed vertical geometry at Fifth Avenue, so direct ray hits are
           // not reliable anchors at every LOD.
-          ground = SITE_GRADE[site]; model!.position.y = ground + MODEL_LIFT[site];
+          ground = SITE_GRADE[site]; model!.position.y = ground + MODEL_LIFT[site] + (site === 'apple-park' ? CAMPUS_LIFT_METERS : 0);
         }
         if (model) model.visible = ready && ground !== null && registrationMode !== 'tiles';
         renderer.render(scene, camera);
-        if ((attributionClock += elapsed) >= 500) { attributionClock = 0; attributionMarkup(attribution, tiles.getAttributions()); }
+        const nextAttributionFrame = Math.floor(frame.state.tMs / 500);
+        if (attributionFrame !== nextAttributionFrame || !attribution.childElementCount) { attributionFrame = nextAttributionFrame; attributionMarkup(attribution, tiles.getAttributions()); }
       }
-      const targetOpacity = ready && ground !== null && !failed ? plan.blend : 0;
-      opacity += (targetOpacity - opacity) * (1 - Math.exp(-elapsed / 160));
-      if (targetOpacity === 0 && opacity < 0.002) opacity = 0;
+      opacity = tileOpacity(plan, ready, failed, forcedFallback, ground);
       host.style.opacity = opacity.toFixed(4);
       host.style.visibility = opacity > 0 ? 'visible' : 'hidden';
       attribution.style.opacity = opacity.toFixed(4);
@@ -368,12 +381,7 @@ export function createSiteScene(host: HTMLElement, attribution: HTMLElement, api
     status,
     releaseFallback() {
       forcedFallback = true;
-      failed = false;
-      ready = !!model;
-      if (site && model && ground === null) {
-        ground = SITE_GRADE[site];
-        model.position.y = ground + MODEL_LIFT[site];
-      }
+      fallback();
     },
     dispose() {
       clearSite(); environment.dispose(); renderer.dispose(); renderer.domElement.remove(); attribution.replaceChildren();

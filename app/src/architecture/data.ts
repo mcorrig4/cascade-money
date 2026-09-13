@@ -1,23 +1,20 @@
+import evidence from '../data/onchain.json' with { type: 'json' };
 export const github = 'https://github.com/mcorrig4/cascade-money/blob/main/';
 export const code = (path: string) => `${github}${path}`;
 export const vaultSource = code('contracts/src/CascadeVault.sol');
 export const usycSource = code('contracts/src/CascadeVaultUSYC.sol');
 export const explorer = 'https://testnet.arcscan.app';
 export const deployment = {
-  address: '0x57838A35f05a43aD519204D7A6Ce63F52d7C1987',
-  owner: '0x9C2069b5b510E548963E98474CA08F72E26Fe3f4',
-  verified: `${explorer}/address/0x57838a35f05a43ad519204d7a6ce63f52d7c1987#code`,
+  address: evidence.vault,
+  owner: evidence.owner,
+  verified: evidence.sourceUrl,
   launch: 'After September 16, 2026 launch',
   status: 'Planned · Arc mainnet',
   allowlist: 'Real USYC after Circle allowlists the vault',
 };
 export const receipts = [
-  { label: 'Deploy vault', hash: '0xeec1fa5a6c47902e2a10b953f809262f52b2759eb88642e14622a7d2204b275e' },
-  { label: 'Issue · Apple → Foxconn', hash: '0x70fa7b0e7a2f77dd51c8e23f41919e4e909c5f54230b4b590db8bf2017f6ef2c' },
-  { label: 'Pay · Foxconn → TSMC', hash: '0x7d95fb4b18b0b0ae616c665408cab1304606219b3e675abe71426123df3d1619' },
-  { label: 'Pay · TSMC → Corning', hash: '0xb43e2d93ca18c142c1e252910c80f5eebbadd7d7598e282c078687461283542c' },
-  { label: 'Extend · T90 → T120', hash: '0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7' },
-  { label: 'Pay · Corning → glass supplier', hash: '0xc7ab543c8b736e254b37516c74e566502721af1f68de6ca36b51028b84660b46' },
+  { label: 'Deploy vault', hash: evidence.deploymentTransaction },
+  ...evidence.transactions.slice(11).map(t => ({ label: t.label, hash: t.hash })),
 ];
 export const sequence = [
   { id: 'register', from: 0, to: 2, title: 'Register invoice · creditor authorizes D and M', detail: 'registerInvoice(Apple, $100, D, M) · M ≤ D', backing: 0, settled: 0 },

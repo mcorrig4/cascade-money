@@ -27,11 +27,11 @@ test('local camera and lighting use real height, true north and southwest sun', 
   for (const id of Object.keys(SITES) as (keyof typeof SITES)[]) {
     const frame=siteFrame(SITES[id].lat,SITES[id].lng,100), pose=siteCamera(id,100), sun=siteSun(id,100);
     near(sitePoint(id,100,0,0,0).distanceTo(frame.position),0);
-    near(pose.position.clone().sub(frame.position).dot(frame.up),metersToScene(id==='apple-park'?600:5.2,100));
+    near(pose.position.clone().sub(frame.position).dot(frame.up),metersToScene(id==='apple-park'?600:12,100));
     if (id === 'fifth-avenue') {
       const offset = pose.position.clone().sub(frame.position);
       near(Math.hypot(offset.dot(frame.east), offset.dot(frame.north)), metersToScene(48,100));
-      assert.ok(pose.target.clone().sub(pose.position).dot(frame.up) > 0, 'Cube view looks slightly upward');
+      assert.ok(pose.target.clone().sub(pose.position).dot(frame.up) < 0, 'Street camera clears the local plate and looks down toward the cube');
       assert.ok(offset.dot(frame.east) < 0 && Math.abs(offset.dot(frame.north)) < 1e-8, 'Cube camera is centered across Fifth Avenue');
     }
     assert.ok(sun.dot(frame.east)<0 && sun.dot(frame.north)<0 && sun.dot(frame.up)>0);
@@ -78,7 +78,7 @@ test('shared model resources dispose once and the model detaches', () => {
   disposeModel(root);
   assert.equal(geometries,1); assert.equal(materials,1); assert.equal(scene.children.length,0);
 });
-test('site LOD stays lazy, fades in 300ms, unloads between visits and preserves missing fallback', async () => {
+test('site LOD stays lazy, blends by sampled altitude, unloads between visits and preserves missing fallback', async () => {
   const { createSiteModels } = await import('../src/globe/site-models.ts');
   const scene = new Group(), fallbacks = { 'apple-park':new Group(), 'fifth-avenue':new Group() };
   let requests=0, disposals=0;
@@ -87,12 +87,12 @@ test('site LOD stays lazy, fades in 300ms, unloads between visits and preserves 
     loadSiteModel:async()=>{ requests++; const root=new Group(); root.add(new Mesh(new BoxGeometry(),new MeshBasicMaterial())); return root; },
     disposeModel:root=>{ disposals++; disposeModel(root); },
   }));
-  const visit=()=>models.update(SITES['apple-park'].lat,SITES['apple-park'].lng,.0001,150);
+  const visit=(altitude=.00185)=>models.update(SITES['apple-park'].lat,SITES['apple-park'].lng,altitude,150);
   models.update(0,0,2,300); assert.equal(requests,0);
   for(let i=0;i<3;i++) {
     visit(); await new Promise(resolve=>setImmediate(resolve)); visit();
-    assert.equal(models.status()[0].fade,.5); assert.equal(fallbacks['apple-park'].visible,true);
-    visit(); assert.equal(models.status()[0].fade,1); assert.equal(fallbacks['apple-park'].visible,false);
+    near(models.status()[0].fade,.5); assert.equal(fallbacks['apple-park'].visible,true);
+    visit(.0001); assert.equal(models.status()[0].fade,1); assert.equal(fallbacks['apple-park'].visible,false);
     models.update(0,0,2,300); assert.equal(scene.children.length,0);
   }
   models.dispose(); assert.equal(requests,3); assert.equal(disposals,3);

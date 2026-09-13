@@ -5,30 +5,20 @@
 @media(min-width:851px) and (min-height:600px){.bottom-panel{height:285px;padding-top:20px;padding-bottom:16px}.volume-chart{height:95px}.ledger{bottom:310px}.ledger-compact .ledger-heading{padding:14px 0}.ledger-compact .ledger-heading h2{margin:4px 0}.ledger-compact .ledger-foot{padding:9px 0}.shot-overlay{bottom:280px}.globe-dimmer{bottom:-280px}.headline>span,.series-key,.speed-options button,.date-block .eyebrow,.timeline-months,.chart-ceiling{font-size:16px}.speed-options button:last-child{font-size:15px}.headline>strong{font-size:56px}.ratio span{font-size:16px}.eyebrow{font-size:14px}.ledger-row-top{font-size:12px}.ledger-annotation{font-size:16px}.date-block strong{font-size:24px}.location-card .eyebrow{font-size:18px}}
 @media(max-width:850px){.ledger-compact{width:300px}.ledger-log-line{grid-template-columns:37px minmax(0,1fr) 57px 49px;gap:4px;font-size:12px}.overlay-card h2{font-size:32px}.overlay-card p{font-size:19px}.overlay-card .eyebrow,.overlay-card .fine-print{font-size:14px}.composable-items{gap:8px}.composable-items li{padding:8px;gap:8px}.composable-items strong{font-size:20px}.composable-items p{font-size:15px}.close-card .close-wordmark{font-size:46px;letter-spacing:-2px}.close-card .close-phrase{font-size:22px}.curve-label{font-size:14px}.invariant-list>div{font-size:14px}.vault-columns dl>div{font-size:19px}.date-interval,.meter-label{font-size:15px}.law strong{font-size:22px}.law>span{font-size:16px}.law p{font-size:17px}.close-card a,.close-card .onchain-trigger,.close-footer{font-size:15px}}
 @media(max-width:600px) and (min-height:481px){.ledger-compact{width:auto}.composable-items{grid-template-columns:1fr}.architecture-card>a{font-size:15px}.coin-layout{width:100%}.fungible-equals{position:static}}
-/* Landscape recordings: use the available pixels instead of the portrait bottom sheet. */
-@media(max-height:480px) and (min-aspect-ratio:4/3){
- .topbar{height:34px;padding:3px 12px;align-items:center;flex-wrap:nowrap;gap:10px}.brand{font-size:21px;height:26px;gap:6px}.brand svg{width:20px;height:20px}.brand-subtitle,.network-status{display:none}.story-selector{width:auto;margin-left:auto;gap:3px}.story-selector button{font-size:12px;padding:4px 6px}.topbar>.onchain-trigger{position:static;font-size:12px;padding:5px 8px}.scene-heading,.globe-coordinate{display:none}
- .bottom-panel{height:102px;padding:5px 10px;display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:10px}.timeline-top{height:19px;align-items:center}.date-block{display:flex;gap:7px;align-items:center}.date-block .eyebrow{font-size:11px}.date-block strong{font-size:12px;margin:0}.series-key{display:flex;flex-direction:row;gap:5px;font-size:11px}.chart-track{height:30px;margin-top:4px}.volume-chart{height:30px}.chart-ceiling{font-size:11px}.timeline-months{font-size:10px;line-height:12px;margin-top:5px;letter-spacing:0}.timeline-months span:nth-child(even){display:none}.transport{margin-top:2px;gap:3px}.transport .play-button,.transport .icon-button{width:24px;min-width:24px;height:24px;padding:4px}.speed-options{justify-content:flex-start;gap:2px}.speed-options button,.speed-options button:last-child{font-size:11px;letter-spacing:0;padding:3px 5px;min-height:24px;margin:0}.headline-counters{display:grid;width:auto;grid-template-columns:1fr;padding:3px 0 0 10px;border-top:0;border-left:1px solid var(--line);gap:4px}.headline{display:flex;gap:5px;align-items:center;justify-content:space-between}.headline>span{font-size:10px;max-width:90px;margin:0;line-height:1.15}.headline>strong{font-size:23px;letter-spacing:-1px}.ratio{padding-top:3px;gap:7px}.ratio strong{font-size:19px}.ratio span{font-size:10px;letter-spacing:0}
- .ledger-toggle{display:none}.ledger{display:flex;top:42px;bottom:110px;right:10px;left:auto;height:auto;width:300px;padding:0 8px}.ledger-heading{padding:4px 0}.ledger-heading h2{font-size:16px;margin:0}.ledger-heading .eyebrow{font-size:11px}.ledger-columns{font-size:10px;padding:4px 0;letter-spacing:0}.ledger-foot{font-size:10px;padding:3px 0}.ledger-log-line{font-size:12px}.ledger-compact .ledger-row,.ledger-log-line{height:30px}.count{font-size:12px;padding:3px}.location-card{top:55px;bottom:auto;left:16px}.location-card h2{font-size:24px}.location-card .eyebrow{font-size:12px}.debt-card{top:60px;left:16px}.debt-card strong{font-size:36px}.year-caption{bottom:107px;font-size:12px}.director{inset:8px;width:auto;padding:12px;overflow:auto}.shot-list{max-height:none}.director-head h2{font-size:20px}
- .shot-overlay{inset:36px 0 104px;display:grid;place-items:center;overflow:hidden;pointer-events:none}.overlay-card{width:100%;height:100%;min-height:0;padding:5px 14px;overflow:hidden}.globe-dimmer{position:fixed;inset:0}.overlay-card h2{font-size:25px;letter-spacing:-.6px;margin:2px 0 6px}.overlay-card .eyebrow{font-size:12px;letter-spacing:.7px}.overlay-card p{font-size:17px;line-height:1.25;margin:5px 0}.overlay-card .fine-print{font-size:12px;line-height:1.2;margin-top:5px}.coin-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;align-items:center}.dated-coin{position:relative;width:145px;height:145px;gap:5px;justify-self:center;box-shadow:0 0 0 2px #548e7d,0 0 0 6px #102824}.dated-coin strong{font-size:50px}.dated-coin>span,.dated-coin small{font-size:12px;letter-spacing:0}.coin-date{font-size:15px}.date-interval{font-size:13px;margin-top:9px}.meter-label{font-size:12px;gap:6px}.yield-track{margin:7px 0}.claim-rule{font-size:18px;padding-top:10px}.fungible-equals{position:static}.curve-card h2 br{display:none}.curve-card h2{font-size:23px}.curve-label{font-size:12px;margin-bottom:0;letter-spacing:0}.curve-card svg{height:125px;width:100%;font-size:27px}.curve-empty{position:absolute;left:30%;top:50%;font-size:16px!important}.law{padding:5px 0}.law>span{font-size:13px;margin-bottom:2px}.law strong{font-size:18px}.law p{font-size:14px;margin:2px 0}.vault-columns{display:grid;grid-template-columns:1fr 1fr;gap:22px}.vault-columns dl>div{font-size:16px;padding:3px 0}.invariant-list>div{font-size:12px;padding:1px 0;line-height:1.1}.invariant-list>.eyebrow{margin-bottom:4px}.reframe-card h2{font-size:70px;margin:10px 0}.reframe-card h2 span{font-size:25px}.cube-caption{left:15px;bottom:15px}.cube-caption h2{font-size:26px}.composable-items{grid-template-columns:1fr 1fr;gap:4px 14px;margin:4px 0}.composable-items li{padding:4px;gap:7px}.composable-items li>span{font-size:12px}.composable-items strong{font-size:17px}.composable-items p{font-size:13px;margin:2px 0}.architecture-card>a{font-size:12px;margin-top:3px}.close-card .close-phrase{font-size:18px}.close-card .close-wordmark{font-size:40px;margin:4px 0}.close-card nav{gap:5px;margin:8px 0;flex-wrap:wrap}.close-card a,.close-card .onchain-trigger{font-size:12px;padding:5px 7px}.close-card a svg{width:10px;height:10px;margin-left:4px}.close-footer{font-size:12px;padding-top:5px}.onchain-panel{font-size:13px;padding:12px}.onchain-panel h2{font-size:21px}
-}
-@media(max-height:280px) and (min-aspect-ratio:4/3){
- .topbar{height:27px;padding:2px 7px}.brand{font-size:18px}.brand svg{width:16px;height:16px}.story-selector button{font-size:11px;padding:3px}.topbar>.onchain-trigger{font-size:11px;padding:3px 5px}.bottom-panel{height:77px;grid-template-columns:minmax(0,1fr) 128px;gap:5px;padding:3px 7px}.series-key{display:none}.date-block strong{font-size:11px}.date-block .eyebrow{font-size:10px}.chart-track,.volume-chart{height:20px;margin-top:0}.timeline-months{display:none}.headline-counters{padding-left:6px;gap:1px}.headline>span{font-size:10px;max-width:65px}.headline>strong{font-size:18px}.ratio strong{font-size:16px}.ratio span{font-size:10px}.speed-options button,.speed-options button:last-child{font-size:10px;padding:2px 3px}.shot-overlay{inset:29px 0 79px}.overlay-card{padding:2px 9px}.overlay-card h2{font-size:19px;margin:0 0 3px}.overlay-card .eyebrow{font-size:10px}.overlay-card p{font-size:14px}.overlay-card .fine-print{font-size:10px;margin:2px 0}.coin-layout{gap:10px;grid-template-columns:1.5fr 1fr}.dated-coin{width:105px;height:105px;gap:2px}.dated-coin strong{font-size:33px}.dated-coin>span,.dated-coin small{font-size:10px}.coin-date{font-size:12px}.date-interval,.meter-label{font-size:10px;gap:4px}.date-interval{margin-top:4px}.yield-track{margin:3px 0}.claim-rule{font-size:14px;padding-top:4px}.curve-card h2{font-size:18px}.curve-label{font-size:10px}.curve-card svg{height:79px;font-size:29px}.law{padding:3px 0}.law>span{font-size:10px;margin:0}.law strong{font-size:14px}.law p{font-size:11px;margin:0}.vault-columns{gap:10px}.vault-columns dl>div{font-size:12px;padding:2px 0}.invariant-list>div{font-size:10px;line-height:1;padding:1px 0;gap:5px}.invariant-list>.eyebrow{display:none}.check-light{width:5px;height:5px}.composable-items{gap:2px 6px;margin:1px 0}.composable-items li{padding:2px;gap:4px}.composable-items strong{font-size:13px}.composable-items p{font-size:10px;line-height:1.15;margin:1px 0}.composable-items li>span{font-size:10px}.architecture-card>a{font-size:10px;margin:0}.close-card .close-phrase{font-size:14px;margin:0}.close-card .close-wordmark{font-size:27px;margin:2px 0;letter-spacing:-1px}.close-card p{font-size:13px;margin:2px 0}.close-card nav{margin:4px 0;gap:3px}.close-card a,.close-card .onchain-trigger{font-size:10px;padding:3px 4px}.close-card a svg{display:none}.close-footer{font-size:10px;padding-top:2px}.reframe-card h2{font-size:42px;margin:3px 0}.reframe-card h2 span{font-size:20px}.ledger{top:30px;bottom:83px;width:270px}.ledger-heading{display:none}.year-caption{bottom:80px;font-size:10px}
-}
+/* Landscape film geometry is defined once in film.css. */
+
 /* Site captions contain geography only; narration gets the scene's center. */
 .scene-location{position:absolute;z-index:14;left:36px;bottom:310px;display:flex;flex-direction:column;gap:5px;pointer-events:none;text-shadow:0 2px 10px #000,0 0 25px #000;color:#edf6f2}
 .scene-location strong{font-size:28px;font-weight:500;line-height:1.1}.scene-location span{font-size:20px;line-height:1.2;color:#c9dcd5}
 .scene-narration{position:absolute;z-index:14;inset:70px 5% 390px;display:grid;place-items:center;pointer-events:none;text-align:center;will-change:opacity,transform}
 .scene-narration p{margin:0;max-width:1250px;font-size:clamp(38px,6.8vw,130px);line-height:1.08;letter-spacing:-.035em;font-weight:550;color:#f1fff9;text-wrap:balance;text-shadow:0 3px 16px #000,0 0 60px #000}
 @media(max-width:600px) and (min-height:481px){.scene-location{left:20px;bottom:calc(350px + var(--safe-bottom))}.scene-location strong{font-size:22px}.scene-location span{font-size:16px}.scene-narration{inset:130px 5% 430px}}
-@media(max-height:480px) and (min-aspect-ratio:4/3){.scene-location{left:12px;bottom:110px;gap:2px}.scene-location strong{font-size:16px}.scene-location span{font-size:12px}.scene-narration{inset:38px 4% 158px}.scene-narration p{font-size:clamp(30px,7.3vw,46px)}}
-@media(max-height:280px) and (min-aspect-ratio:4/3){.scene-location{left:9px;bottom:83px;gap:1px}.scene-location strong{font-size:13px}.scene-location span{font-size:11px}.scene-narration{inset:30px 4% 115px}.scene-narration p{font-size:30px;line-height:1.04}}
+
 /* Keep the hit area fixed when compact rows expand under the pointer. */
 .ledger-inspecting{width:480px}
 @media(max-width:850px){.ledger-inspecting{width:300px}}
 @media(max-width:600px) and (min-height:481px){.ledger-inspecting{width:auto}}
-@media(max-height:480px) and (min-aspect-ratio:4/3){.ledger-inspecting{width:300px}}
-@media(max-height:280px) and (min-aspect-ratio:4/3){.ledger-inspecting{width:270px}}
+
 /* Stage 11: overlays own the vertical frame; the HUD becomes one line. */
 .director-active .scene-heading,.director-active .globe-coordinate{display:none}
 .overlay-active:not(.recording-hud) .bottom-panel{height:34px;padding:4px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px}
@@ -50,21 +40,9 @@
 @keyframes date-flip{0%{rotate:y 0deg}50%{rotate:y 90deg}100%{rotate:y 0deg}}
 @keyframes pay-bill{0%,15%{translate:0}60%,100%{translate:30%;opacity:.3}}
 @keyframes bill-paid{0%,40%{opacity:.2}65%{opacity:1}100%{opacity:0}}
-@media(max-height:480px) and (min-aspect-ratio:4/3){
- .overlay-active .shot-overlay{inset:34px 0 30px}.overlay-active:not(.recording-hud) .bottom-panel{height:27px;padding:2px 8px}.overlay-active:not(.recording-hud) .headline-counters{gap:9px}.overlay-active:not(.recording-hud) .headline>span{font-size:10px}.overlay-active:not(.recording-hud) .headline>strong,.overlay-active:not(.recording-hud) .ratio strong{font-size:14px}.overlay-active:not(.recording-hud) .ratio span{font-size:10px}.overlay-active:not(.recording-hud) .transport .icon-button{display:none}
- .overlay-active .overlay-card h2{font-size:27px;margin:2px 0 6px}.overlay-active .curve-card svg{height:185px;font-size:32px}.overlay-active .law{padding:7px 0}.overlay-active .law strong{font-size:18px}.overlay-active .law p{font-size:15px}.overlay-active .vault-card h2 br{display:none}.overlay-active .vault-columns dl>div{font-size:16px;padding:6px 0}.overlay-active .invariant-list>div{font-size:14px;line-height:1.15;padding:2px 0}.overlay-active .composable-items li{padding:9px 4px}.overlay-active .composable-items strong{font-size:19px}.overlay-active .composable-items p{font-size:14px}.asset-composition{font-size:15px;gap:5px}.treasury-dates{margin:20px 0}.treasury-dates strong{font-size:44px}.treasury-dates span{font-size:18px}.treasury-gap{font-size:21px}.coin-stage{width:100%}.ghost-bill{padding:7px}.ghost-bill span{font-size:11px}.scene-clean .shot-overlay{inset:0}.scene-overlay-network .network-card h2,.scene-overlay-catch .catch-card h2{font-size:55px}
-}
-@media(max-height:280px) and (min-aspect-ratio:4/3){
- .overlay-active .shot-overlay{inset:28px 0 27px}.overlay-active .overlay-card{padding:3px 9px}.overlay-active .overlay-card h2{font-size:19px;margin:0 0 3px}.overlay-active .curve-card svg{height:123px;font-size:34px}.overlay-active .law{padding:4px 0}.overlay-active .law strong{font-size:14px}.overlay-active .law p{font-size:12px}.overlay-active .laws-card .law>span{font-size:11px}.overlay-active .vault-columns dl>div{font-size:13px;padding:4px 0}.overlay-active .invariant-list>div{font-size:11px;padding:1px 0;line-height:1.1}.overlay-active .vault-card h2 br{display:none}.overlay-active .composable-items li{padding:4px 2px}.overlay-active .composable-items strong{font-size:15px}.overlay-active .composable-items p{font-size:11px}.overlay-active:not(.recording-hud) .headline-counters{gap:5px}.overlay-active:not(.recording-hud) .headline>span{max-width:60px;font-size:9px}.overlay-active:not(.recording-hud) .ratio span{display:none}.treasury-dates{margin:15px 0;gap:8px}.treasury-dates strong{font-size:32px}.treasury-dates span{font-size:13px}.treasury-gap{font-size:15px}.asset-composition{font-size:12px;gap:3px}.asset-composition b{padding:5px}.scene-clean .shot-overlay{inset:0}.scene-overlay-network .network-card h2,.scene-overlay-catch .catch-card h2{font-size:40px}.curve-ghost{height:40px;width:45px}.coin-stage .ghost-bill strong{font-size:25px}
-}
+
 .wordmark-icon{width:.65em;height:.65em;margin-right:.2em;color:#397c5c}
-@media(max-height:280px) and (min-aspect-ratio:4/3){
- .overlay-active .laws-card .law{display:grid;grid-template-columns:82px 1fr;gap:2px 8px;padding:5px 0}
- .overlay-active .laws-card .law>span{grid-column:1;grid-row:1/3;font-size:11px;line-height:1.15}
- .overlay-active .laws-card .law strong{grid-column:2;font-size:14px;line-height:1.1}
- .overlay-active .laws-card .law p{grid-column:2;font-size:12px;line-height:1.1}
- .overlay-active:not(.recording-hud) .headline>span{font-size:10px}
-}
+
 .treasury-card{width:min(1280px,88vw)}
 .yield-axis-bridge{position:fixed;left:16vw;top:53vh;width:4px;height:65px;background:#8ce8c2;transform-origin:bottom left;pointer-events:none}
 .composable-items{grid-template-columns:repeat(6,minmax(0,1fr));gap:20px 14px}
@@ -72,12 +50,10 @@
 .composable-items li:nth-child(4){grid-column:2/span 2}.composable-items li:nth-child(5){grid-column:4/span 2}
 .composable-items li:nth-child(2)::before,.composable-items li:nth-child(3)::before{content:'→';position:absolute;left:-15px;top:35%;color:#82d5b8}
 .composable-items li:nth-child(4)::before,.composable-items li:nth-child(5)::before{content:'';position:absolute;height:20px;border-left:1px solid #82d5b8;left:50%;top:-21px}
-@media(max-height:280px) and (min-aspect-ratio:4/3){.composable-items{gap:12px 6px}.composable-items li:nth-child(2)::before,.composable-items li:nth-child(3)::before{font-size:10px;left:-8px}.composable-items li:nth-child(4)::before,.composable-items li:nth-child(5)::before{height:12px;top:-13px}.yield-axis-bridge{height:40px}}
+
 .overlay-active:not(.scene-clean) .scene-location{bottom:48px}
 .overlay-active:not(.scene-clean) .scene-narration{inset:70px 5% 120px}
 .scene-cue-context{display:block;font-size:25px;letter-spacing:.12em;margin-bottom:16px;color:#cbe5d8}
-@media(max-height:480px) and (min-aspect-ratio:4/3){.overlay-active:not(.scene-clean) .scene-location{bottom:35px}.overlay-active:not(.scene-clean) .scene-narration{inset:38px 4% 85px}.scene-cue-context{font-size:14px;margin-bottom:6px}}
-@media(max-height:280px) and (min-aspect-ratio:4/3){.overlay-active:not(.scene-clean) .scene-narration{inset:30px 4% 75px}.scene-cue-context{font-size:12px;margin-bottom:4px}}
 
 /* Narration v6: large, clause-sized compositions above the collapsed ledger. */
 .payment-timeline{margin:32px 0 55px;display:grid;gap:8px;font-size:clamp(16px,2vw,28px)}
@@ -87,15 +63,9 @@
 .cascade-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:35px;text-align:center}.cascade-stat{display:grid;gap:10px;transition:opacity .4s}.cascade-stat strong{font-size:clamp(40px,5vw,88px);color:#69e6c0}.cascade-stat span{font-size:clamp(16px,1.8vw,26px)}.cascade-totals h2{grid-column:1/-1;transition:opacity .4s}
 .backing-card small{display:block;font-size:.65em;margin-top:8px}.backing-card .asset-composition{margin:35px 0}
 .scene-overlay-promises .globe-dimmer{background:#02080b33}.promises-card{position:relative;width:90vw!important;background:transparent!important;border:0!important;text-align:center}.promise-graph{width:100%;height:45vh;stroke:#69e6c0;fill:#a2f7dd;stroke-width:1;stroke-opacity:.23}.promises-card h2{text-shadow:0 2px 12px #000}.scene-overlay-composable .globe-dimmer{background:#02080b66}
-@media(max-height:480px) and (min-aspect-ratio:4/3){
- .payment-timeline{margin:16px 0 28px;gap:3px;font-size:18px}.question-card{gap:8px}.question-card .dated-coin{width:125px;height:125px}.question-card .dated-coin strong{font-size:50px}.cascade-totals{gap:18px}.cascade-stat strong{font-size:44px}.cascade-stat span{font-size:16px}.backing-card .asset-composition{margin:18px 0}.promise-graph{height:48vh}
-}
-@media(max-height:280px) and (min-aspect-ratio:4/3){
- .payment-timeline{margin:10px 0 21px;font-size:14px}.question-card .dated-coin{width:90px;height:90px}.question-card .dated-coin strong{font-size:35px}.question-card .dated-coin>span{font-size:8px}.question-card .coin-date{font-size:10px}.cascade-totals{gap:10px}.cascade-stat strong{font-size:30px}.cascade-stat span{font-size:12px}.backing-card .asset-composition{margin:12px 0}
-}
+
 @media(max-width:600px) and (max-aspect-ratio:1/1){.cascade-totals{grid-template-columns:1fr;gap:16px}.cascade-totals h2{grid-column:auto}.backing-card .asset-composition{flex-wrap:wrap}.payment-timeline{font-size:17px}.question-card .dated-coin{width:160px;height:160px}}
 @keyframes coin-enter{0%{opacity:0;transform:scale(1.8) rotate(-8deg)}65%{opacity:1;transform:scale(.94) rotate(1deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
-
 
 /* HUD recordings retain the product. Overlay scenes reserve a live ledger strip. */
 .recording .story-selector,.recording .network-status,.recording .director{display:none!important}
@@ -110,79 +80,11 @@
 .recording-hud .globe-dimmer{position:fixed;inset:0;z-index:-1}
 .clean-frame .scene-location{bottom:20px}
 .clean-frame .scene-narration{inset:10% 5% 25%}
-@media(max-height:480px) and (min-aspect-ratio:4/3){
- .recording-hud{--film-top:36px;--film-bottom:102px;--film-log:30px}
- .recording-hud .overlay-card{padding:3px 12px}
- .recording-hud .overlay-card h2{font-size:23px;margin:2px 0 5px}
- .recording-hud .law{padding:3px 0}
- .recording-hud .law strong{font-size:17px}
- .recording-hud .law p{font-size:13px}
- .recording-hud .vault-columns dl>div{padding:3px 0}
- .recording-hud .invariant-list>div{font-size:12px;padding:1px 0}
- .recording-hud .composable-items li{padding:4px}
- .recording-hud .promise-graph{height:95px}
- .recording-hud .scene-narration p{font-size:36px}
-}
-@media(max-height:280px) and (min-aspect-ratio:4/3){
- .recording-hud{--film-top:28px;--film-bottom:77px;--film-log:22px}
- .recording-hud .overlay-card h2{font-size:17px}
- .recording-hud .law{padding:1px 0}
- .recording-hud .law strong{font-size:12px}
- .recording-hud .law p{font-size:10px}
- .recording-hud .scene-narration p{font-size:26px}
-}
+
 @media(max-width:600px) and (min-height:481px){
  .recording-hud{--film-top:60px;--film-bottom:335px;--film-log:30px}
-}
-
-@media(max-height:480px) and (min-aspect-ratio:4/3){
- .app.recording-hud .laws-card .law{display:grid;grid-template-columns:100px 1fr;gap:1px 8px;padding:4px 0}
- .app.recording-hud .laws-card .law>span{grid-column:1;grid-row:1/3;font-size:12px;margin:0}
- .app.recording-hud .laws-card .law strong{grid-column:2;font-size:16px;line-height:1.1}
- .app.recording-hud .laws-card .law p{grid-column:2;font-size:13px;line-height:1.1;margin:0}
- .app.recording-hud .backing-card .asset-composition{margin:8px 0}
- .app.recording-hud .payment-timeline{margin:8px 0 24px}
- .app.recording-hud .vault-card h2{font-size:20px}
- .app.recording-hud .scene-location{max-width:45%}
-}
-@media(max-height:280px) and (min-aspect-ratio:4/3){
- .app.recording-hud .laws-card .law{grid-template-columns:78px 1fr;padding:2px 0}
- .app.recording-hud .laws-card .law>span{font-size:10px}
- .app.recording-hud .laws-card .law strong{font-size:12px}
- .app.recording-hud .laws-card .law p{font-size:10px}
 }
 
 .recording-hud .bottom-panel{z-index:21}
 .recording-hud .topbar,.recording-hud .bottom-panel{z-index:28}
 .recording-hud .ending-line{inset:var(--film-top) 0 calc(var(--film-bottom) + var(--film-log) + 8px)}
-@media(max-height:480px) and (min-aspect-ratio:4/3){
- .recording-hud .question-card{grid-template-columns:1.5fr 1fr;align-items:center}
- .recording-hud .contradiction-card{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:center}
- .recording-hud .contradiction-card>.eyebrow,.recording-hud .contradiction-card>h2{grid-column:1/-1}
- .recording-hud .promises-card h2{font-size:21px}
-}
-
-/* Fit all ten invariants above the live ledger in 360p recordings. */
-@media (min-height:281px) and (max-height:480px) and (min-aspect-ratio:4/3) {
- .app.recording-hud .vault-card .vault-columns{grid-template-columns:minmax(0,1fr) minmax(0,1.55fr);gap:16px;align-items:start}
- .app.recording-hud .vault-card .vault-columns dl>div{font-size:14px;line-height:18px;padding:1px 0}
- .app.recording-hud .vault-card .invariant-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 8px;align-content:start}
- .app.recording-hud .vault-card .invariant-list>.eyebrow{grid-column:1/-1;font-size:12px;line-height:15px;margin:0 0 2px}
- .app.recording-hud .vault-card .invariant-list>div{min-width:0;font-size:12px;line-height:15px;padding:0;gap:5px;align-items:baseline}
- .app.recording-hud .vault-card .check-light{flex:0 0 5px;width:5px;height:5px}
-}
-
-/* 240p has only ~105px between the brand and the visible ledger. Keep the
-   six balances beside five paired invariant rows, with an explicit type rhythm. */
-@media (max-height:280px) and (min-aspect-ratio:4/3) {
- .app.recording-hud .vault-card{width:100%;height:100%;padding:2px 8px;display:flex;flex-direction:column;justify-content:flex-start}
- .app.recording-hud .vault-card>.eyebrow{display:block;font-size:10px;line-height:11px;letter-spacing:.5px}
- .app.recording-hud .vault-card h2{font-size:14px;line-height:16px;letter-spacing:-.3px;margin:1px 0 3px}
- .app.recording-hud .vault-card .vault-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:8px;align-items:start}
- .app.recording-hud .vault-card .vault-columns dl>div{font-size:10px;line-height:10px;padding:0;min-width:0}
- .app.recording-hud .vault-card .vault-columns dt,.app.recording-hud .vault-card .vault-columns dd{white-space:nowrap}
- .app.recording-hud .vault-card .invariant-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 5px;align-content:start}
- .app.recording-hud .vault-card .invariant-list>.eyebrow{display:block;grid-column:1/-1;font-size:10px;line-height:11px;letter-spacing:.5px;margin:0}
- .app.recording-hud .vault-card .invariant-list>div{font-size:10px;line-height:11px;padding:0;min-width:0;gap:3px;align-items:baseline}
- .app.recording-hud .vault-card .check-light{flex:0 0 4px;width:4px;height:4px}
-}

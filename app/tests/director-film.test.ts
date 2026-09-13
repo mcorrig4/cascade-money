@@ -49,7 +49,7 @@ test('large ticks match frame-by-frame film timing; flash and pause preserve the
  const a=new PlaybackEngine(index),b=new PlaybackEngine(index);playFilm(a);playFilm(b);
  a.tick(FILM_SECONDS);for(let i=0;i<Math.round(FILM_SECONDS*30);i++)b.tick(1/30);
  assert.equal(a.state.shot,b.state.shot);assert.ok(Math.abs(a.state.shotElapsed-b.state.shotElapsed)<1e-7);
- const e=new PlaybackEngine(index);playFilm(e);e.tick(SHOTS[2].startTime+1.3);assert.equal(e.state.shot,13);assert.equal(e.state.exposure,1);
+ const e=new PlaybackEngine(index);playFilm(e);e.tick(SHOTS[2].startTime+2.25);assert.equal(e.state.shot,13);assert.ok(Math.abs(e.state.exposure-1)<1e-9);
  e.tick(.7);assert.ok(e.state.exposure<1e-8);playShot(e,3);e.tick(1);e.toggle();const before=sampleCamera(e.state.camera,e.state.cameraElapsed);e.tick(2);assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),before);
 });
 

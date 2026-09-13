@@ -1,8 +1,9 @@
+import { rewindLedgerRows } from '../globe/rewind-events.ts';
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import { dollars } from '../data/format.ts';
 import { displayDate } from '../data/types.ts';
 import type { Event, EventIndex } from '../data/types.ts';
-import { ledgerMode, logDuration, ledgerRowHeight, inspectionSnapshot } from './ledger-mode.ts';
+import { ledgerMode, ledgerRowHeight, inspectionSnapshot } from './ledger-mode.ts';
 const labels: Record<string, string> = {
   issue: 'Committed & settled', pay: 'Invoice settled', transfer: 'Transfer', invoice_registered: 'New purchase',
   extend: 'Maturity extended', sell: 'Sold for spot', withdraw: 'Withdrawal', claim: 'Yield claimed', operation_rejected: 'Not executed',
@@ -21,20 +22,26 @@ function LedgerRow({ event, index, compact, inspect, waiting, amount, date }: { 
     {detail && <p className="ledger-annotation" title={detail}>{detail}</p>}</> }
   </article>;
 }
-export function DayLedger({ index, day, cursor, running=false, rate=1, waiting=false, presentation }: { index: EventIndex; day: number; cursor: number; running?:boolean; rate?:number; waiting?:boolean; presentation?:{events:Event[];amount:bigint;date:number|null} }) {
+export function DayLedger({ index, day, cursor, running=false, rate=1, waiting=false, presentation, rewindPosition }: { index: EventIndex; day: number; cursor: number; running?:boolean; rate?:number; waiting?:boolean; presentation?:{events:Event[];amount:bigint;date:number|null}; rewindPosition?:number }) {
+  const [viewport,setViewport]=useState(()=>({width:innerWidth,height:innerHeight}));
+  useEffect(()=>{
+    const resize=()=>setViewport({width:innerWidth,height:innerHeight});
+    window.addEventListener('resize',resize);return ()=>window.removeEventListener('resize',resize);
+  },[]);
+  const rowPixels=(mode:'compact'|'expanded')=>ledgerRowHeight(mode,viewport);
   const [scroll, setScroll] = useState(0), host = useRef<HTMLDivElement>(null);
   const [inspection,setInspection]=useState<ReturnType<typeof inspectionSnapshot<Event>> | null>(null);
   const panel=useRef<HTMLElement>(null);
   const latched=useRef(false), pendingScroll=useRef<number | null>(null);
   const inspecting=inspection!==null;
   const mode=ledgerMode(running,inspecting), compact=mode==='compact';
-  const liveEvents = presentation?[...presentation.events].reverse():index.days[day].events.slice(0, cursor).filter(e => !['run_started', 'run_completed', 'story', 'day_summary', 'checkpoint', 'day_opened', 'scenario_result'].includes(e.type)).reverse();
+  const liveEvents = rewindPosition!==undefined ? rewindLedgerRows(index,rewindPosition,12) : presentation?[...presentation.events].reverse():index.days[day].events.slice(0, cursor).filter(e => !['run_started', 'run_completed', 'story', 'day_summary', 'checkpoint', 'day_opened', 'scenario_result'].includes(e.type)).reverse();
   const events=inspection?.events ?? liveEvents, displayedDay=inspection?.day ?? day;
   const inspect=(seq?:number)=>{
     if(latched.current || !events.length)return;
     latched.current=true;
     const snapshot=inspectionSnapshot(day,events,seq);
-    pendingScroll.current=snapshot.selectedIndex*ledgerRowHeight('expanded');
+    pendingScroll.current=snapshot.selectedIndex*rowPixels('expanded');
     setInspection(snapshot);
   };
   const resume=()=>{latched.current=false;setInspection(null);pendingScroll.current=0;};
@@ -57,7 +64,7 @@ export function DayLedger({ index, day, cursor, running=false, rate=1, waiting=f
     const row=(event.target as Element).closest<HTMLElement>('[data-seq]');
     // The scroll host survives every row replacement. Entering its live area
     // latches immediately, including gaps left by an insertion animation.
-    const offset=Math.max(0,Math.floor(((event.clientY-event.currentTarget.getBoundingClientRect().top)+event.currentTarget.scrollTop)/ledgerRowHeight(mode)));
+    const offset=Math.max(0,Math.floor(((event.clientY-event.currentTarget.getBoundingClientRect().top)+event.currentTarget.scrollTop)/rowPixels(mode)));
     inspect(row?Number(row.dataset.seq):events[offset]?.seq);
   };
   useLayoutEffect(()=>{
@@ -69,12 +76,11 @@ export function DayLedger({ index, day, cursor, running=false, rate=1, waiting=f
   useLayoutEffect(()=>{
     if(!compact||!host.current)return;
     host.current.scrollTop=0; setScroll(0);
-    const rows=host.current.firstElementChild;
-    if(rows) { rows.getAnimations().forEach(a=>a.cancel()); rows.animate([{transform:'translateY(-10px)'},{transform:'translateY(0)'}],{duration:logDuration(rate),easing:'ease-out'}); }
+
   },[day,cursor,compact,rate]);
-  const rowHeight = ledgerRowHeight(mode), start = Math.max(0, Math.floor(scroll / rowHeight) - 2), visible = events.slice(start, start + (compact?28:12));
+  const rowHeight = rowPixels(mode), start = Math.max(0, Math.floor(scroll / rowHeight) - 2), visible = events.slice(start, start + (compact?28:12));
   return <aside ref={panel} id="daily-ledger" className={`ledger ledger-${mode} ${inspecting?'ledger-inspecting':''}`} data-mode={mode} onPointerLeave={e=>{if(e.pointerType==='mouse'||e.pointerType==='pen')resume();}} aria-label="Current day transaction ledger">
-    <div className="ledger-heading"><div><span className="eyebrow">TRANSACTIONS</span><h2>{displayDate(displayedDay, true)}</h2></div><span className="count">{events.length.toLocaleString('en-US')}</span></div>
+    <div className="ledger-heading"><div><span className="eyebrow">{rewindPosition!==undefined?'UN-POSTING TRANSACTIONS':'TRANSACTIONS'}</span><h2>{displayDate(displayedDay, true)}</h2></div><span className="count">{events.length.toLocaleString('en-US')}</span></div>
     <div className="ledger-columns"><span>{compact?'DAY · PAYMENT FLOW · USD · DATED UNIT':'PAYMENT FLOW'}</span>{inspecting&&<button onClick={resume}>Resume log</button>}</div>
     <div className="ledger-scroll" ref={host} onPointerEnter={inspectPointer} onPointerMoveCapture={inspectPointer} onPointerDownCapture={inspectPointer} onScroll={e => setScroll(e.currentTarget.scrollTop)}>
       {events.length ? <div style={{ height: events.length * rowHeight, position: 'relative' }}><div style={{ position: 'absolute', top: start * rowHeight, width: '100%' }}>{visible.map(e => <LedgerRow key={e.seq} event={e} index={index} compact={compact} waiting={waiting} amount={presentation?.amount} date={presentation?.date} inspect={()=>inspect(e.seq)} />)}</div></div> : <div className="ledger-empty"><span className="empty-line" />No transactions this day</div>}

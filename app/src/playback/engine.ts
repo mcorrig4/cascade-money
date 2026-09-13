@@ -1,9 +1,12 @@
+import { CUE_NAMES, type CueName } from '../director/cues.ts';
+import { RenderReadiness } from '../globe/readiness.ts';
 import { fromBookmarks, type BookmarkInput, sampleCamera, type CameraCommand, type Pose, type Center, type Ease, type Route, type Keyframe, orbitAt } from '../camera/primitives.ts';
 import { DAYS } from '../data/types.ts';
 import type { Event, EventIndex, Totals } from '../data/types.ts';
 
 export type Speed = 1 | 10 | 50 | 'year';
 export interface PlaybackState {
+  tMs:number; cues:Record<string,number>; companyCues:{company:string;atMs:number}[];
   position: number; day: number; cursor: number; playing: boolean; speed: Speed;
   revision: number; shot: number | null; shotRunning: boolean; story: string;
   presentationTotals: Totals | null;
@@ -15,6 +18,10 @@ export const eventPosition = (index: number, count: number) => 0.08 + (index + 1
 export const speedRate = (speed: Speed) => speed === 'year' ? DAYS / 15 : speed;
 
 export class PlaybackEngine {
+  private sceneGate?: RenderReadiness;
+  prepareScene() { return this.sceneGate ??= new RenderReadiness(); }
+  ready() { return this.sceneGate?.promise ?? Promise.resolve(); }
+  get isReady() { return !this.sceneGate || this.sceneGate.complete; }
   index: EventIndex;
   state: PlaybackState;
   listeners = new Set<() => void>();
@@ -35,7 +42,7 @@ export class PlaybackEngine {
   private range?: { start: number; end: number; seconds: number; elapsed: number; complete?: () => void };
   constructor(index: EventIndex) {
     this.index = index;
-    this.state = { position: 0.999, day: 0, cursor: index.days[0].events.length, playing: false, speed: 1,
+    this.state = { tMs:0,cues:{},companyCues:[],position: 0.999, day: 0, cursor: index.days[0].events.length, playing: false, speed: 1,
       presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,cameraElapsed:0, film:false, exposure:0, flash:null, timelapse:null, revision: 0, shot: null, shotRunning: false, story: 'all', recording: false, hud: true, showDebt: false, caption: false,
       shotElapsed: 0, shotDuration: 0, stage: 'main', focusInvoices: null,
       camera: { lat: 36, lng: -145, altitude: 2.15, duration: 0, id: 0 } };
@@ -66,12 +73,20 @@ export class PlaybackEngine {
     this.bookmarkOverride=false;
     if(this.state.camera.bookmarkPath)this.update({camera:{...this.state.camera,bookmarkPath:false}});
     this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = [];
-    this.update({ presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
+    this.update({ cues:{},companyCues:[],presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
   beginShot(shot: number, duration = 0) {
     const {exposure,flash,timelapse}=this.state;
     this.stopShot(); this.update({exposure,flash,timelapse}); this.shotClock = 0;
     this.update({ shot, shotElapsed: 0, shotDuration: duration, shotRunning: true, revision: this.state.revision + 1 });
+  }
+  cue(name:CueName,value?:string,atMs=this.state.shot===null?this.state.tMs:this.state.shotElapsed*1000) {
+    if(!CUE_NAMES.includes(name))throw new Error(`Unknown cue: ${name}`);
+    if(!Number.isFinite(atMs)||atMs<0)throw new Error('Cue timestamp must be nonnegative milliseconds');
+    if(name==='company') {
+      if(!value?.trim())throw new Error('Company cue requires a name');
+      this.update({companyCues:[...this.state.companyCues,{company:value,atMs}]});
+    } else this.update({cues:{...this.state.cues,[name]:atMs}});
   }
   after(seconds: number, run: () => void) {
     this.scheduled.push({ time: seconds, run }); this.scheduled.sort((a, b) => a.time - b.time);
@@ -120,13 +135,14 @@ export class PlaybackEngine {
   flashToWhite(duration:number) { this.update({flash:{from:this.state.exposure,to:1,elapsed:0,duration}}); }
   fadeFromWhite(duration:number) { this.update({flash:{from:this.state.exposure,to:0,elapsed:0,duration}}); }
   tick(seconds:number, source: 'realtime' | 'manual' = 'realtime') {
-    if (source !== this.clockMode) return;
+    if (source !== this.clockMode || !this.isReady) return;
     let remaining=Math.max(0,seconds),guard=0;
     do {
       // Consume exact cue boundaries, including when a capture advances many
       // seconds at once. No range from scene N leaks into N+1.
       const next=this.state.shotRunning?this.scheduled[0]?.time:undefined;
       const dt=next===undefined?remaining:Math.min(remaining,Math.max(0,next-this.shotClock));
+      this.update({tMs:this.state.tMs+dt*1000});
       if(this.state.shotRunning){this.shotClock+=dt;this.update({shotElapsed:this.shotClock});}
       if(this.state.shotRunning||this.state.shot===null){
         const flash=this.state.flash,tl=this.state.timelapse;

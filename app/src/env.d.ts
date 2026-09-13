@@ -6,10 +6,14 @@ declare global {
   interface Window {
     Telegram?: { WebApp?: import('./platform/telegram.ts').TelegramApp };
     __cascade?: {
+      ready:()=>Promise<void>;
+      cue:(name:import('./director/cues.ts').CueName,value?:string,atMs?:number)=>void;
+      cameraClearance:()=>{actualMeters:number;minimumMeters:number;site:string|null;groundMeters:number};
+      readiness:()=>{textures:{name:string;decoded:boolean;uploaded:boolean}[];fullFrame:boolean;background:string};
       bookmarks: import("./camera/primitives.ts").CameraBookmark[];
       addBookmark:()=>import("./camera/primitives.ts").CameraBookmark; exportBookmarks:()=>Promise<string>;
       loadBookmarks:(json:string)=>import("./camera/primitives.ts").Bookmark[];fromBookmarks:(list:import("./camera/primitives.ts").BookmarkInput[])=>number;
-      shots: typeof import('./director/shots.ts').SHOTS;playScene:(id:number)=>void;playFilm:()=>void;
+      shots: typeof import('./director/shots.ts').SHOTS;playScene:(id:number)=>void;playFilm:()=>void|Promise<void>;
       sceneTransitions:{sceneIndex:number;sceneId:number;tMs:number}[];readonly filmStartMs:number|null;
       engine: PlaybackEngine; globe: GlobeInstance; pool: ArcPool;
       cameraFlightActive: () => boolean;

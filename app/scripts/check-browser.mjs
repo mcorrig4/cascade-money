@@ -21,13 +21,15 @@ const nativeGl=process.env.CHROME_GL==='native';
 let browser;
 try { browser = await chromium.launch({ executablePath, headless: true,
   // Software WebGL is deterministic for the production suite but far too slow
-  // to drive a second photogrammetry renderer in the local-only tile frames.
+  // to drive a second photogrammetry renderer in the optional tile frames.
   args: staticMode ? ['--no-sandbox', '--disable-dev-shm-usage', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : ['--no-sandbox', '--disable-dev-shm-usage'] }); } catch (error) {
   console.error(`Chrome launch failed (${executablePath}): ${error.message}\nRun outside the sandbox: pnpm --dir app check:browser --static`);
   process.exit(1);
 }
 async function routeStatic(context) {
   if (staticMode) {
+    // Static proofs remain deterministic and explicitly exercise offline GLB fallback.
+    await context.route('https://tile.googleapis.com/**', route => route.fulfill({ status: 403, body: '{}' }));
     // Fulfill the built app over an intercepted origin; no listening socket or port allocation.
     const root = resolve('dist');
     const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png', '.ndjson': 'application/x-ndjson', '.glb': 'model/gltf-binary', '.wasm': 'application/wasm' };
@@ -39,6 +41,15 @@ async function routeStatic(context) {
       catch { await route.fulfill({ status: 404, body: 'Not found' }); }
     });
   }
+}
+async function waitForEarthReady(page) {
+  await page.waitForFunction(()=>typeof window.__cascade?.ready==='function');
+  await page.evaluate(()=>window.__cascade.ready());
+  const readiness=await page.evaluate(()=>window.__cascade.readiness());
+  assert.equal(readiness.fullFrame,true,'Readiness includes a completed full-frame render');
+  assert.equal(readiness.background,'#071019','Readiness uses the final scene background');
+  assert.equal(readiness.textures.length,2,'The current Earth shader uses day and night maps');
+  assert.ok(readiness.textures.every(map=>map.decoded&&map.uploaded),'Every sampled texture is decoded and uploaded');
 }
 async function expectLedgerMode(page, mode, phase) {
   try {
@@ -58,7 +69,7 @@ async function captureScenes(context, legibility=false) {
   const page=await context.newPage();page.setDefaultTimeout(300000);
   page.on('pageerror',e=>errors.push(e.message));
   const target=new URL(url);target.searchParams.set('inspect','1');
-  await page.goto(target.href);await page.waitForFunction(()=>!!window.__cascade&&window.__cascade.globe.globeMaterial().userData.textureStage!=='pending');
+  await page.goto(target.href);await waitForEarthReady(page);
   await page.keyboard.press('Shift+D');
   await page.keyboard.press('b');
   assert.equal(await page.evaluate(()=>window.__cascade.bookmarks.length),1,'B appends a rendered view');
@@ -73,8 +84,10 @@ async function captureScenes(context, legibility=false) {
   const directory=legibility?'legibility':'scenes';await mkdir(`artifacts/${directory}`,{recursive:true});
   const manifest=[];
   for(const [width,height] of legibility?[[640,360],[426,240]]:[[1920,1080],[640,360]]) {
-    await page.setViewportSize({width,height});
-    await page.evaluate(()=>{const e=window.__cascade.engine;e.setClockMode('manual');window.__cascade.playFilm();
+    // Legibility is a delivery-resolution audit of the 1080p composition.
+    // Relaying out the app at 426px tests an unrelated responsive layout.
+    await page.setViewportSize(legibility?{width:1920,height:1080}:{width,height});
+    await page.evaluate(async ()=>{const e=window.__cascade.engine;e.setClockMode('manual');await window.__cascade.playFilm();
       window.__capturePlaying=e.state.playing;e.update({recording:true,hud:true,playing:false,shotRunning:true});});
     let clock=0;
     for(const shot of shots) {
@@ -89,25 +102,52 @@ async function captureScenes(context, legibility=false) {
       await page.waitForTimeout(700);
       await page.waitForFunction(()=>window.__cascade.models().every(m=>!m.pending));
       const path=`artifacts/${directory}/scene-${String(shot.scene).padStart(2,'0')}-${width}x${height}.png`;
-      await page.screenshot({path});
-      const audit=await page.evaluate(()=>{
+      const frame=await page.screenshot();
+      if(legibility) {
+        const reduced=await page.evaluate(async ({base64,width,height})=>{
+          const image=new Image();image.src='data:image/png;base64,'+base64;await image.decode();
+          const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+          const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+          ctx.drawImage(image,0,0,width,height);return canvas.toDataURL('image/png').split(',')[1];
+        },{base64:frame.toString('base64'),width,height});
+        await writeFile(path,Buffer.from(reduced,'base64'));
+      } else await writeFile(path,frame);
+      const audit=await page.evaluate(({width,height,legibility})=>{
+        const scaleX=width/innerWidth,scaleY=height/innerHeight;
+        const bounds=e=>{const r=e.getBoundingClientRect();return {left:r.left*scaleX,right:r.right*scaleX,top:r.top*scaleY,bottom:r.bottom*scaleY};};
         const visible=selector=>{const e=document.querySelector(selector);return !!e&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'&&getComputedStyle(e).opacity!=='0'&&e.getBoundingClientRect().height>0;};
-        const hud=document.querySelector('.bottom-panel'),bottom=hud&&getComputedStyle(hud).visibility!=='hidden'?hud.getBoundingClientRect().top:innerHeight;
+        const hud=document.querySelector('.bottom-panel'),bottom=hud&&getComputedStyle(hud).visibility!=='hidden'?bounds(hud).top:height;
         const ledger=document.querySelector('.ledger');
-        const safeBottom=document.querySelector('.overlay-active')?Math.min(bottom,ledger.getBoundingClientRect().top):bottom;
+        const safeBottom=document.querySelector('.overlay-active')?Math.min(bottom,bounds(ledger).top):bottom;
         const content=[...document.querySelectorAll('.law:last-child,.invariant-list>div,.vault-card dt,.vault-card dd,.vault-card h2,.vault-card .eyebrow,.composable-items li:last-child')];
         return {hud:['.topbar','.ledger','.bottom-panel','.volume-chart','.scrubber'].every(visible),hidden:['.director','.story-selector','.network-status'].every(s=>!visible(s)),mode:window.__cascade.engine.state.shot,elapsed:window.__cascade.engine.state.shotElapsed,exposure:window.__cascade.engine.state.exposure,
-          clipped:content.filter(e=>e.getBoundingClientRect().bottom>safeBottom+1).map(e=>e.textContent),
+          clipped:content.filter(e=>bounds(e).bottom>safeBottom+1).map(e=>e.textContent),
           vaultClipped:[...document.querySelectorAll('.vault-card dt,.vault-card dd,.vault-card .invariant-list>div,.vault-card h2,.vault-card .eyebrow')].filter(e=>{
-            const r=e.getBoundingClientRect(),card=e.closest('.overlay-card').getBoundingClientRect();
+            const r=bounds(e),card=bounds(e.closest('.overlay-card'));
             return r.top<card.top-1||r.bottom>card.bottom+1||r.left<card.left-1||r.right>card.right+1;
           }).map(e=>e.textContent),
+          frameClipped:[...document.querySelectorAll('.overlay-card,.scene-narration p,.scene-location')].filter(e=>{
+            for(let node=e;node instanceof Element;node=node.parentElement)if(getComputedStyle(node).opacity==='0'||getComputedStyle(node).visibility==='hidden'||getComputedStyle(node).display==='none')return false;
+            const r=bounds(e),top=bounds(document.querySelector('.topbar')).bottom;
+            return r.left<-.5||r.right>width+.5||r.top<top-.5||r.bottom>safeBottom+.5;
+          }).map(e=>e.getAttribute('aria-label')||e.textContent?.slice(0,100)),
+          source:{width:innerWidth,height:innerHeight},output:{width,height},
+          type:[...document.querySelectorAll('.overlay-card h2,.overlay-card p,.laws-card .law strong,.vault-columns dt,.vault-columns dd,.invariant-list>div,.scene-narration p,.scene-location strong,.scene-location span,.ledger-log-line,.date-block strong,.date-block .eyebrow,.headline>strong,.headline>span,.ratio strong,.ratio span')].filter(e=>{
+            for(let node=e;node instanceof Element;node=node.parentElement)if(getComputedStyle(node).opacity==='0'||getComputedStyle(node).visibility==='hidden'||getComputedStyle(node).display==='none')return false;
+            return e.getBoundingClientRect().height>0;
+          }).map(e=>({text:e.textContent?.slice(0,100),selector:e.className||e.tagName,fontPx:parseFloat(getComputedStyle(e).fontSize)*scaleY,minimum:e.matches('h2,.scene-narration p')?14:e.matches('.ledger-log-line,.scene-location span,.date-block .eyebrow,.headline>span,.ratio span')?7.5:8.5})),
           overflow:[...document.querySelectorAll('.overlay-card')].filter(e=>e.scrollHeight>e.clientHeight+2).map(e=>e.getAttribute('aria-label'))};
-      });
+      },{width,height,legibility});
       manifest.push({scene:shot.scene,id:shot.id,title:shot.title,seconds,width,height,path,audit});
+      if(legibility) {
+        assert.deepEqual(audit.source,{width:1920,height:1080},'Legibility captures the canonical 1080p composition');
+        assert.deepEqual(audit.type.filter(item=>item.fontPx+0.05<item.minimum),[],`Scene ${shot.scene} text survives downscaling to ${width}×${height}`);
+      }
       assert.equal(audit.hud,true,'Recording keeps the product HUD');assert.equal(audit.hidden,true,'Recording hides production controls');
       assert.equal(audit.mode,shot.id,`Capture follows the 17-scene order (scene ${shot.scene}, film time ${targetTime}s)`);
       assert.ok(Math.abs(audit.elapsed-seconds)<1e-7, 'Capture uses the declared scene-relative time');
+      assert.deepEqual(audit.frameClipped,[],`${shot.title} keeps film content between the visible HUD regions at ${width}×${height}`);
+      assert.deepEqual(audit.overflow,[],`${shot.title} fits inside its overlay card at ${width}×${height}`);
       assert.deepEqual(audit.vaultClipped,[], 'Every stress-test label fits inside its card');
       assert.deepEqual(audit.clipped,[],`${shot.title} stays above the visible HUD at ${width}×${height}`);
     }
@@ -133,6 +173,7 @@ try {
   page.on('console', message => { if (message.type() === 'error' && /THREE|WebGL|shader/i.test(message.text())) errors.push(message.text()); });
   const inspectUrl = new URL(url); inspectUrl.searchParams.set('inspect', '1');
   await page.goto(inspectUrl.href);
+  await waitForEarthReady(page);
   await page.waitForFunction(() => window.__cascade?.geometry().every(a => a.geometry && a.alpha === 1) && window.__cascade.pool.arcs.length > 0);
   await page.waitForTimeout(500);
   // Deterministic RPC failure exercises the recorded fallback without relying on a public service.
@@ -141,6 +182,15 @@ try {
   const arcPanel=page.getByRole('dialog');
   await arcPanel.getByText('Arc RPC unavailable. Showing the recorded demo balances.').waitFor();
   assert.equal(await arcPanel.locator('tbody tr').count(),16);
+  for(const section of ['diagram','tickers','ladder','lifecycle','contract']) {
+    await arcPanel.getByTestId('token-'+section).waitFor({state:'visible'});
+  }
+  const tokenText=await arcPanel.getByTestId('token-tickers').innerText();
+  assert.match(tokenText,/recorded/i,'RPC failure labels metadata as recorded');
+  assert.match(await arcPanel.getByTestId('token-ladder').innerText(),/recorded/i,'RPC failure labels the maturity ladder as recorded');
+  assert.match(await arcPanel.getByTestId('token-contract').innerText(),/uri\(/,'Judges can reproduce the metadata read');
+  assert.equal(await arcPanel.getByTestId('token-lifecycle').locator('a[href*="/tx/"]').count(),3,'Issue, pay and extend link to recorded transactions');
+  assert.equal(await arcPanel.getByTestId('token-lifecycle').locator('a[href*=".sol"]').count(),2,'Maturity and redemption cite contract behavior');
   await arcPanel.locator('summary').click();
   assert.equal(await arcPanel.locator('.arc-actors li').count(),5);
   await page.screenshot({path:'artifacts/verify-on-arc-1920x1080.png'});
@@ -188,7 +238,7 @@ try {
   }
   assert.ok(after.every(arc => arc.clipStart > 0 && arc.clipEnd === 1 && arc.depthTest), 'Collapse moves into the payee with depth testing');
   await page.screenshot({ path: 'artifacts/arcs-collapse-1920x1080.png' });
-  await page.waitForFunction(() => window.__cascade.globe.globeMaterial().userData.textureStage !== 'pending');
+  await waitForEarthReady(page);
   assert.equal(await page.evaluate(() => window.__cascade.globe.renderer().capabilities.logarithmicDepthBuffer), true);
   assert.equal(await page.locator('.company-label svg').count() > 0, true, 'Named firms use vector marks');
   const alignment = await page.evaluate(() => window.__cascade.geography());
@@ -239,7 +289,7 @@ try {
   await expectLedgerMode(page,'expanded','Seek stays paused on subsequent ticks');
   assert.equal(modelRequests.length,0,'Models and Draco are never fetched on first paint or distant views');
   await captureScenes(context);
-  await page.evaluate(()=>{window.__cascade.playScene(12);const e=window.__cascade.engine;e.tick(e.state.shotDuration*.9);e.update({playing:false,shotRunning:false});});
+  await page.evaluate(async ()=>{await window.__cascade.ready();await window.__cascade.playScene(12);const e=window.__cascade.engine;e.tick(e.state.shotDuration*.9);e.update({playing:false,shotRunning:false});});
   await page.getByText('Earth imagery: NASA', { exact: true }).waitFor();
   await page.getByRole('button',{name:'Verify on Arc',exact:true}).click();
   await page.getByRole('dialog').waitFor();
@@ -259,7 +309,7 @@ try {
   const phone = await mobile.newPage(); phone.setDefaultTimeout(90000);
   phone.on('pageerror', error => errors.push(error.message));
   await phone.goto(inspectUrl.href);
-  await phone.waitForFunction(() => window.__cascade?.globe.globeMaterial().userData.textureStage !== 'pending' && !!window.__cascade);
+  await waitForEarthReady(phone);
   const telegramCalls = await phone.evaluate(() => window.__telegramCalls);
   assert.ok(telegramCalls.length >= 3 && telegramCalls.length % 3 === 0);
   for (let index = 0; index < telegramCalls.length; index += 3) {
@@ -300,7 +350,10 @@ try {
   await phone.screenshot({ path: 'artifacts/director-390x844.png' });
   await phone.getByRole('button', { name: 'Close director', exact: true }).click();
   await phone.screenshot({ path: 'artifacts/globe-390x844.png' });
-  assert.equal(textureRequests[0], 'earth-blue-marble-4k.jpg', '4K loads before the night map and high-resolution upgrade');
+  const earthRequests=textureRequests.filter(name=>/^earth-(blue-marble|night)-/.test(name));
+  assert.match(earthRequests[0],/^earth-blue-marble-(5400|4k)\.jpg$/,'The final day-map resolution loads first');
+  assert.equal(earthRequests[1],'earth-night-4k.jpg','The night map is part of startup readiness');
+  assert.equal(earthRequests.length,2,'Earth never swaps texture quality after readiness');
   await mobile.close();
   assert.deepEqual(errors, []);
   await writeFile('artifacts/browser-check.json', JSON.stringify({ viewports: ['1920x1080', '390x844'], alignment, layout, textureRequests, growing, scenes: 'artifacts/scenes/manifest.json', renderer: nativeGl?'Chrome / native GL':'Chrome / SwiftShader', opacity: 'passed', retainedGeometry: 'passed', before, after, errors }, null, 2));

@@ -1,3 +1,4 @@
+import { clampCamera, cameraGround } from '../camera/primitives.ts';
 import { Matrix4, Quaternion, Vector3 } from 'three';
 export const EARTH_METERS = 6_371_000;
 export const WGS84_A = 6_378_137;
@@ -29,7 +30,7 @@ export function siteLocalCamera(site: SiteId, orbit = 0) {
   const distance = campus ? 1000 : 48;
   const bearing = ((campus ? -43 : 270) + orbit) * Math.PI / 180;
   return {
-    position: new Vector3(Math.sin(bearing) * distance, campus ? 600 : 5.2, -Math.cos(bearing) * distance),
+    position: new Vector3(Math.sin(bearing) * distance, campus ? 600 : 12, -Math.cos(bearing) * distance),
     target: new Vector3(0, campus ? 12 : 7.4, 0),
     up: new Vector3(0, 1, 0),
     fov: campus ? 45 : 38,
@@ -37,7 +38,11 @@ export function siteLocalCamera(site: SiteId, orbit = 0) {
 }
 export function siteCamera(site: SiteId, radius: number, orbit = 0) {
   const local = siteLocalCamera(site, orbit);
-  return { position: sitePoint(site, radius, local.position.x, local.position.y, -local.position.z),
+  const eye=sitePoint(site, radius, local.position.x, local.position.y, -local.position.z);
+  const pose={lat:Math.asin(eye.y/eye.length())*180/Math.PI,lng:Math.atan2(eye.x,eye.z)*180/Math.PI,altitude:eye.length()/radius-1};
+  const safe=clampCamera(pose,cameraGround(pose));
+  eye.multiplyScalar((1+safe.altitude)*radius/eye.length());
+  return { position: eye,
     target: sitePoint(site, radius, local.target.x, local.target.y, -local.target.z),
     up: siteFrame(SITES[site].lat, SITES[site].lng, radius).up, fov: local.fov };
 }
@@ -47,7 +52,7 @@ const ease = (value: number) => {
   return t * t * (3 - 2 * t);
 };
 
-/** Shot 1: a low architectural orbit, descent, then a true arch fly-through. */
+/** Shot 1: a low architectural orbit, descent, then a clearance-safe pass above the ring. */
 export function appleParkShotCamera(radius: number, elapsed: number) {
   let position: Vector3, target: Vector3, fov: number;
   if (elapsed < 6.5) {
@@ -58,12 +63,12 @@ export function appleParkShotCamera(radius: number, elapsed: number) {
   } else if (elapsed < 10) {
     const t = ease((elapsed - 6.5) / 3.5), bearing = 70 * Math.PI / 180;
     const orbitEnd = new Vector3(Math.sin(bearing) * 420, 120, -Math.cos(bearing) * 420);
-    position = orbitEnd.lerp(new Vector3(-27.34, 7.8, 64.51), t);
+    position = orbitEnd.lerp(new Vector3(-27.34, 29, 64.51), t);
     target = new Vector3(-2, 9, 2).lerp(new Vector3(-6.13, 10.5, 6.24), t);
     fov = 47 + 3 * t;
   } else {
     const t = ease((elapsed - 10) / 3.7);
-    position = new Vector3(-27.34, 7.8, 64.51).lerp(new Vector3(2.76, 8.0, -18.19), t);
+    position = new Vector3(-27.34, 29, 64.51).lerp(new Vector3(2.76, 29, -18.19), t);
     target = new Vector3(-6.13, 10.5, 6.24).lerp(new Vector3(20.0, 8.8, -65.0), t);
     fov = 50;
   }

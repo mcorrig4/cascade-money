@@ -1,3 +1,4 @@
+import { separateSiteSurfaces } from './site-surfaces.ts';
 import { Group, Material } from 'three';
 import type { GlobeInstance } from 'globe.gl';
 import type { Object3D, Mesh } from 'three';
@@ -22,13 +23,14 @@ export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId,
       const scene = await loadSiteModel(siteModelUrl(entry.id), controller.signal);
       if (!scene) { if (!controller.signal.aborted) entry.missing = true; return; }
       if (disposed || !entry.wanted) { disposeModel(scene); return; }
+      separateSiteSurfaces(scene, entry.id);
       const root = new Group(), site = SITES[entry.id], frame = siteFrame(site.lat, site.lng, globe.getGlobeRadius());
       root.position.copy(frame.position); root.quaternion.copy(frame.rotation); root.scale.setScalar(metersToScene(1, globe.getGlobeRadius()));
       root.name = `Site model: ${entry.id}`; root.userData.skipBloom = true; root.add(scene);
       const unique = new Set<Material>();
       scene.traverse(object => { const mesh = object as Mesh; if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) unique.add(m); });
       const materials = [...unique].map(material => ({ material, opacity: material.opacity, transparent: material.transparent, depthWrite: material.depthWrite }));
-      materials.forEach(({ material }) => { material.opacity = 0; material.transparent = true; material.depthWrite = false; material.needsUpdate = true; });
+      materials.forEach(({ material }) => { material.opacity = 0; material.transparent = true; material.depthWrite = true; material.needsUpdate = true; });
       entry.loaded = { root, fade: 0, materials, release: () => disposeModel(root) };
       globe.scene().add(root);
     } catch (error) {
@@ -36,19 +38,20 @@ export function createSiteModels(globe: GlobeInstance, fallbacks: Record<SiteId,
     } finally { entry.pending = false; entry.controller = undefined; }
   }
   return {
-    update(lat: number, lng: number, altitude: number, elapsed: number) {
+    update(lat: number, lng: number, altitude: number, _elapsed: number) {
       for (const entry of entries) {
         entry.wanted = nearSite(entry.id, lat, lng, altitude);
         if (!entry.wanted) entry.controller?.abort();
         if (entry.wanted && !entry.loaded && !entry.pending && !entry.missing) void load(entry);
         const loaded = entry.loaded;
         if (loaded) {
-          loaded.fade = Math.max(0, Math.min(1, loaded.fade + (entry.wanted ? 1 : -1) * elapsed / 300));
+          // LOD blending follows the sampled camera altitude, never time since load.
+          loaded.fade = entry.wanted ? Math.max(0, Math.min(1, (.002-altitude)/.0003)) : 0;
           for (const original of loaded.materials) {
             const { material } = original, full = loaded.fade === 1;
             const transparent = full ? original.transparent : true;
             if (material.transparent !== transparent) { material.transparent = transparent; material.needsUpdate = true; }
-            material.opacity = original.opacity * loaded.fade; material.depthWrite = full && original.depthWrite;
+            material.opacity = original.opacity * loaded.fade; material.depthWrite = original.depthWrite;
           }
           if (!entry.wanted && loaded.fade === 0) { loaded.release(); entry.loaded = undefined; }
         }

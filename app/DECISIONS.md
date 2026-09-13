@@ -202,3 +202,12 @@ presentation metadata on the existing connected events, not mutations or
 additional events in the index. The free explorer and year keep the actual
 stream values. The requested $450M/eight-company alternative is an exported
 constant. See SCENES.md for the mapping and optional narration JSON contract.
+
+
+## Production UI and tiles — September 13, 2026
+
+> 2026-09-13 00:41 EDT: Film shows the full app UI; recording mode keeps the HUD; hud:false is never used for film frames; the film wraps the app in a real browser window.
+
+> 2026-09-13 00:54 EDT: tiles served on cascade.vellum.network too (key referrer-restricted to the domain + localhost); local-only gate retired.
+
+The Earth readiness gate covers its day/night maps and a complete frame only. Site tiles refine over the GLB view and never block this gate or playback. The main globe renderer already enabled logarithmic depth before Stage 16; its setting is unchanged.
