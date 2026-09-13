@@ -63,7 +63,7 @@
   .app .ledger-toggle {display:none}
   /* The sidebar sits over the globe, so it needs an opaque ground and a layer
      above the on-globe company callouts: they otherwise print through its rows. */
-  .app.recording-hud.ledger-sidebar .ledger {z-index:28;background:#071019f2}
+  .app.recording-hud.ledger-sidebar .ledger {z-index:28;background:#071019}
   .app.recording-hud:not(.ledger-sidebar) .ledger {top:auto;bottom:var(--film-bottom);left:calc(36 * var(--film-unit));right:calc(36 * var(--film-unit));width:auto;height:var(--film-log);padding:0 calc(8 * var(--film-unit));z-index:28;overflow:hidden}
   .app.recording-hud:not(.ledger-sidebar) .ledger-heading,.app.recording-hud:not(.ledger-sidebar) .ledger-columns,.app.recording-hud:not(.ledger-sidebar) .ledger-foot {display:none}
   .app.recording-hud .ledger-scroll {overflow:hidden}
