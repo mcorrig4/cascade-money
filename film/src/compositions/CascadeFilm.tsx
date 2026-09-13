@@ -583,7 +583,7 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
 
   let visual: React.ReactNode;
   if(source==='live'){
-    const app=<AppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
+    const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
     if(sceneIndex===1){
       const pullbackFrames=at30(SCENE1_PULLBACK_FRAMES_AT_30,fps);
       const pullback=interpolate(frame,[0,pullbackFrames],[0,1],{...CLAMP,easing:Easing.out(Easing.cubic)});
