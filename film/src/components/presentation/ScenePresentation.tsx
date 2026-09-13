@@ -19,28 +19,48 @@ const requiredFrame = (cues: SceneCues, name: string, fps: number) => {
 const Wordmark = () => <h2 className="close-wordmark"><svg className="wordmark-icon" viewBox="0 0 36 36" aria-hidden="true"><path d="M5 8h26M5 18h19M5 28h12" stroke="currentColor" strokeWidth="4"/></svg>Cascade Money</h2>;
 const visibility = (shown: boolean): React.CSSProperties => ({visibility: shown ? 'visible' : 'hidden'});
 const citations = [
-  {cue: 'stat-cost', source: 'Apple 10-K FY2025', fact: 'product cost of sales $194.1B'},
-  {cue: 'stat-suppliers', source: 'Apple Supplier List 2025', fact: '~200 direct suppliers, 98% of spend'},
-  {cue: 'stat-factories', source: 'Apple Supply Chain 2025 Progress Report', fact: 'thousands of facilities, 50+ countries'},
+  {cue: 'hook-open', sourceCue: 'stat-cost', figure: '$200B', label: 'of product costs', source: 'Apple 10-K FY2025', fact: 'product cost of sales $194.1B'},
+  {cue: 'stat-suppliers', sourceCue: 'stat-suppliers', figure: '200', label: 'suppliers', source: 'Apple Supplier List 2025', fact: 'about 200 direct suppliers, 98% of spend'},
+  {cue: 'stat-factories', sourceCue: 'stat-factories', figure: 'thousands', label: 'of factories', source: 'Apple Supply Chain 2025 Progress Report', fact: 'thousands of facilities'},
+  {cue: 'stat-countries', sourceCue: 'stat-countries', figure: '50', label: 'countries', source: 'Apple Supply Chain 2025 Progress Report', fact: '50+ countries'},
 ];
 
-const HookPresentation: React.FC<{shown: Beat; geometry: WindowGeometry}> = ({shown, geometry}) => {
+const HookPresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
   const unit = geometry.width / 1920;
-  return <>
-    <div className="film-hook-sources" style={{left: 32 * unit, right: 32 * unit, top: 40 * unit}}>
-      {citations.map(c => <div key={c.cue} style={visibility(shown(c.cue))}><strong>{c.source}</strong><span>{c.fact}</span></div>)}
-    </div>
-    <div className="film-hook-band" style={{left: 32 * unit, right: 32 * unit, top: geometry.rect.bottom + 8 * unit, bottom: 8 * unit}}>
-      {shown('wordmark') ? <section className="overlay-card film-hook-close"><Wordmark/>{shown('hook-arc') && <p>on Arc</p>}</section>
-        : shown('promises') ? <section className="overlay-card"><h2>payment terms and promises</h2></section>
-        : shown('stat-suppliers') ? <section className="overlay-card cascade-totals film-hook-facts">
-          <div className="cascade-stat"><strong>200</strong><span>suppliers</span></div>
-          <div className="cascade-stat" style={visibility(shown('stat-factories'))}><strong>thousands</strong><span>of factories</span></div>
-          <div className="cascade-stat" style={visibility(shown('stat-countries'))}><strong>50</strong><span>countries</span></div>
-        </section>
-        : shown('hook-open') ? <section className="overlay-card film-hook-cost"><div className="cascade-stat"><strong>$200B</strong><span>of product costs</span></div></section> : null}
-    </div>
-  </>;
+  const terms = at('payment-terms'), promises = at('promises-word');
+  const close = at('wordmark'), arc = at('hook-arc');
+  const progress = (start: number, duration: number) => interpolate(frame, [start, start + duration], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  const on = (start: number) => progress(start - 1, 1) === 1;
+  const reveal = (start: number): React.CSSProperties => ({
+    ...visibility(on(start)), opacity: progress(start, .2 * fps),
+  });
+  return <div className="film-hook-band" style={{
+    left: 32 * unit, right: 32 * unit, top: geometry.rect.bottom + 8 * unit, bottom: 8 * unit,
+    '--film-unit': `${unit}px`,
+  } as React.CSSProperties}>
+    <section className="film-hook-facts" style={{opacity: 1 - .6 * progress(terms, .4 * fps)}}>
+      {citations.map(c => <div className="film-hook-column" key={c.cue} style={reveal(at(c.cue))}>
+        <strong className="film-hook-figure">{c.figure}</strong>
+        <span className="film-hook-label">{c.label}</span>
+        <div className="film-hook-source" style={reveal(at(c.sourceCue))}>
+          <strong>{c.source}</strong><span>{c.fact}</span>
+        </div>
+      </div>)}
+    </section>
+    {/* Both clauses occupy their final width even before the second is spoken. */}
+    <h2 className="film-hook-phrase" style={{
+      ...visibility(on(terms) && !on(close)), opacity: progress(terms, .2 * fps) * (1 - progress(close - 1, 1)),
+    }}>
+      <span style={reveal(terms)}>payment terms</span><span style={reveal(promises)}> and promises</span>
+    </h2>
+    <section className="overlay-card film-hook-close" style={reveal(close)}>
+      <Wordmark/><p style={reveal(arc)}>on Arc</p>
+    </section>
+  </div>;
 };
 
 const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
@@ -414,7 +434,7 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
     : scene === 7 ? <CoinPresentation at={at} geometry={geometry}/>
     : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
-    {scene === 2 ? <HookPresentation shown={shown} geometry={geometry}/>
+    {scene === 2 ? <HookPresentation at={at} geometry={geometry}/>
       : inset ? scene === 3 ? <div className="film-presentation-inset" style={{
         // Reserve the footer and keep both the scrim and copy below the order cards.
         position: 'absolute', left: 0, width: geometry.width, height: 255 * unit,
