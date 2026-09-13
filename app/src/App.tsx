@@ -13,10 +13,11 @@ import { SceneLabels } from './director/SceneLabels.tsx';
 import { ShotOverlays } from './director/ShotOverlays.tsx';
 import { OnchainPanel } from './components/OnchainPanel.tsx';
 import { FilmEffects } from './director/FilmEffects.tsx';
-import { SHOTS, playShot, loadNarrationDurations } from './director/shots.ts';
+import { SHOTS, playShot, loadNarrationDurations, ledgerSidebar } from './director/shots.ts';
 import './stage.css';
 import './film.css';
 import { recordingVisibility, setRecordingMode } from './director/recording.ts';
+
 
 function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: () => void; onError: (message: string) => void }) {
   const [engine] = useState(() => { const value = new PlaybackEngine(index); value.prepareScene(); return value; });
@@ -81,7 +82,7 @@ function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: ()
   },[director]);
   const visibility=recordingVisibility(state.recording,state.hud);
   const tesla = [...index.firms.values()].some(f => f.id.toLowerCase().includes('tesla'));
-  return <main className={`app ${state.shot===2?'california-hook':''} ${state.camera.site?'site-focused':''} ${state.recording ? visibility.hud?'recording recording-hud':'recording clean-frame' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
+  return <main className={`app ${state.shot===2?'california-hook':''} ${state.camera.site?'site-focused':''} ${state.recording ? visibility.hud?'recording recording-hud':'recording clean-frame' : ''} ${ledgerSidebar(state.recording,state.shot) ? 'ledger-sidebar' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
     <div className={state.timelapse&&state.timelapse.elapsed<state.timelapse.duration?'time-lapse-blur':''}><Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense></div>
     <header className="topbar"><Brand onDirector={openDirector} />
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>

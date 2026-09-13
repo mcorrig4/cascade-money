@@ -245,6 +245,11 @@ export function californiaPath(from:Pose,seconds:number,incomingLngVelocity=0):K
   {...APPLE_MARKER_APPROACH,t:seconds*.75,tangent:zero},
   {...table[1].end,t:seconds,tangent:zero}];
 }
+// Scenes 3 and 5-10 keep the product's right-hand event ledger on screen while recording
+// (Liam 2026-09-13: the film keeps the app UI). Shot ids, in scene order: 3, 4, 17, 6, 18, 5, 11.
+// The opening two scenes and the two store-interior scenes stay clean.
+export const LEDGER_SIDEBAR_SHOTS=[3,4,17,6,18,5,11];
+export function ledgerSidebar(recording:boolean,shot:number|null){return recording&&LEDGER_SIDEBAR_SHOTS.includes(shot??0);}
 export function shotAvailable(_engine:PlaybackEngine,id:number){return SHOTS.some(s=>s.id===id);}
 const chase:Ease={kind:'bezier',points:[.12,.65,.18,1]};
 export function nextShot(id:number,direction=1){return SHOTS[Math.max(0,Math.min(SHOTS.length-1,SHOTS.findIndex(s=>s.id===id)+direction))].id;}
