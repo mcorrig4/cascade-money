@@ -2,24 +2,31 @@ import { createElement as h, useId } from 'react';
 
 export type DatedDollarProps = { days?: number | null; isoDate?: string; size?: number };
 
-// Coin-v3 geometry (Liam's 7 notes on the v2 sheet, msg 22232): smaller number,
-// plus stroke matched to the ring thickness and shrunk overall, a condensed
-// centred date with more air above the number, and the spot token (days=null)
-// reading "+0" through the same layout as every other coin.
+// Coin-v4 = FINAL geometry (Liam voice 2026-09-13 06:39 EDT, msg 22297), on top
+// of v3 (msg 22232): v3's number size/date-gap/date-centring/spot-"+0"/ring-USD
+// are unchanged. This round: (2) plus reverted to v2's chunky bar/arm, amber as
+// before; (3) date now uses a real bundled condensed light typeface (Roboto
+// Condensed Light, app/public/fonts/RobotoCondensed-Light.woff2, @font-face'd
+// as 'Coin Date Condensed' in styles.css — never a system-font assumption)
+// plus negative tracking plus a small extra horizontal squeeze, so the date is
+// close to the big number's width instead of dominating it; (4) palette A
+// everywhere except the date colour, which takes glacier enamel's #A8C6CE.
 const RING_STROKE = 7;
-const PLUS_ARM = 22;
-const PLUS_THICK = RING_STROKE;
+const PLUS_ARM = 34;
+const PLUS_THICK = 20;
 const NUMBER_SIZE = 82;
 const NUM_DIGIT_WIDTH = NUMBER_SIZE * 0.62;
-const DATE_SIZE = 26;
-const DATE_CONDENSE = 0.82;
+const DATE_SIZE = 25;
+const DATE_LETTER_SPACING = -0.4;
+const DATE_CONDENSE = 0.96;
 const DATE_GAP_FROM_NUM_BASELINE = 84;
-const NUM_X = 208.87;
+const NUM_X = 220.87;
 const NUM_BASELINE = 168.62;
 const PLUS_CENTER: [number, number] = [168.87, 136.62];
-const DATE_FONT = "'Inter Condensed', 'Roboto Condensed', 'Arial Narrow', Inter, 'DejaVu Sans', sans-serif";
+const DATE_COLOR = '#A8C6CE';
+const DATE_FONT = "'Coin Date Condensed', 'Roboto Condensed', Arial, sans-serif";
 
-/** Approved coin-v3 geometry. Size is the SVG height; null days denotes spot ("+0"). */
+/** Approved coin-v4 (FINAL) geometry. Size is the SVG height; null days denotes spot ("+0"). */
 export function DatedDollar({ days = null, isoDate, size = 96 }: DatedDollarProps) {
   const gradient = `dated-dollar-${useId()}`;
   const spot = days === null;
@@ -44,6 +51,6 @@ export function DatedDollar({ days = null, isoDate, size = 96 }: DatedDollarProp
         h('rect', { x: -PLUS_THICK / 2, y: -PLUS_ARM, width: PLUS_THICK, height: 2 * PLUS_ARM, rx: PLUS_THICK / 2 })),
       h('text', { x: NUM_X, y: NUM_BASELINE, fontSize: NUMBER_SIZE, fontWeight: 700, letterSpacing: -2, fill: '#e9f2ee', style: { fontVariantNumeric: 'tabular-nums' } }, shown),
       size >= 72 && isoDate && h('g', { transform: `translate(${dateCenterX} ${NUM_BASELINE - DATE_GAP_FROM_NUM_BASELINE}) scale(${DATE_CONDENSE} 1)` },
-        h('text', { x: 0, y: 0, textAnchor: 'middle', fontFamily: DATE_FONT, fontSize: DATE_SIZE, fontWeight: 600,
-          letterSpacing: 0.5, fill: '#8297a5', style: { fontStretch: 'condensed', fontVariantNumeric: 'tabular-nums' } }, isoDate))));
+        h('text', { x: 0, y: 0, textAnchor: 'middle', fontFamily: DATE_FONT, fontSize: DATE_SIZE, fontWeight: 300,
+          letterSpacing: DATE_LETTER_SPACING, fill: DATE_COLOR, style: { fontVariantNumeric: 'tabular-nums' } }, isoDate))));
 }

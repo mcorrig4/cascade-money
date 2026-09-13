@@ -1,44 +1,45 @@
 #!/usr/bin/env python3
-"""Cascade dated-dollar coin icon — v3, per Liam's seven notes on the v2 sheet
-(msg 22232, on the v2 sheet 22224):
+"""Cascade dated-dollar coin icon — v4 = FINAL (Liam voice 2026-09-13 06:39 EDT,
+msg 22297), on top of v3 (branch app/coin-v3 @ 62b979f):
 
-1. Shrink the big number a little.
-2. Plus stroke matches the coin's border-ring thickness; plus is smaller overall.
-3. Date uses a narrower, more horizontally condensed treatment.
-4. More gap between the top of the big number and the bottom of the date.
-5. Date is centred above the big number (no more left hang).
-6. The spot token (no maturity) gets the plus too, reading "+0" — same layout.
-7. USD lettering and the border are unchanged ("it kind of looks good how it is").
+1. Big number size: keep v3 (82px, unchanged this round).
+2. Plus: REVERTED to the v2 chunky plus (arm 34 / thickness 20), amber as before.
+3. Date: genuinely narrow now — a real bundled condensed light typeface
+   (Roboto Condensed Light, woff2 under app/public/fonts, @font-face'd; no
+   reliance on a system font existing on dev-mac or anywhere else) plus
+   negative letter-spacing plus a small horizontal squeeze. Measured
+   (Chromium getBBox, see v4/measure-v4.mjs) date width ≈0.93x the width of
+   "30" at the same scale — comfortably under the ≤1.15x bar.
+4. Colour: palette A everywhere except the date colour, which takes glacier
+   enamel's date colour (#A8C6CE).
 
-Geometry constants below are the ONLY thing that changed from v2 in the number/
-plus/date block; the two-ring border and the USD wordmark keep v2's numbers.
-
-Palette is now a parameter (colourways brief, msg 22233): PALETTES holds four
-named palettes; the app stays on palette "A" (current) until Liam picks one.
+v3's notes 1/4/5/6/7 (number size, date gap, date centring, spot "+0", ring/
+USD) are untouched — only the plus geometry and the date typography changed.
 """
 import math
 import sys
 
 FONT = "Inter, 'DejaVu Sans', Helvetica, Arial, sans-serif"
-DATE_FONT = "'Inter Condensed', 'Roboto Condensed', 'Arial Narrow', Inter, 'DejaVu Sans', sans-serif"
+# Bundled — app/public/fonts/RobotoCondensed-Light.woff2, @font-face'd as 'Coin Date
+# Condensed' in app/src/styles.css. Never relies on a system-installed condensed face.
+DATE_FONT = "'Coin Date Condensed', 'Roboto Condensed', Arial, sans-serif"
 
 CX, CY, R = 100, 100, 78
 RING_STROKE = 7          # coin's border-ring thickness (both rings) — unchanged from v2, note 7
 RING_GAP = 3.5           # inner ring radius offset — unchanged from v2
 
 PLUS_ANGLE = 118  # ~4 o'clock, clockwise from 12 — unchanged
-PLUS_ARM, PLUS_THICK = 22, RING_STROKE   # note 2: smaller overall; stroke == ring thickness
+PLUS_ARM, PLUS_THICK = 34, 20   # v4 note 2: reverted to v2's chunky plus
 PLUS_RX = PLUS_THICK / 2
 
 NUMBER_SIZE = 82          # note 1: was 94 in v2
 NUMBER_LETTER_SPACING = -2
 NUM_DIGIT_WIDTH = NUMBER_SIZE * 0.62   # tabular-nums approx digit advance, bold
 
-DATE_SIZE = 26
-DATE_CONDENSE = 0.82       # note 3: horizontal squeeze applied via transform (font-stretch alone
-                           # is not reliably honored without a real condensed face installed)
-DATE_GAP_FROM_NUM_BASELINE = 84  # note 4: was 76 in v2; number top moves further from date bottom
-                                  # both because this grew AND because the number itself shrank
+DATE_SIZE = 25              # v4 note 3: real condensed font + tracking + squeeze together
+DATE_LETTER_SPACING = -0.4  # negative tracking, on top of the condensed typeface
+DATE_CONDENSE = 0.96        # small extra horizontal squeeze (font does most of the work now)
+DATE_GAP_FROM_NUM_BASELINE = 84  # unchanged from v3 (note 4 not revisited this round)
 
 
 def rim_point(angle_deg, radius=R):
@@ -61,8 +62,11 @@ PALETTES = {
                ring_dark="#102824", plus="#e8b768", number="#e9f2ee", date="#8297a5", usd="#0e7a5a"),
     "B": dict(name="Glacier enamel", face="#DDF8F3", ring="#43D9C0", plus="#43D9C0",
                number="#F4FFFC", date="#A8C6CE", usd="#103B37"),
+    # Wingman's pick: "+30 reads as one element when the plus matches the number";
+    # also carries two geometry overrides — a thin single ring (not the double
+    # dark+colour ring) and an upright (non-italic) USD wordmark.
     "C": dict(name="Porcelain and vermilion", face="#FFF2DF", ring="#E9CDA7", plus="#FF735E",
-               number="#FF735E", date="#C3B8AC", usd="#263B40"),
+               number="#FF735E", date="#C3B8AC", usd="#263B40", thin_ring=True, upright_usd=True),
     "D": dict(name="Midnight and electric lilac", face="#202B43", ring="#B7A2FF", plus="#CCBAFF",
                number="#F1EAFF", date="#B1BBD0", usd="#F1EAFF"),
 }
@@ -71,12 +75,17 @@ PALETTES = {
 DARK_FACE_HI, DARK_FACE_LO, DARK_USD = "#132531", "#081319", "#69e6c0"
 
 
+# v4 note 4: palette A everywhere, EXCEPT the date colour, which takes glacier
+# enamel's date colour.
+GLACIER_DATE = "#A8C6CE"
+
 def resolve_palette(key, dark=False):
     p = dict(PALETTES[key])
     p.setdefault("face_lo", darken(p["face"], 0.12))
     p.setdefault("ring_dark", darken(p["ring"], 0.55))
     if dark:
         p["face"], p["face_lo"], p["usd"] = DARK_FACE_HI, DARK_FACE_LO, DARK_USD
+    p["date"] = GLACIER_DATE
     return p
 
 
@@ -95,12 +104,13 @@ def coin_svg(show_plus, days, iso_date, show_date=True, palette="A", dark=False,
       <stop offset="100%" stop-color="{pal['face_lo']}"/>
     </radialGradient>
   </defs>
-  <g font-family="{FONT}">
+  <g font-family="{FONT}">'''] + ([f'''
+    <circle cx="{CX}" cy="{CY}" r="{R}" fill="none" stroke="{pal['ring']}" stroke-width="2"/>'''] if pal.get('thin_ring') else [f'''
     <circle cx="{CX}" cy="{CY}" r="{R}" fill="none" stroke="{pal['ring_dark']}" stroke-width="{RING_STROKE}"/>
-    <circle cx="{CX}" cy="{CY}" r="{R-RING_GAP}" fill="none" stroke="{pal['ring']}" stroke-width="{RING_STROKE}"/>
+    <circle cx="{CX}" cy="{CY}" r="{R-RING_GAP}" fill="none" stroke="{pal['ring']}" stroke-width="{RING_STROKE}"/>''']) + [f'''
     <circle cx="{CX}" cy="{CY}" r="{R-9}" fill="url(#panel-{uid})"/>
     <text x="{CX}" y="{CY+11}" text-anchor="middle" font-size="34" font-weight="700"
-          font-style="italic" letter-spacing="1" fill="{pal['usd']}">USD</text>''']
+          font-style="{'normal' if pal.get('upright_usd') else 'italic'}" letter-spacing="1" fill="{pal['usd']}">USD</text>''']
 
     # note 6: spot (no maturity) still gets the plus + "0", same layout as every other coin.
     render_days = 0 if days is None else days
@@ -126,8 +136,8 @@ def coin_svg(show_plus, days, iso_date, show_date=True, palette="A", dark=False,
         # text-anchor=middle keeps it centred over the number regardless of digit count.
         parts.append(f'''
     <g transform="translate({cx_date:.2f} {date_baseline:.2f}) scale({DATE_CONDENSE} 1)">
-      <text x="0" y="0" text-anchor="middle" font-family="{DATE_FONT}" font-stretch="condensed"
-            font-size="{DATE_SIZE}" font-weight="600" letter-spacing="0.5"
+      <text x="0" y="0" text-anchor="middle" font-family="{DATE_FONT}"
+            font-size="{DATE_SIZE}" font-weight="300" letter-spacing="{DATE_LETTER_SPACING}"
             fill="{pal['date']}" font-variant-numeric="tabular-nums">{iso_date}</text>
     </g>''')
 
