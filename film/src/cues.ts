@@ -18,7 +18,12 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'wordmark', phrase: 'Cascade'},
     {cue: 'hook-arc', phrase: 'on ARK'},
   ],
-  3: [{cue: 'example-labels', phrase: 'obligation'}, {cue: 'example-labels-fallback', phrase: 'waits'}],
+  3: [
+    {cue: 'parts-move', phrase: 'parts move'},
+    {cue: 'money-waits', phrase: 'money waits'},
+    {cue: 'example-labels', phrase: 'obligation'},
+    {cue: 'example-labels-fallback', phrase: 'waits'},
+  ],
   4: [
     {cue: 'question-card', phrase: 'form'},
     {cue: 'question-card-fallback', phrase: 'move'},

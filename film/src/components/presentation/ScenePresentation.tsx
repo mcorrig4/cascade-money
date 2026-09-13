@@ -84,8 +84,39 @@ const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: Wi
   </>;
 };
 
-const ExamplePresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('example-labels') ? null :
-  <section className="overlay-card film-inset-card" aria-label="The supply chain's timing gap"><p>FROM APPLE · LATER</p><p>PAYMENT NEEDED · TODAY</p></section>;
+const ExamplePresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const unit = geometry.width / 1920;
+  const tracks = [
+    {cue: 'parts-move', label: 'Parts delivered', duration: .4, className: 'film-example-parts'},
+    {cue: 'money-waits', label: 'Payment due', duration: .9, className: 'film-example-money'},
+  ].map(track => ({...track, start: at(track.cue)}));
+  const closing = at('example-labels');
+  const progress = (start: number, duration: number) => interpolate(frame, [start, start + duration], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  const on = (start: number) => progress(start - 1, 1) === 1;
+  return <>
+    <div className="film-question-scrim film-example-scrim" aria-hidden="true" style={visibility(on(tracks[0].start))}/>
+    <section className="film-example" aria-label="The supply chain's timing gap" style={{left: 48 * unit, width: 620 * unit}}>
+      <div className="film-example-eyebrow" style={visibility(on(tracks[0].start))}>PARTS AND PAYMENT</div>
+      {tracks.map(track => <div className="film-example-track" key={track.cue} style={visibility(on(track.start))}>
+        <div className="film-example-label">{track.label}</div>
+        <div className="film-example-bar">
+          <div className={`film-example-fill ${track.className}`} style={{transform: `scaleX(${progress(track.start, track.duration * fps)})`}}/>
+        </div>
+      </div>)}
+      <div className="film-example-dates" style={visibility(on(tracks[1].start))}>
+        <span>DAY 0</span><span>DAY 90</span>
+        <i className="film-example-stop" aria-hidden="true"/>
+      </div>
+      <p className="film-example-closing" style={visibility(on(closing))}>
+        Incoming value is useful only if it<br/>can meet the next obligation.
+      </p>
+    </section>
+  </>;
+};
 
 const CascadePresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
   const frame = useCurrentFrame();
@@ -379,12 +410,17 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
   const unit = geometry.width / 1920;
   if (![2, 3, 4, 5, 6, 7, 8, 9, 10].includes(scene)) return null;
   const inset = scene === 3 || scene === 4 || scene === 9;
-  const content = scene === 3 ? <ExamplePresentation shown={shown}/> : scene === 4 ? <QuestionPresentation at={at} geometry={geometry}/> : scene === 5 ? <CascadePresentation at={at} geometry={geometry}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
+  const content = scene === 3 ? <ExamplePresentation at={at} geometry={geometry}/> : scene === 4 ? <QuestionPresentation at={at} geometry={geometry}/> : scene === 5 ? <CascadePresentation at={at} geometry={geometry}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
     : scene === 7 ? <CoinPresentation at={at} geometry={geometry}/>
     : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
     {scene === 2 ? <HookPresentation shown={shown} geometry={geometry}/>
-      : inset ? scene === 4 ? <div className="film-presentation-inset" style={{
+      : inset ? scene === 3 ? <div className="film-presentation-inset" style={{
+        // Reserve the footer and keep both the scrim and copy below the order cards.
+        position: 'absolute', left: 0, width: geometry.width, height: 255 * unit,
+        bottom: geometry.height * (252 / 1080), overflow: 'hidden',
+        '--film-unit': `${unit}px`,
+      } as React.CSSProperties}>{content}</div> : scene === 4 ? <div className="film-presentation-inset" style={{
         // MiddleFilm fits the 1080-high source below 65px of browser chrome.
         // Clip the full-height scrim to the globe between the app's 90px topbar
         // and 250px footer, leaving two film units clear of their border pixels.

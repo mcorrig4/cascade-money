@@ -97,6 +97,51 @@
   background: radial-gradient(ellipse at center, rgba(3, 13, 19, .8), rgba(3, 13, 19, .35));
   border-radius: calc(18 * var(--film-unit)); text-align: left;
 }
+/* Scene 3 reuses scene 4's horizontal scrim, fading in only below its block top.
+   The scene-3 inset clips all painting above the footer and below the orders. */
+.app.film-app-surface.film-presentation .film-example-scrim {
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 40%, #000 100%);
+}
+.app.film-app-surface.film-presentation .film-example {
+  position: absolute; bottom: 0; text-align: left;
+}
+.app.film-app-surface.film-presentation .film-example-eyebrow {
+  margin-bottom: calc(16 * var(--film-unit)); line-height: calc(17 * var(--film-unit));
+  font-size: calc(14 * var(--film-unit)); letter-spacing: calc(2.6 * var(--film-unit));
+  font-weight: 500; color: #8297a5;
+}
+.app.film-app-surface.film-presentation .film-example-track + .film-example-track {
+  /* 4px gap + 24px label places the bars exactly 28px apart. */
+  margin-top: calc(4 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-example-label {
+  margin-bottom: calc(4 * var(--film-unit)); line-height: calc(24 * var(--film-unit));
+  font-size: calc(20 * var(--film-unit)); color: #8ba0ad;
+}
+.app.film-app-surface.film-presentation .film-example-bar {
+  width: calc(620 * var(--film-unit)); height: calc(18 * var(--film-unit));
+  border-radius: calc(2 * var(--film-unit)); overflow: hidden; background: var(--line);
+}
+.app.film-app-surface.film-presentation .film-example-fill {
+  width: 100%; height: 100%; transform-origin: left center;
+}
+.app.film-app-surface.film-presentation .film-example-parts {background: #8297a5;}
+.app.film-app-surface.film-presentation .film-example-money {background: var(--money);}
+.app.film-app-surface.film-presentation .film-example-dates {
+  position: relative; display: flex; justify-content: space-between;
+  margin-top: calc(8 * var(--film-unit)); line-height: calc(17 * var(--film-unit));
+  font-size: calc(14 * var(--film-unit)); letter-spacing: calc(1.8 * var(--film-unit));
+  font-variant-numeric: tabular-nums; color: #718692;
+}
+.app.film-app-surface.film-presentation .film-example-stop {
+  position: absolute; right: 0; top: calc(-26 * var(--film-unit));
+  width: calc(3 * var(--film-unit)); height: calc(18 * var(--film-unit)); background: var(--money);
+}
+.app.film-app-surface.film-presentation .film-example-closing {
+  margin: calc(16 * var(--film-unit)) 0 0;
+  font-size: calc(34 * var(--film-unit)); line-height: 1.25; font-weight: 400;
+  color: #abc0bd; white-space: nowrap;
+}
 /* Scene 4 shares the app ground. Gradient stops are frame-relative; clipping
    at 46% leaves the native events sidebar untouched. The inset owns Y clearance. */
 .app.film-app-surface.film-presentation .film-question-scrim {
