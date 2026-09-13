@@ -24,22 +24,20 @@ Config.overrideWebpackConfig(current => ({
     },
     // app/src/styles.css's `url('/fonts/RobotoCondensed-Light.woff2')` (the
     // coin-v3/stage18 merge's dated-dollar font, 2026-09-13) is a root-
-    // relative CSS url — css-loader v6+ resolves those through webpack's
-    // normal module resolution rather than serving them from `public/`
-    // directly, so without a `resolve.modules` entry pointing at the
-    // public dirs any render that touches app/src fails with "Can't
-    // resolve '/fonts/RobotoCondensed-Light.woff2'" (verified: every
-    // scene's bundle includes the full CascadeFilm module graph regardless
-    // of which frames are rendered, so this broke ALL renders, not just
-    // ones using the coin). film's own fonts avoid this by loading via
-    // FontFace()/fetch(staticFile(...)) (see brand/fonts.ts) instead of a
-    // CSS @font-face import.
-    // 'node_modules' must stay first and explicit: webpack only supplies
-    // that default itself when `resolve.modules` is left UNSET entirely,
-    // so appending to `current.resolve?.modules` (empty/undefined here)
-    // would otherwise silently drop normal node_modules resolution for
-    // every bare import (verified: doing that broke 'globe.gl'/'three').
-    modules: [...(current.resolve?.modules ?? ['node_modules']), resolve(filmDir, 'public'), resolve(filmDir, '../app/public')],
+    // relative CSS url. Webpack treats a leading "/" as ALREADY absolute
+    // and, for a `resolve.roots`-eligible request, strips the slash and
+    // resolves it relative to each configured root — with none configured
+    // it only tries the compiler context (film/), never `public/`, so any
+    // render that touches app/src failed with "Can't resolve
+    // '/fonts/RobotoCondensed-Light.woff2'" (verified: every scene's
+    // bundle includes the full CascadeFilm module graph regardless of
+    // which frames are rendered, so this broke ALL renders, not just ones
+    // using the coin — and NOT `resolve.modules`, which doesn't apply to
+    // requests webpack already treats as absolute paths; that was tried
+    // first and had no effect on this specific error). film's own fonts
+    // avoid this entirely by loading via FontFace()/fetch(staticFile(...))
+    // (see brand/fonts.ts) instead of a CSS @font-face import.
+    roots: [...(current.resolve?.roots ?? []), resolve(filmDir, 'public'), resolve(filmDir, '../app/public')],
   },
   plugins: [
     ...(current.plugins ?? []),
