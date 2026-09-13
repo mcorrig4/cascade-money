@@ -37,12 +37,12 @@
   padding: 0 calc(80 * var(--film-unit));
   font-size: calc(84 * var(--film-unit)); letter-spacing: calc(-2 * var(--film-unit));
   line-height: 1.06; font-weight: 450; white-space: pre;
-  background: linear-gradient(90deg, transparent, #071019 12%, #071019 88%, transparent);
+  background: linear-gradient(90deg, #071019, #071019);
 }
 .app.film-app-surface.film-presentation .film-hook-close {
   grid-area: 1 / 1; align-self: stretch; justify-self: stretch; z-index: 1;
   display: flex; align-items: center; justify-content: center; gap: calc(32 * var(--film-unit));
-  background: linear-gradient(90deg, transparent, #071019 12%, #071019 88%, transparent);
+  background: linear-gradient(90deg, #071019, #071019);
 }
 .app.film-app-surface.film-presentation .wordmark-icon {width: .7em; height: .7em; margin-right: .2em; color: #69e6c0;}
 .app.film-app-surface.film-presentation .film-cascade-spine {

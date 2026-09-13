@@ -180,13 +180,13 @@ test('scene 2 grid, typography and centred scrim fit wholly below the projected 
   assert.equal(rule('film-hook-source strong')['font-weight'], '500');
   assert.equal(phrase['font-size'], 'calc(84 * var(--film-unit))');
   assert.equal(phrase['white-space'], 'pre', 'the hidden second span reserves its width, including the space');
-  assert.equal(phrase.background, 'linear-gradient(90deg, transparent, #071019 12%, #071019 88%, transparent)');
+  assert.equal(phrase.background, 'linear-gradient(90deg, #071019, #071019)');
   // The phrase and the close both stretch across the band so their scrim covers
   // the dimmed figures behind them instead of only their own line box.
   for (const entry of [phrase, rule('film-hook-close')]) {
     assert.equal(entry['justify-self'], 'stretch');
     assert.equal(entry['align-self'], 'stretch');
-    assert.equal(entry.background, 'linear-gradient(90deg, transparent, #071019 12%, #071019 88%, transparent)');
+    assert.equal(entry.background, 'linear-gradient(90deg, #071019, #071019)');
     assert.equal(entry['align-items'], 'center');
   }
   for (const entry of [facts, phrase, rule('film-hook-close')]) assert.equal(entry['grid-area'], '1 / 1');
