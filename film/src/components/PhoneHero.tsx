@@ -1,16 +1,14 @@
 /**
- * PhoneHero — the iPhone Duo product photo (public/assets/iphone-duo.jpg),
- * shared by two beats of script-v6-liam.md:
- *   Scene 1 "The object of desire" — the photo with a slow push, the
- *     browser frame tilting in over it. Gated to reveal only once the
- *     narration reaches "the iPhone Duo launches Monday" (the film's first
- *     mention of the phone by name) — see scene1PhoneRevealFrame in
- *     CascadeFilm.tsx — not visible during the scene's silent/lead-in
- *     frames.
- *   Scene 15 "New York" — the photo again, held as "a finished phone" for
- *     a beat before the film cuts to the descent capture.
- * `tilt` (0-1) drives BrowserFrame's tilt-in; pass 1 for the scene 15 use
- * (settled, no tilt gesture) and an eased 0->1 ramp for scene 1's open.
+ * PhoneHero — the iPhone Duo product photo (public/assets/iphone-duo-hands.png,
+ * dark-navy two-hands folding shot), the "finished phone" beat of
+ * script-v6-liam.md:
+ *   Scene 15 "New York" — the photo held as "a finished phone" for a beat
+ *     before the film cuts to the descent capture. Called with `tilt=1`
+ *     (settled, no tilt gesture) via PhoneHeroScene's `finished` prop.
+ * Scene 1's own phone reveal ("The object of desire") no longer uses this
+ * component — it composites the same image directly over the app window
+ * with an unfolding wipe (see CascadeFilm.tsx's PhoneRevealOverlay), rather
+ * than replacing the whole frame with its own tilted browser window.
  */
 import React from 'react';
 import {AbsoluteFill, Img, interpolate, staticFile} from 'remotion';
@@ -32,7 +30,7 @@ export const PhoneHero: React.FC<{
     <BrowserFrame mode="tilt" progress={tilt}>
       <AbsoluteFill style={{background: color.bgOuter, display: 'grid', placeItems: 'center'}}>
         <Img
-          src={staticFile('assets/iphone-duo.jpg')}
+          src={staticFile('assets/iphone-duo-hands.png')}
           style={{
             width: '100%',
             height: '100%',

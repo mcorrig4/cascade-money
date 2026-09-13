@@ -15,7 +15,20 @@
  *     shot file, or a pure motion graphic if none matches the new beat).
  */
 import React from 'react';
-import {AbsoluteFill, Audio, Sequence, Series, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {
+  AbsoluteFill,
+  Audio,
+  Easing,
+  Freeze,
+  Img,
+  OffthreadVideo,
+  Sequence,
+  Series,
+  interpolate,
+  staticFile,
+  useCurrentFrame,
+  useVideoConfig,
+} from 'remotion';
 import {ensureFontsLoaded} from '../brand/fonts';
 import {color} from '../brand/tokens';
 import {CaptureScene} from '../components/CaptureScene';
@@ -24,7 +37,8 @@ import {PhoneHero} from '../components/PhoneHero';
 import {resolveSceneDurations, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
-import {at30} from '../motion/timing';
+import {at30, CLAMP} from '../motion/timing';
+import {cueFrame} from '../cues';
 import cueTimesData from '../generated/cues.json';
 
 import {RewindSequence} from './motion-graphics/RewindSequence';
@@ -273,14 +287,19 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
     <AbsoluteFill style={{background: color.bgOuter}}>
       <Series>
         <Series.Sequence name="Scene 1 — The object of desire" durationInFrames={durations[0]}>
-          <AbsoluteFill style={{background: color.bgOuter}} />
-          <Sequence
-            from={scene1PhoneRevealFrame(durations[0])}
-            durationInFrames={durations[0] - scene1PhoneRevealFrame(durations[0])}
-            layout="none"
-          >
-            <PhoneHeroScene durationInFrames={durations[0] - scene1PhoneRevealFrame(durations[0])} />
-          </Sequence>
+          {(() => {
+            const sc1 = sceneByNum(1);
+            const cap1 = captureFor(sc1, captureOverrides, durations[0]);
+            const revealFrame1 = cueFrame(CUE_TIMES[1], 'phone-reveal', fps, scene1PhoneRevealFrame(durations[0]));
+            return (
+              <>
+                <Scene1AppWindow cap={cap1} />
+                <Sequence from={revealFrame1} durationInFrames={durations[0] - revealFrame1} layout="none">
+                  <PhoneRevealOverlay />
+                </Sequence>
+              </>
+            );
+          })()}
           <SceneVO num={1} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
@@ -518,11 +537,10 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
  * The phone photo is the film's first mention of the product by name, so it
  * must not be on screen for the lead-in line — it reveals exactly when the
  * narration reaches "the iPhone Duo launches Monday," not at the scene's
- * (and film's) frame 0. There is no word-level VO timing available (see
- * narration.ts — only a per-scene total duration), so the split is
- * estimated the same way schedule.ts estimates scene durations: by word
- * count, at a constant speaking rate, so it moves with the real VO length
- * if scene 1's actual clip differs from the word-count estimate.
+ * (and film's) frame 0. This word-count split is now only the FALLBACK for
+ * cueFrame() (cues.ts's 'phone-reveal' cue, scene 1) — used only when
+ * generated/cues.json has no resolved timestamp for this scene (missing
+ * words file, or a re-narration that no longer says "iPhone" at all).
  */
 const SCENE1_PRE_MENTION_WORDS = 9;
 const SCENE1_MENTION_WORDS = 5;
@@ -532,16 +550,115 @@ const scene1PhoneRevealFrame = (scene1DurationInFrames: number): number =>
       (SCENE1_PRE_MENTION_WORDS + SCENE1_MENTION_WORDS),
   );
 
-const TILT_RAMP_FRAMES_AT_30 = 70;
+/** Scene 15's held-photo beat — settled, no tilt gesture (scene 1 no longer uses PhoneHero; see PhoneRevealOverlay below). */
+const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> = ({durationInFrames}) => {
+  const frame = useCurrentFrame();
+  return <PhoneHero frame={frame} durationInFrames={durationInFrames} tilt={1} />;
+};
 
-/** Scene 1's entrance / scene 15's held-photo beat — the tilt eases 0->1 on scene 1 only. */
-const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> = ({
-  durationInFrames,
-  finished = false,
-}) => {
+/**
+ * Scene 1's opening beat — full-bleed app capture that pulls back into the
+ * BrowserFrame's 'framed' window (~5% padding each side, chrome fading in)
+ * over the first ~1.2s, per the product owner's brief (2026-09-12): "Full
+ * screen app... pulls back inside a fake window... 5% padding on each side."
+ *
+ * public/captures/scene-01.mp4 (verified via ffprobe, 2026-09-12) does NOT
+ * open on the app's loading state — it's an Apple Park flyover, i.e. footage
+ * already in motion — so per the brief's own documented fallback ("if the
+ * current capture does not [open on loading], use its first frame held for
+ * 0.8s") this holds that first frame for SCENE1_HOLD_FRAMES_AT_30 before
+ * playback begins, rather than showing camera motion under the pull-back.
+ */
+const SCENE1_PULLBACK_FRAMES_AT_30 = 36; // ~1.2s ease into the framed window
+const SCENE1_HOLD_FRAMES_AT_30 = 24; // ~0.8s held on the capture's first frame
+
+const Scene1AppWindow: React.FC<{
+  cap: {src: string; captureDurationInFrames: number; startFrom: number} | null;
+}> = ({cap}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const tiltRampFrames = at30(TILT_RAMP_FRAMES_AT_30, fps);
-  const tilt = finished ? 1 : Math.max(0, Math.min(1, frame / tiltRampFrames));
-  return <PhoneHero frame={frame} durationInFrames={durationInFrames} tilt={tilt} />;
+  const pullbackFrames = at30(SCENE1_PULLBACK_FRAMES_AT_30, fps);
+  const holdFrames = at30(SCENE1_HOLD_FRAMES_AT_30, fps);
+  const progress = interpolate(frame, [0, pullbackFrames], [0, 1], {
+    ...CLAMP,
+    easing: Easing.out(Easing.cubic),
+  });
+
+  const video = cap ? (
+    <AbsoluteFill>
+      {frame < holdFrames ? (
+        <Freeze frame={cap.startFrom}>
+          <OffthreadVideo src={staticFile(`captures/${cap.src}`)} />
+        </Freeze>
+      ) : (
+        <Sequence from={-holdFrames} durationInFrames={Infinity} layout="none">
+          <OffthreadVideo src={staticFile(`captures/${cap.src}`)} startFrom={cap.startFrom} />
+        </Sequence>
+      )}
+    </AbsoluteFill>
+  ) : (
+    <AbsoluteFill style={{background: color.bgOuter}} />
+  );
+
+  return (
+    <BrowserFrame mode="framed" progress={progress}>
+      {video}
+    </BrowserFrame>
+  );
+};
+
+/**
+ * Scene 1's product reveal — the folding-phone photo fades in ON TOP of the
+ * (by now framed) app window, keyed to cues.ts's 'phone-reveal' cue. Per the
+ * product owner's brief: subtle "unfolding" — starts compressed
+ * horizontally (scaleX 0.94) and eases open to 1.0 (scaleY untouched), while
+ * a horizontal edge mask (transparent -> opaque -> transparent, 18% bands
+ * shrinking to 0) plus a matching 2px->0 blur on those edges wipes in from
+ * the centre outward. Rendered as a sibling AFTER Scene1AppWindow (not
+ * nested in its BrowserFrame), so it sits unclipped above the whole window
+ * and casts its drop-shadow onto the app below it.
+ */
+const SCENE1_PHONE_REVEAL_FRAMES_AT_30 = 27; // ~900ms
+const SCENE1_PHONE_HEIGHT_FRAC = 0.62; // of the 1080-tall frame
+const SCENE1_PHONE_ASPECT = 1429 / 1101; // public/assets/iphone-duo-hands.png
+const SCENE1_PHONE_EDGE_BAND_PCT = 18;
+const SCENE1_PHONE_EDGE_BLUR_PX = 2;
+
+const PhoneRevealOverlay: React.FC = () => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const revealFrames = at30(SCENE1_PHONE_REVEAL_FRAMES_AT_30, fps);
+  const p = interpolate(frame, [0, revealFrames], [0, 1], {...CLAMP, easing: Easing.out(Easing.cubic)});
+
+  const opacity = interpolate(frame, [0, revealFrames], [0, 1], CLAMP);
+  const scaleX = 0.94 + 0.06 * p;
+  const edgeBand = SCENE1_PHONE_EDGE_BAND_PCT * (1 - p);
+  const blur = SCENE1_PHONE_EDGE_BLUR_PX * (1 - p);
+  const maskImage = `linear-gradient(to right, transparent 0%, black ${edgeBand}%, black ${100 - edgeBand}%, transparent 100%)`;
+
+  const height = 1080 * SCENE1_PHONE_HEIGHT_FRAC;
+  const width = height * SCENE1_PHONE_ASPECT;
+
+  return (
+    <AbsoluteFill style={{display: 'grid', placeItems: 'center', pointerEvents: 'none'}}>
+      <div
+        style={{
+          position: 'relative',
+          width,
+          height,
+          opacity,
+          transform: `scaleX(${scaleX})`,
+          transformOrigin: 'center',
+          WebkitMaskImage: maskImage,
+          maskImage,
+          filter: `blur(${blur}px) drop-shadow(0 24px 48px rgba(0,0,0,0.5))`,
+        }}
+      >
+        <Img
+          src={staticFile('assets/iphone-duo-hands.png')}
+          style={{width: '100%', height: '100%', objectFit: 'contain'}}
+        />
+      </div>
+    </AbsoluteFill>
+  );
 };
