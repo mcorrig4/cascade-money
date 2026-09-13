@@ -442,7 +442,11 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const durations = resolveSceneDurations(narration, fps);
-  const duration = durations[sceneIndex - 1];
+  // Look up by scene NUM, not array position — scene 3 is cut, so SCENES
+  // (and the `durations` array parallel to it) has a gap and `sceneIndex-1`
+  // would silently read the wrong neighbor's duration for every scene from
+  // 4 onward (crashing outright once sceneIndex runs off the end, at 17).
+  const duration = durationFor(durations, sceneIndex);
   const sc = sceneByNum(sceneIndex);
   const progress = framingRamp(sc, frame, duration, fps);
   const loadingFrames = sceneIndex === 1 ? fps : 0;
