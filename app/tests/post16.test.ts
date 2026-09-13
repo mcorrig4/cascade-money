@@ -69,7 +69,7 @@ test('pull-out preserves the spline endpoint and velocity, then joins cubic ease
  for(const field of ['lat','lng','altitude'] as const)assert.ok(Math.abs(sampleCamera(pull,span)[field]-SHOTS[1].end[field])<1e-10);
 });
 
-test('actual scene components render three dated orders, no app location card, and $100M / $450M / 8',async()=>{
+test('actual scene components render three dated orders, no app location card, and $100M / $450M / 10 invoices',async()=>{
  const {transpileModule,JsxEmit,ModuleKind,ScriptTarget}=await import('typescript');
  const {createElement}=await import('react');
  const {renderToStaticMarkup}=await import('react-dom/server');
@@ -90,6 +90,6 @@ test('actual scene components render three dated orders, no app location card, a
  const {ShotOverlays}=await component('ShotOverlays');
  const engine=new PlaybackEngine(index);playShot(engine,17);engine.tick(11);
  const totals=renderToStaticMarkup(createElement(ShotOverlays,{engine,state:engine.state}));
- assert.deepEqual([...totals.matchAll(/<strong>(.*?)<\/strong>/g)].map(m=>m[1]),['$100M','$450M','8']);
+ assert.deepEqual([...totals.matchAll(/<strong>(.*?)<\/strong>/g)].map(m=>m[1]),['$100M','$450M','10']);
  assert.ok(!totals.includes('opacity:0'));
 });
