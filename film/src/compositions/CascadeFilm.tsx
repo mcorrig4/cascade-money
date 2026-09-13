@@ -272,14 +272,25 @@ const SceneVO: React.FC<{num: number; narration: NarrationMap; narrationControls
     // from can be negative: a negative offsetSec means the clip is already
     // partway through by the time the scene starts, not that it plays
     // before the scene's own Series.Sequence exists.
-    <Sequence from={offsetFrames} durationInFrames={Infinity} layout="none">
-      <Audio
-        src={staticFile(`narration/${entry.file}`)}
-        trimBefore={trimBefore}
-        trimAfter={trimAfter}
-        volume={volume}
-      />
-    </Sequence>
+    <>
+      <Sequence from={offsetFrames} durationInFrames={Infinity} layout="none">
+        <Audio
+          src={staticFile(`narration/${entry.file}`)}
+          trimBefore={trimBefore}
+          trimAfter={trimAfter}
+          volume={volume}
+        />
+      </Sequence>
+      {/* Scene 1 two-part narration (round 4): the Kokoro tail plays after
+          `entry.file` + the fixed gap — see narration.ts's tailOffsetInFrames.
+          Absent for every other scene (and for scene 1 until both parts
+          exist), so this is a no-op everywhere else. */}
+      {entry.tailFile && entry.tailOffsetInFrames !== undefined ? (
+        <Sequence from={offsetFrames + entry.tailOffsetInFrames} durationInFrames={Infinity} layout="none">
+          <Audio src={staticFile(`narration/${entry.tailFile}`)} volume={volume} />
+        </Sequence>
+      ) : null}
+    </>
   );
 };
 
@@ -376,14 +387,13 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
               fps,
               cueFrame(CUE_TIMES[1], 'phone-reveal-fallback', fps, scene1PhoneRevealFrame(durations[0])),
             );
-            // The strobe pre-roll (SCENE1_STROBE_TOTAL_MS, cues.ts's
-            // 'phone-reveal' cue minus this) has to run BEFORE the cue
-            // lands, so the overlay's own Sequence starts earlier than the
-            // landing frame — PhoneRevealOverlay receives how many local
-            // frames until landing via cueFrame1 (clamped at the top of the
-            // scene if the cue resolves very early).
-            const strobeLeadFrames = Math.round((SCENE1_STROBE_TOTAL_MS / 1000) * fps);
-            const overlayStart1 = Math.max(0, revealFrame1 - strobeLeadFrames);
+            // The fade-in pre-roll (SCENE1_PHONE_FADE_MS) has to run BEFORE
+            // the cue lands, so the overlay's own Sequence starts earlier
+            // than the landing frame — PhoneRevealOverlay receives how many
+            // local frames until landing via cueFrame (clamped at the top
+            // of the scene if the cue resolves very early).
+            const fadeLeadFrames = Math.round((SCENE1_PHONE_FADE_MS / 1000) * fps);
+            const overlayStart1 = Math.max(0, revealFrame1 - fadeLeadFrames);
             return (
               <>
                 <Scene1AppWindow cap={cap1} />
@@ -674,12 +684,14 @@ const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> =
  * default to the old centred/flat 5%-padding look, so every other caller —
  * there are none on chrome="browser" today, but the props stay opt-in on
  * principle — is unaffected) to settle at ~62% frame width, ~4% left
- * margin, rotateY -8° (right edge recedes into perspective 1800px).
+ * margin, rotateY +8° (round 4, Liam correction 2026-09-13: round 3's -8°
+ * read backwards — left edge closer, right edge receding into perspective
+ * 1800px, sign flipped from round 3's -8° to +8°).
  */
 const SCENE1_PULLBACK_FRAMES_AT_30 = 36; // ~1.2s ease into the framed window
 const SCENE1_WINDOW_TARGET_SCALE = 0.62; // ~62% of frame width
 const SCENE1_WINDOW_LEFT_MARGIN_FRAC = 0.04; // ~4% left margin
-const SCENE1_WINDOW_SKEW_DEG = -8; // rotateY at settle — right edge recedes
+const SCENE1_WINDOW_SKEW_DEG = 8; // rotateY at settle — left closer, right recedes (round 4: sign flip from round 3's -8°)
 const SCENE1_WINDOW_PERSPECTIVE_PX = 1800;
 
 const Scene1AppWindow: React.FC<{
@@ -716,11 +728,9 @@ const Scene1AppWindow: React.FC<{
 };
 
 /**
- * Scene 1's product reveal (round 3, product owner's brief 2026-09-13 v2):
- * "On right side of screen, slight overlap in front of the window flashes
- * in, faster and faster like horror build up the picture of new iPhone,
- * before fully appearing and remaining once narration says 'foldable
- * iPhone'." Rendered as a sibling AFTER Scene1AppWindow (not nested in its
+ * Scene 1's product reveal (round 4, Liam correction 2026-09-13: "ditch the
+ * flash on the iPhone image and just fade it in at the right timing").
+ * Rendered as a sibling AFTER Scene1AppWindow (not nested in its
  * BrowserFrame), so it sits unclipped and in front of the whole window.
  *
  * The phone sits at ~80% frame height on the right, positioned so its own
@@ -729,28 +739,17 @@ const Scene1AppWindow: React.FC<{
  * which this reads to place that overlap correctly.
  *
  * `cueFrame` (prop) is the LOCAL frame — inside this component's own
- * Sequence — at which the reveal lands (i.e. the narration cue point); the
- * Sequence itself starts SCENE1_STROBE_TOTAL_MS earlier so the whole strobe
- * pre-roll finishes exactly on that frame. Before it: a hard on/off strobe
- * whose gaps shrink geometrically (SCENE1_STROBE_GAPS_MS), each flash a
- * plain opacity snap to 1 (no fade) tinted with a faint white overlay — no
- * other color shift, no shake, no unfold/skew on the image itself. On and
- * after the cue: full opacity with a quick 120ms scale settle (1.03->1.0),
- * then held.
+ * Sequence — at which the reveal lands (the narration cue point, cues.ts's
+ * 'phone-reveal' → 'foldable', falling back to 'phone-reveal-fallback' →
+ * 'iPhone'); the Sequence itself starts SCENE1_PHONE_FADE_MS earlier so a
+ * plain opacity fade-in finishes exactly on that frame — no strobe, no
+ * color tint, no shake, no unfold/skew on the image itself. On and after
+ * the cue: full opacity with a quick 120ms scale settle (1.03->1.0), then
+ * held.
  */
 const SCENE1_PHONE_HEIGHT_FRAC = 0.8; // of the 1080-tall frame
 const SCENE1_PHONE_ASPECT = 1429 / 1101; // public/assets/iphone-duo-hands.png
-// Gaps (ms) between successive strobe flashes, shrinking geometrically; the
-// final entry is the gap from the last flash to the landing cue itself.
-const SCENE1_STROBE_GAPS_MS = [700, 480, 330, 230, 160, 110, 80];
-const SCENE1_STROBE_FLASH_STARTS_MS: number[] = [0];
-for (let i = 1; i < SCENE1_STROBE_GAPS_MS.length; i++) {
-  SCENE1_STROBE_FLASH_STARTS_MS.push(SCENE1_STROBE_FLASH_STARTS_MS[i - 1] + SCENE1_STROBE_GAPS_MS[i - 1]);
-}
-const SCENE1_STROBE_TOTAL_MS =
-  SCENE1_STROBE_FLASH_STARTS_MS[SCENE1_STROBE_FLASH_STARTS_MS.length - 1] +
-  SCENE1_STROBE_GAPS_MS[SCENE1_STROBE_GAPS_MS.length - 1];
-const SCENE1_STROBE_FLASH_ON_MS = 60; // each hard-flash's own on-duration
+const SCENE1_PHONE_FADE_MS = 700; // plain opacity fade-in, landing on the cue
 const SCENE1_LAND_SETTLE_MS = 120; // scale 1.03 -> 1.0 once landed
 
 const PhoneRevealOverlay: React.FC<{cueFrame: number}> = ({cueFrame}) => {
@@ -759,28 +758,12 @@ const PhoneRevealOverlay: React.FC<{cueFrame: number}> = ({cueFrame}) => {
   const ms = (frame / fps) * 1000;
   const cueMs = (cueFrame / fps) * 1000;
 
-  let opacity = 0;
-  let flashTint = 0;
-  let scale = 1;
-
-  if (ms < cueMs) {
-    // Pre-cue: hard on/off strobe, accelerating toward the cue.
-    for (const startMs of SCENE1_STROBE_FLASH_STARTS_MS) {
-      if (ms >= startMs && ms < startMs + SCENE1_STROBE_FLASH_ON_MS) {
-        opacity = 1;
-        flashTint = 1;
-        break;
-      }
-    }
-  } else {
-    // Landed: full opacity, brief scale settle, then held.
-    opacity = 1;
-    const settleP = interpolate(ms - cueMs, [0, SCENE1_LAND_SETTLE_MS], [0, 1], {
-      ...CLAMP,
-      easing: Easing.out(Easing.cubic),
-    });
-    scale = 1.03 - 0.03 * settleP;
-  }
+  const opacity = interpolate(ms, [cueMs - SCENE1_PHONE_FADE_MS, cueMs], [0, 1], CLAMP);
+  const settleP = interpolate(ms - cueMs, [0, SCENE1_LAND_SETTLE_MS], [0, 1], {
+    ...CLAMP,
+    easing: Easing.out(Easing.cubic),
+  });
+  const scale = 1.03 - 0.03 * settleP;
 
   const height = 1080 * SCENE1_PHONE_HEIGHT_FRAC;
   const width = height * SCENE1_PHONE_ASPECT;
@@ -809,9 +792,6 @@ const PhoneRevealOverlay: React.FC<{cueFrame: number}> = ({cueFrame}) => {
           src={staticFile('assets/iphone-duo-hands.png')}
           style={{width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 24px 48px rgba(0,0,0,0.5))'}}
         />
-        {flashTint > 0 ? (
-          <AbsoluteFill style={{background: `rgba(255,255,255,${0.35 * flashTint})`, mixBlendMode: 'screen'}} />
-        ) : null}
       </div>
     </AbsoluteFill>
   );
