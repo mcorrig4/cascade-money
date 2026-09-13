@@ -72,7 +72,7 @@ export class PlaybackEngine {
   stopShot() {
     this.bookmarkOverride=false;
     if(this.state.camera.bookmarkPath)this.update({camera:{...this.state.camera,bookmarkPath:false}});
-    this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = [];
+    this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = []; this.storyEventTimes.clear();
     this.update({ cues:{},companyCues:[],presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
   beginShot(shot: number, duration = 0) {

@@ -7,6 +7,9 @@ export interface LiveArc {
   altitude: number; midLat: number; midLng: number; born: number; life: number; alpha: number;
   groundKm: number; clipStart: number; clipEnd: number; phaseKm: number; annotation?: string; maturity?:number; displayAmount?:bigint; held?:boolean; reverse?:boolean;
 }
+export interface TimedArc {
+  event: Event; born: number; life: number; maturity?: number; displayAmount?: bigint;
+}
 export function midpoint(lat1: number, lng1: number, lat2: number, lng2: number) {
   const r = Math.PI / 180, a = lat1 * r, b = lat2 * r, delta = (lng2 - lng1) * r;
   const x = Math.cos(b) * Math.cos(delta), y = Math.cos(b) * Math.sin(delta);
@@ -31,6 +34,24 @@ export class ArcPool {
     this.arcs.push({ id: event.seq, event, maturity, displayAmount, startLat: from.lat, startLng: from.lng, endLat: to.lat, endLng: to.lng,
       altitude: Math.max(0.008, Math.min(0.4, mid.distance * 0.18)), midLat: mid.lat, midLng: mid.lng,
       born: time, life, alpha: 0, groundKm: mid.distance * GROUND_RADIUS_KM, clipStart: 0, clipEnd: 0, phaseKm: 0, annotation: index.invoices.get(event.invoiceId ?? '')?.annotation });
+  }
+  /** Replace the logical set while retaining GPU-backed datum objects by event id. */
+  sync(entries: TimedArc[], index: EventIndex, time: number, held = false) {
+    const existing = new Map(this.arcs.map(arc => [arc.id, arc]));
+    const next: LiveArc[] = [];
+    for (const entry of entries.slice(-ARC_CAP)) {
+      let arc = existing.get(entry.event.seq);
+      if (!arc) {
+        const scratch = new ArcPool();
+        scratch.add(entry.event, index, entry.born, entry.life, entry.maturity, entry.displayAmount);
+        arc = scratch.arcs[0];
+      }
+      if (!arc) continue;
+      arc.born = entry.born; arc.life = entry.life; arc.maturity = entry.maturity; arc.displayAmount = entry.displayAmount;
+      next.push(arc);
+    }
+    this.arcs = next;
+    this.tick(time, held);
   }
   tick(time: number, held=false) {
     this.arcs = this.arcs.filter(a => held || time - a.born < a.life);

@@ -1,16 +1,27 @@
 import {SHOTS, playShot} from './shots.ts';
 
 const LIVE_SCENE = 4;
+export const FRAME_DRIVEN_STATE_SOURCES = [
+  'React playback requestAnimationFrame', 'globe.gl render and tween requestAnimationFrame', 'OrbitControls damping',
+  'camera flight origin and easing', 'idle camera drift', 'event-stream cursor', 'story reveal queue and cue ages',
+  'arc lifetime, dash phase, and GPU object identity', 'ring propagation ticker', 'ledger rows and entrance animation',
+  'CSS animations and transitions', 'earth sun clock', 'site-model fade and async readiness', 'scene-transition diagnostics',
+] as const;
+let loggedSources = false;
 
-/** Deterministically reconstruct scene 4 at an absolute timeline position. */
-export function seekTo(tMs: number) {
+/** Deterministically reconstruct a scene at an absolute timeline position. */
+export function seekTo(tMs: number, scene = LIVE_SCENE) {
   const engine = window.__cascade?.engine;
   if (!engine) throw new Error('Cascade is not ready to seek');
-  const shot = SHOTS.find(candidate => candidate.scene === LIVE_SCENE);
-  if (!shot) throw new Error(`Cascade scene ${LIVE_SCENE} is missing`);
+  const shot = SHOTS.find(candidate => candidate.scene === scene);
+  if (!shot) throw new Error(`Cascade scene ${scene} is missing`);
   const elapsedMs = Math.max(0, Math.min(tMs, shot.seconds * 1000));
 
   engine.setClockMode('manual');
+  if (!loggedSources) {
+    loggedSources = true;
+    console.info('[Cascade frame-driven] controlled state sources:', FRAME_DRIVEN_STATE_SOURCES.join('; '));
+  }
   engine.stopShot();
   engine.update({
     speed: 1,
