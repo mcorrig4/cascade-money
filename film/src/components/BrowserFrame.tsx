@@ -60,8 +60,30 @@ export const BrowserFrame: React.FC<{
   progress?: number;
   /** 'simple' (default) preserves the original chrome for every existing caller. */
   chrome?: ChromeStyle;
+  /**
+   * 'framed' + chrome="browser" only. Overrides the settle scale (default
+   * undefined = the original centred `1 - 0.086*p` ~5%-padding pull-back),
+   * left-anchors the window at this fraction of frame width once settled
+   * (default undefined = stays centred), adds an extra rotateY at settle
+   * (default 0 = no skew), and the perspective distance for that skew
+   * (default 2400, matching the existing centred/tilt look). Every other
+   * caller omits these and gets the unchanged behavior.
+   */
+  targetScale?: number;
+  anchorLeftFrac?: number;
+  skewYDeg?: number;
+  perspectivePx?: number;
   children: React.ReactNode;
-}> = ({mode, progress = 1, chrome = 'simple', children}) => {
+}> = ({
+  mode,
+  progress = 1,
+  chrome = 'simple',
+  targetScale,
+  anchorLeftFrac,
+  skewYDeg = 0,
+  perspectivePx = 2400,
+  children,
+}) => {
   if (mode === 'bleed') {
     return <AbsoluteFill>{children}</AbsoluteFill>;
   }
@@ -73,7 +95,7 @@ export const BrowserFrame: React.FC<{
   // Tilt: starts small/rotated (p=0) and eases to flat/full (p=1).
   // Framed: starts full-bleed (p=0) and eases IN to a chrome-visible inset
   // window (p=1) — this is the "pull back out" gesture.
-  const scale = isTilt ? 0.62 + 0.38 * p : 1 - 0.086 * p;
+  const scale = isTilt ? 0.62 + 0.38 * p : 1 - (1 - (targetScale ?? 0.914)) * p;
   const rotateX = isTilt ? 22 * (1 - p) : 0;
   const rotateY = isTilt ? -14 * (1 - p) : 0;
   const chromeOpacity = p;
@@ -81,25 +103,33 @@ export const BrowserFrame: React.FC<{
   const chromeH = isBrowserChrome ? CHROME_H_BROWSER : CHROME_H;
 
   if (isBrowserChrome) {
+    // Left-anchored settle (Scene 1 round 3): transform-origin stays the
+    // window's own left edge the whole time, so at p=0 (leftPct=0,
+    // scale=1, skew=0) it's identical to the old full-bleed start, and it
+    // eases continuously toward the left-margin / scale / skew target as p
+    // goes to 1 — never a discontinuous origin swap.
+    const leftPct = (anchorLeftFrac ?? 0) * p * 100;
+    const rotateYSettle = skewYDeg * p;
     return (
       <AbsoluteFill
         style={{
-          perspective: 2400,
-          display: 'grid',
-          placeItems: 'center',
+          perspective: perspectivePx,
           background: color.bgOuter,
         }}
       >
         <div
           style={{
+            position: 'absolute',
+            top: '50%',
+            left: `${leftPct}%`,
             width: 1920,
             height: 1080,
-            transform: `scale(${scale})`,
+            transform: `translateY(-50%) scale(${scale}) rotateY(${rotateYSettle}deg)`,
+            transformOrigin: 'left center',
             borderRadius: radius,
             overflow: 'hidden',
             boxShadow: `0 ${60 * p}px ${140 * p}px rgba(0,0,0,${0.55 * p})`,
             border: `1px solid rgba(170,199,204,${0.22 * chromeOpacity})`,
-            position: 'relative',
             background: color.bgOuter,
           }}
         >

@@ -19,7 +19,6 @@ import {
   AbsoluteFill,
   Audio,
   Easing,
-  Freeze,
   Img,
   OffthreadVideo,
   Sequence,
@@ -370,12 +369,25 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc1 = sceneByNum(1);
             const cap1 = captureFor(sc1, captureOverrides, durations[0]);
-            const revealFrame1 = cueFrame(CUE_TIMES[1], 'phone-reveal', fps, scene1PhoneRevealFrame(durations[0]));
+            const revealFrame1 = cueFrame(
+              CUE_TIMES[1],
+              'phone-reveal',
+              fps,
+              cueFrame(CUE_TIMES[1], 'phone-reveal-fallback', fps, scene1PhoneRevealFrame(durations[0])),
+            );
+            // The strobe pre-roll (SCENE1_STROBE_TOTAL_MS, cues.ts's
+            // 'phone-reveal' cue minus this) has to run BEFORE the cue
+            // lands, so the overlay's own Sequence starts earlier than the
+            // landing frame — PhoneRevealOverlay receives how many local
+            // frames until landing via cueFrame1 (clamped at the top of the
+            // scene if the cue resolves very early).
+            const strobeLeadFrames = Math.round((SCENE1_STROBE_TOTAL_MS / 1000) * fps);
+            const overlayStart1 = Math.max(0, revealFrame1 - strobeLeadFrames);
             return (
               <>
                 <Scene1AppWindow cap={cap1} />
-                <Sequence from={revealFrame1} durationInFrames={durations[0] - revealFrame1} layout="none">
-                  <PhoneRevealOverlay />
+                <Sequence from={overlayStart1} durationInFrames={durations[0] - overlayStart1} layout="none">
+                  <PhoneRevealOverlay cueFrame={revealFrame1 - overlayStart1} />
                 </Sequence>
               </>
             );
@@ -635,137 +647,155 @@ const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> =
 };
 
 /**
- * Scene 1's opening beat — full-bleed app capture that pulls back into the
- * BrowserFrame's 'framed' window (~5% padding each side, chrome fading in)
- * over the first ~1.2s, per the product owner's brief (2026-09-12): "Full
- * screen app... pulls back inside a fake window... 5% padding on each side."
- *
- * public/captures/scene-01.mp4 (verified via ffprobe, 2026-09-12) does NOT
- * open on the app's loading state — it's an Apple Park flyover, i.e. footage
- * already in motion — so per the brief's own documented fallback ("if the
- * current capture does not [open on loading], use its first frame held for
- * 0.8s") this holds that first frame for SCENE1_HOLD_FRAMES_AT_30 before
- * playback begins, rather than showing camera motion under the pull-back.
+ * Scene 1's opening beat — full-bleed app capture (which itself now opens on
+ * a near-black loading frame and resolves into the live dashboard, verified
+ * on the current public/captures/scene-01.mp4, 2026-09-13) that pulls back
+ * over the first ~1.2s into a LEFT-anchored window, per the product owner's
+ * round-3 brief (2026-09-13 v2): "fake browser UI that floats towards left
+ * side of screen, right edge slightly skewed back giving perspective view."
+ * BrowserFrame's 'framed'/chrome="browser" pull-back scale is overridden via
+ * its optional targetScale/anchorLeftFrac/skewYDeg/perspectivePx props (all
+ * default to the old centred/flat 5%-padding look, so every other caller —
+ * there are none on chrome="browser" today, but the props stay opt-in on
+ * principle — is unaffected) to settle at ~62% frame width, ~4% left
+ * margin, rotateY -8° (right edge recedes into perspective 1800px).
  */
 const SCENE1_PULLBACK_FRAMES_AT_30 = 36; // ~1.2s ease into the framed window
-const SCENE1_HOLD_FRAMES_AT_30 = 24; // ~0.8s held on the capture's first frame
+const SCENE1_WINDOW_TARGET_SCALE = 0.62; // ~62% of frame width
+const SCENE1_WINDOW_LEFT_MARGIN_FRAC = 0.04; // ~4% left margin
+const SCENE1_WINDOW_SKEW_DEG = -8; // rotateY at settle — right edge recedes
+const SCENE1_WINDOW_PERSPECTIVE_PX = 1800;
 
 const Scene1AppWindow: React.FC<{
   cap: {src: string; captureDurationInFrames: number; startFrom: number} | null;
 }> = ({cap}) => {
-  const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const pullbackFrames = at30(SCENE1_PULLBACK_FRAMES_AT_30, fps);
-  const holdFrames = at30(SCENE1_HOLD_FRAMES_AT_30, fps);
-  const progress = interpolate(frame, [0, pullbackFrames], [0, 1], {
+  const progress = interpolate(useCurrentFrame(), [0, pullbackFrames], [0, 1], {
     ...CLAMP,
     easing: Easing.out(Easing.cubic),
   });
 
   const video = cap ? (
     <AbsoluteFill>
-      {frame < holdFrames ? (
-        <Freeze frame={cap.startFrom}>
-          <OffthreadVideo src={staticFile(`captures/${cap.src}`)} />
-        </Freeze>
-      ) : (
-        <Sequence from={-holdFrames} durationInFrames={Infinity} layout="none">
-          <OffthreadVideo src={staticFile(`captures/${cap.src}`)} startFrom={cap.startFrom} />
-        </Sequence>
-      )}
+      <OffthreadVideo src={staticFile(`captures/${cap.src}`)} startFrom={cap.startFrom} />
     </AbsoluteFill>
   ) : (
     <AbsoluteFill style={{background: color.bgOuter}} />
   );
 
   return (
-    <BrowserFrame mode="framed" progress={progress} chrome="browser">
+    <BrowserFrame
+      mode="framed"
+      progress={progress}
+      chrome="browser"
+      targetScale={SCENE1_WINDOW_TARGET_SCALE}
+      anchorLeftFrac={SCENE1_WINDOW_LEFT_MARGIN_FRAC}
+      skewYDeg={SCENE1_WINDOW_SKEW_DEG}
+      perspectivePx={SCENE1_WINDOW_PERSPECTIVE_PX}
+    >
       {video}
     </BrowserFrame>
   );
 };
 
 /**
- * Scene 1's product reveal — the folding-phone photo fades in ON TOP of the
- * (by now framed) app window, keyed to cues.ts's 'phone-reveal' cue. Per the
- * product owner's brief: subtle "unfolding" — starts compressed
- * horizontally (scaleX 0.94) and eases open to 1.0 (scaleY untouched), while
- * a horizontal edge mask (transparent -> opaque -> transparent, 18% bands
- * shrinking to 0) plus a matching 2px->0 blur on those edges wipes in from
- * the centre outward. Rendered as a sibling AFTER Scene1AppWindow (not
- * nested in its BrowserFrame), so it sits unclipped above the whole window
- * and casts its drop-shadow onto the app below it.
+ * Scene 1's product reveal (round 3, product owner's brief 2026-09-13 v2):
+ * "On right side of screen, slight overlap in front of the window flashes
+ * in, faster and faster like horror build up the picture of new iPhone,
+ * before fully appearing and remaining once narration says 'foldable
+ * iPhone'." Rendered as a sibling AFTER Scene1AppWindow (not nested in its
+ * BrowserFrame), so it sits unclipped and in front of the whole window.
  *
- * Round 2 (product owner's brief, 2026-09-13): "Picture of the iPhone is way
- * too small. Let's right align the iPhone, and then as it appears, skew back
- * to the right edge of our window." The phone now sits at ~85% of frame
- * height, right-edge flush with the (now settled, per Scene1AppWindow's own
- * pull-back) framed window's inner right edge and vertically centered, and
- * the reveal adds a subtle 3D skew on top of the existing unfold/mask: it
- * starts rotated 10° away (perspective 1600px) and translated +6% further
- * toward the right edge, settling flat over the same ~900ms ease-out.
+ * The phone sits at ~80% frame height on the right, positioned so its own
+ * left ~12% overlaps IN FRONT of the (now left-anchored, ~62%-wide)
+ * window's right edge — see Scene1AppWindow's SCENE1_WINDOW_* constants,
+ * which this reads to place that overlap correctly.
+ *
+ * `cueFrame` (prop) is the LOCAL frame — inside this component's own
+ * Sequence — at which the reveal lands (i.e. the narration cue point); the
+ * Sequence itself starts SCENE1_STROBE_TOTAL_MS earlier so the whole strobe
+ * pre-roll finishes exactly on that frame. Before it: a hard on/off strobe
+ * whose gaps shrink geometrically (SCENE1_STROBE_GAPS_MS), each flash a
+ * plain opacity snap to 1 (no fade) tinted with a faint white overlay — no
+ * other color shift, no shake, no unfold/skew on the image itself. On and
+ * after the cue: full opacity with a quick 120ms scale settle (1.03->1.0),
+ * then held.
  */
-const SCENE1_PHONE_REVEAL_FRAMES_AT_30 = 27; // ~900ms
-const SCENE1_PHONE_HEIGHT_FRAC = 0.85; // of the 1080-tall frame
+const SCENE1_PHONE_HEIGHT_FRAC = 0.8; // of the 1080-tall frame
 const SCENE1_PHONE_ASPECT = 1429 / 1101; // public/assets/iphone-duo-hands.png
-const SCENE1_PHONE_EDGE_BAND_PCT = 18;
-const SCENE1_PHONE_EDGE_BLUR_PX = 2;
-const SCENE1_PHONE_SKEW_DEG = 10; // starting rotateY, eases to 0
-const SCENE1_PHONE_SKEW_TRANSLATE_PCT = 6; // starting translateX, eases to 0
-const SCENE1_PHONE_PERSPECTIVE_PX = 1600;
-// Scene1AppWindow's BrowserFrame settles to scale 1 - 0.086 (see
-// BrowserFrame.tsx's 'framed' scale formula) once fully pulled back, which
-// is always true by the time the phone reveals — the reveal cue lands well
-// after the ~1.2s pull-back. Right margin = half the shrink, in the same
-// 1920-wide frame this overlay shares with that window.
-const SCENE1_FRAMED_WINDOW_RIGHT_MARGIN_PX = Math.round((1920 * 0.086) / 2);
+// Gaps (ms) between successive strobe flashes, shrinking geometrically; the
+// final entry is the gap from the last flash to the landing cue itself.
+const SCENE1_STROBE_GAPS_MS = [700, 480, 330, 230, 160, 110, 80];
+const SCENE1_STROBE_FLASH_STARTS_MS: number[] = [0];
+for (let i = 1; i < SCENE1_STROBE_GAPS_MS.length; i++) {
+  SCENE1_STROBE_FLASH_STARTS_MS.push(SCENE1_STROBE_FLASH_STARTS_MS[i - 1] + SCENE1_STROBE_GAPS_MS[i - 1]);
+}
+const SCENE1_STROBE_TOTAL_MS =
+  SCENE1_STROBE_FLASH_STARTS_MS[SCENE1_STROBE_FLASH_STARTS_MS.length - 1] +
+  SCENE1_STROBE_GAPS_MS[SCENE1_STROBE_GAPS_MS.length - 1];
+const SCENE1_STROBE_FLASH_ON_MS = 60; // each hard-flash's own on-duration
+const SCENE1_LAND_SETTLE_MS = 120; // scale 1.03 -> 1.0 once landed
 
-const PhoneRevealOverlay: React.FC = () => {
+const PhoneRevealOverlay: React.FC<{cueFrame: number}> = ({cueFrame}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const revealFrames = at30(SCENE1_PHONE_REVEAL_FRAMES_AT_30, fps);
-  const p = interpolate(frame, [0, revealFrames], [0, 1], {...CLAMP, easing: Easing.out(Easing.cubic)});
+  const ms = (frame / fps) * 1000;
+  const cueMs = (cueFrame / fps) * 1000;
 
-  const opacity = interpolate(frame, [0, revealFrames], [0, 1], CLAMP);
-  const scaleX = 0.94 + 0.06 * p;
-  const edgeBand = SCENE1_PHONE_EDGE_BAND_PCT * (1 - p);
-  const blur = SCENE1_PHONE_EDGE_BLUR_PX * (1 - p);
-  const maskImage = `linear-gradient(to right, transparent 0%, black ${edgeBand}%, black ${100 - edgeBand}%, transparent 100%)`;
-  const rotateY = SCENE1_PHONE_SKEW_DEG * (1 - p);
-  const translateX = SCENE1_PHONE_SKEW_TRANSLATE_PCT * (1 - p);
+  let opacity = 0;
+  let flashTint = 0;
+  let scale = 1;
+
+  if (ms < cueMs) {
+    // Pre-cue: hard on/off strobe, accelerating toward the cue.
+    for (const startMs of SCENE1_STROBE_FLASH_STARTS_MS) {
+      if (ms >= startMs && ms < startMs + SCENE1_STROBE_FLASH_ON_MS) {
+        opacity = 1;
+        flashTint = 1;
+        break;
+      }
+    }
+  } else {
+    // Landed: full opacity, brief scale settle, then held.
+    opacity = 1;
+    const settleP = interpolate(ms - cueMs, [0, SCENE1_LAND_SETTLE_MS], [0, 1], {
+      ...CLAMP,
+      easing: Easing.out(Easing.cubic),
+    });
+    scale = 1.03 - 0.03 * settleP;
+  }
 
   const height = 1080 * SCENE1_PHONE_HEIGHT_FRAC;
   const width = height * SCENE1_PHONE_ASPECT;
+  // Window's settled right edge (Scene1AppWindow's SCENE1_WINDOW_* consts):
+  // left margin + width, in the same 1920-wide frame. The phone's left
+  // edge sits 12% of its own width inside that (overlapping IN FRONT of
+  // the window), the rest extending right.
+  const windowRightEdgePx = 1920 * (SCENE1_WINDOW_LEFT_MARGIN_FRAC + SCENE1_WINDOW_TARGET_SCALE);
+  const overlapFrac = 0.12;
+  const leftPx = windowRightEdgePx - overlapFrac * width;
 
   return (
-    <AbsoluteFill
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        paddingRight: SCENE1_FRAMED_WINDOW_RIGHT_MARGIN_PX,
-        pointerEvents: 'none',
-        perspective: SCENE1_PHONE_PERSPECTIVE_PX,
-      }}
-    >
+    <AbsoluteFill style={{pointerEvents: 'none'}}>
       <div
         style={{
-          position: 'relative',
+          position: 'absolute',
+          top: '50%',
+          left: leftPx,
           width,
           height,
           opacity,
-          transform: `translateX(${translateX}%) rotateY(${rotateY}deg) scaleX(${scaleX})`,
-          transformOrigin: 'right center',
-          WebkitMaskImage: maskImage,
-          maskImage,
-          filter: `blur(${blur}px) drop-shadow(0 24px 48px rgba(0,0,0,0.5))`,
+          transform: `translateY(-50%) scale(${scale})`,
         }}
       >
         <Img
           src={staticFile('assets/iphone-duo-hands.png')}
-          style={{width: '100%', height: '100%', objectFit: 'contain'}}
+          style={{width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 24px 48px rgba(0,0,0,0.5))'}}
         />
+        {flashTint > 0 ? (
+          <AbsoluteFill style={{background: `rgba(255,255,255,${0.35 * flashTint})`, mixBlendMode: 'screen'}} />
+        ) : null}
       </div>
     </AbsoluteFill>
   );

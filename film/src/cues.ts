@@ -45,13 +45,16 @@ export interface CuePhrase {
 }
 
 export const CUE_PHRASES: Record<number, CuePhrase[]> = {
-  // Scene 1 — The object of desire: the folding-phone hero image fades in
-  // over the app window on the line naming the product. The v7 VO says
-  // "the first foldABLE iPhone, the iPhone Duo" — not "folding" — so the
-  // cue anchors to the first spoken "iPhone" (the film's first mention of
-  // the product by name), the same beat scene1PhoneRevealFrame's word-count
-  // fallback in CascadeFilm.tsx was already estimating.
-  1: [{cue: 'phone-reveal', phrase: 'iPhone'}],
+  // Scene 1 — The object of desire (round 3, product owner's brief
+  // 2026-09-13 v2): the phone strobes in and lands on the word "foldable"
+  // ("The first foldable iPhone."). Fallback is the first spoken "iPhone"
+  // (round 2's anchor, and scene1PhoneRevealFrame's word-count estimate
+  // below it) for a re-narration that drops "foldable" but still names the
+  // product.
+  1: [
+    {cue: 'phone-reveal', phrase: 'foldable'},
+    {cue: 'phone-reveal-fallback', phrase: 'iPhone'},
+  ],
   // Scene 3 — Rewind: date card, then the four stat lines.
   3: [
     {cue: 'date-card', phrase: 'September 2025'},

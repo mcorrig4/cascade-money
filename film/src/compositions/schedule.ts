@@ -98,10 +98,27 @@ export const scaleFrames = (framesAtBase: number, fps: number): number =>
  */
 export const SCENE17_CLOSE_FLOOR_FRAMES = 150; // 5s @ FPS_BASE (30fps)
 
-type NarrationDurations = Record<number, {durationInFrames: number}>;
+/**
+ * Scene 1's Kokoro take (round 3, audio agent 2026-09-13) needs more room
+ * after "Monday" than the standard 0.4s settle pad (NARRATION_SETTLE_SECONDS
+ * in narration.ts) — a 1.0s tail — so this scene alone uses the take's own
+ * RAW length (rawDurationInFrames, no settle pad baked in) + this tail,
+ * instead of narration.ts's padded `durationInFrames`. Capped at the
+ * cold-load capture's own length (verified via ffprobe, 2026-09-13:
+ * scene-01.mp4 is 26.53s) so the window is never asked to play past its
+ * source video's end.
+ */
+const SCENE1_TAIL_SECONDS = 1.0;
+const SCENE1_CAPTURE_DURATION_SECONDS = 26.53;
 
-/** A scene's UNROUNDED duration in frames at `fps` — real VO length (already fps-native, integer), else the word-count estimate scaled from FPS_BASE (fractional), with scene 17's floor applied to whichever one it is. */
+type NarrationDurations = Record<number, {durationInFrames: number; rawDurationInFrames?: number}>;
+
+/** A scene's UNROUNDED duration in frames at `fps` — real VO length (already fps-native, integer), else the word-count estimate scaled from FPS_BASE (fractional), with scene 1's tail and scene 17's floor applied to whichever one it is. */
 const rawDurationForScene = (sc: SceneDef, narration: NarrationDurations, fps: number): number => {
+  if (sc.num === 1 && narration[1]?.rawDurationInFrames !== undefined) {
+    const withTail = narration[1].rawDurationInFrames! + SCENE1_TAIL_SECONDS * fps;
+    return Math.min(withTail, SCENE1_CAPTURE_DURATION_SECONDS * fps);
+  }
   const raw = narration[sc.num]?.durationInFrames ?? (sc.estimateFrames * fps) / FPS_BASE;
   return sc.num === 17 ? Math.max(raw, (SCENE17_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE) : raw;
 };
