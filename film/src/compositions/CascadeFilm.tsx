@@ -514,12 +514,25 @@ const ExampleGlobeLabels: React.FC<{durationInFrames: number; cues?: Record<stri
 const STRESS_FLASH_SECONDS = 2.5;
 const STRESS_FLASH_FADE_MS = 350;
 
-const StressResultFlash: React.FC<{durationInFrames: number}> = ({durationInFrames}) => {
+const StressResultFlash: React.FC<{durationInFrames: number; cues?: Record<string, number>}> = ({
+  durationInFrames,
+  cues,
+}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const flashFrames = Math.round(STRESS_FLASH_SECONDS * fps);
   const fadeFrames = Math.round((STRESS_FLASH_FADE_MS / 1000) * fps);
-  const flashStart = durationInFrames - flashFrames;
+  // Keys to the recorded "Separately, we tested..." line (cues.ts's
+  // `stress-flash` on "Separately", fallback `stress-flash-fallback` on
+  // "tested") — falls back to the scene's own fixed tail-length offset
+  // when neither resolves (missing words file, or a re-narration that
+  // drops both words).
+  const flashStart = cueFrame(
+    cues,
+    'stress-flash',
+    fps,
+    cueFrame(cues, 'stress-flash-fallback', fps, durationInFrames - flashFrames),
+  );
   const opacity = interpolate(
     frame,
     [flashStart, flashStart + fadeFrames, durationInFrames - fadeFrames, durationInFrames],
@@ -574,7 +587,7 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   let filmOverlay: React.ReactNode = null;
   if(sceneIndex===2) filmOverlay=<Hook durationInFrames={duration} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />;
   else if(sceneIndex===4) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[4]} />;
-  else if(sceneIndex===9) filmOverlay=<StressResultFlash durationInFrames={duration} />;
+  else if(sceneIndex===9) filmOverlay=<StressResultFlash durationInFrames={duration} cues={CUE_TIMES[9]} />;
   else if(sceneIndex===12) filmOverlay=<Scene17Close durationInFrames={duration} />;
   // Scene 3 (renumbered from old scene 4) has NO live-path film overlay:
   // Scene4DateCornerLabel/ExampleGlobeLabels are screen-space overlays that
@@ -785,7 +798,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
            * schedule.ts (SCENE9_CLOSE_FLASH_SECONDS), so this never eats
            * into the narrated portion above.
            */}
-          <StressResultFlash durationInFrames={durationFor(durations, 9)} />
+          <StressResultFlash durationInFrames={durationFor(durations, 9)} cues={CUE_TIMES[9]} />
           <SceneVO num={9} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 

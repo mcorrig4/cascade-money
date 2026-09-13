@@ -31,17 +31,59 @@
  *     back. (Scene 6's counters, previously in the same boat under the v7
  *     cut, are now keyed to the v9 narration's actual words — see the
  *     scene 6 entry below.)
- *   - Scene 9's closing StressResultFlash and all of scene 12's close card
- *     are excluded entirely (no cue defined). The old scene 13 (The rules
- *     survive) footer this note used to describe is cut as a standalone
- *     scene (reorder-to-13 pass) — its headline figure now lives in scene
- *     9's StressResultFlash, not narration-keyed. Scene 12's (Close, old
- *     17) three beats (tagline -> wordmark -> "Dated dollars on Arc.") are
- *     a deliberate held dramatic sequence timed off the scene's own
- *     duration; the actual VO is now four words ("This is Cascade
- *     Money.") spoken almost entirely in the first two seconds, so
+ *   - Scene 9's closing StressResultFlash is now keyed (`stress-flash` on
+ *     "Separately", fallback "tested" — reorder-to-13 pass's headline
+ *     figure, resolved against the real recorded words below). Scene 12's
+ *     close card (Scene17Close, old 17) is NOT keyed to its cue on
+ *     purpose: its three beats (tagline -> wordmark -> "Dated dollars on
+ *     Arc.") are a deliberate held dramatic sequence timed off the
+ *     scene's own duration; the actual VO is now four words ("This is
+ *     Cascade Money.") spoken almost entirely in the first second, so
  *     anchoring the wordmark to the word "Cascade" would collapse the
- *     sequence instead of pacing it.
+ *     sequence instead of pacing it. Its cue is still authored below
+ *     (resolves cleanly) so that pacing decision can be revisited without
+ *     a re-transcription.
+ *
+ * Cue remap for the final 12-scene film (Director, 2026-09-13, re-run
+ * against the re-transcribed installed wavs for scenes 7-12 — see
+ * dev-mac ~/cascade-narration/words-merged/scene-0{7..9}.json,
+ * scene-1{0,1,2}.json):
+ *   - Scene 7 (the primitive): three beats keyed to the recorded take —
+ *     `swap` on "interchangeable", `earlier-pays-later` on "face" ("A
+ *     dollar due earlier pays a bill due later at face value"), `extend`
+ *     on "push" ("If you push the date out, you earn the yield..."), and
+ *     a `final-card` on the Kokoro tail's "One dollar" ("One dollar. One
+ *     date.", scene-07-kokoro-tail.wav, which plays after the main clip —
+ *     see narration.ts's tailFile/tailOffsetInFrames). That tail's words
+ *     are merged into words-merged/scene-07.json at the main clip's raw
+ *     length + its narration.json tailGapSec (0.85s -> 28.74s) so
+ *     cues-from-words.mjs (which reads one words file per scene) can
+ *     resolve it — same idea as scene 1's
+ *     tail, which doesn't need this because its own cue phrase
+ *     ("foldable") already lives in the main clip. The end-of-scene "A
+ *     vault on Arc" card (app's ShotOverlays.tsx 'backing' overlay) is
+ *     REMOVED from scene 7 — the vault is scene 8 now (Director, 04:34
+ *     ET) — scene 7 defines no cue for it, and never did on the film
+ *     side; that card's own timing is app-side (stage 17/18), not driven
+ *     by this file.
+ *   - Scene 8 (Underneath it): the vault backing card's cues split into
+ *     `contract` on "ERC" (fallback "1155", the number half of
+ *     "ERC-1155" for a re-narration that drops the letters) and `reserve`
+ *     on "USYC".
+ *   - Scene 9 (Run the year): the existing rostrum-camera cues are
+ *     unchanged; `stress-flash` on "Separately" (fallback "tested") and
+ *     `ui-origin` on "interface" are added for the closing two lines
+ *     ("Separately, we tested ten thousand operations..." / "That's
+ *     where this user interface came from...").
+ *   - Scene 10 (Zoom out): word-chip cues unchanged; added `wordmark` on
+ *     the Kokoro-voiced "Cascade" ("Cascade makes that date part of the
+ *     money itself").
+ *   - Scene 11 (Beneath it): `promises` on the first "promises" ("an
+ *     invisible chain of promises") and `cascade-would` on "Cascade"
+ *     ("Cascade would have let those promises move before the cash
+ *     does.").
+ *   - Scene 12 (Close): `wordmark` on "Cascade" — authored per the note
+ *     above; not wired into Scene17Close's rendering.
  */
 export interface CuePhrase {
   /** Stable name for this reveal — referenced from the motion-graphics component via cueFrame(). */
@@ -150,25 +192,62 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'pan-to-ledger-fallback', phrase: 'Thousands'},
     {cue: 'pull-back-full', phrase: 'countries'},
     {cue: 'pull-back-full-fallback', phrase: 'across'},
+    // Closing two lines (Director, 2026-09-13): the stress-test result flash
+    // now keys to "Separately" (falling back to "tested" immediately after
+    // it), and an optional "built to visualize the stress simulations"
+    // card keys to "interface" ("That's where this user interface came
+    // from...").
+    {cue: 'stress-flash', phrase: 'Separately'},
+    {cue: 'stress-flash-fallback', phrase: 'tested'},
+    {cue: 'ui-origin', phrase: 'interface'},
   ],
-  // Scene 7 — A dollar with a date (the primitive); same-date exchanges are scene-local.
+  // Scene 7 — A dollar with a date (the primitive). Recorded take (Director,
+  // 2026-09-13 04:34 ET): "swap" fires on "interchangeable", the
+  // earlier-pays-later beat on "face" ("a bill due later at face value"),
+  // the extend beat on "push" ("if you push the date out, you earn the
+  // yield"), and the final card on the Kokoro tail's "One dollar" ("One
+  // dollar. One date.") — see file header for the tail-merge mechanism.
+  // The end-of-scene "A vault on Arc" card is REMOVED (moved to scene 8);
+  // no cue for it is defined here.
   7: [
-    {cue: 'same-date', phrase: 'Same date'},
-    {cue: 'coin-extend', phrase: 'Extend'},
-    {cue: 'coin-yield', phrase: 'yield'},
+    {cue: 'swap', phrase: 'interchangeable'},
+    {cue: 'earlier-pays-later', phrase: 'face'},
+    {cue: 'extend', phrase: 'push'},
+    {cue: 'final-card', phrase: 'One dollar'},
   ],
-  // Scene 8 — Underneath it: the vault backing card's ERC-1155 line.
-  8: [{cue: 'contract', phrase: 'The vault is an ERC-1155 contract'}],
-  // Scene 10 — Zoom out (renumbered from old scene 14): the four word-chips, then "money plus time" (the
-  // closing "a second dimension to money" card is not spoken — see file header).
+  // Scene 8 — Underneath it: the vault backing card's cues, split per the
+  // real recorded words — contract → "ERC" (fallback "1155"), reserve →
+  // "USYC" (the vault's designed yield reserve).
+  8: [
+    {cue: 'contract', phrase: 'ERC'},
+    {cue: 'contract-fallback', phrase: '1155'},
+    {cue: 'reserve', phrase: 'USYC'},
+  ],
+  // Scene 10 — Zoom out (renumbered from old scene 14): the four word-chips,
+  // a wordmark beat on the Kokoro-voiced "Cascade", then "money plus time"
+  // (the closing "a second dimension to money" card is not spoken — see
+  // file header).
   10: [
     {cue: 'word-loans', phrase: 'Loans'},
     {cue: 'word-forwards', phrase: 'forwards'},
     {cue: 'word-bonds', phrase: 'bonds'},
     {cue: 'word-derivatives', phrase: 'derivatives'},
+    {cue: 'wordmark', phrase: 'Cascade'},
     {cue: 'money-plus-time', phrase: 'money plus time'},
     {cue: 'final-line', phrase: 'a second dimension to money'},
   ],
+  // Scene 11 — Beneath it: "Behind this new folding iPhone was an
+  // invisible chain of promises. Cascade would have let those promises
+  // move before the cash does." No film-side overlay exists yet for this
+  // scene — authored against the real words for whenever one lands.
+  11: [
+    {cue: 'promises', phrase: 'promises'},
+    {cue: 'cascade-would', phrase: 'Cascade'},
+  ],
+  // Scene 12 — Close: narration is "This is Cascade Money." (2.7s).
+  // Authored per the file header note above — resolves, but Scene17Close
+  // does not read it (deliberate pacing decision, unchanged by this pass).
+  12: [{cue: 'wordmark', phrase: 'Cascade'}],
 };
 
 /** scene number -> cue name -> resolved seconds-from-scene-start (word start minus 150ms), written by cues-from-words.mjs. */
