@@ -132,10 +132,14 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
   const enter = progress(beat.pair, .6);
   const principal = progress(beat.principal, .5);
   const accepted = progress(beat.earlier, .5);
-  const billOpacity = 1 - progress(beat.extend, .4);
+  const billDays = [15, 45, 62, 84];
+  const billsStart = beat.earlier + .5 * fps;
+  const judgementSeconds = .9 / billDays.length;
+  const verdictOpacity = 1 - .55 * progress(billsStart + .9 * fps, .25);
   const finalProgress = progress(beat.final, .5);
   const dim = 1 - finalProgress;
   const extension = extensionState(frame, at('extend'), at('coin-yield'));
+  const originalDay = extension.maturityDay - extension.addedDays;
   // Use the outbound half of the existing swap arc, then hold the exchanged positions.
   const arc = swapPositions(.75 * progress(beat.swap, .75), 0, 0, pairRadius);
   const pairPoses = arc.map(pose => ({
@@ -157,22 +161,26 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
     </div>;
   const activeSize = pairSize + (soloSize - pairSize) * principal;
   const tokenLeft = pairPoses[0].left * (1 - principal) + soloLeft * principal;
-  // The pair's shared drop resolves into the solo disc's centre. The axis connects it to the date marker.
-  const dropX = pane.width / 2 * (1 - principal) + (soloLeft + soloSize * 82 / 170) * principal;
+  const activeY = pairPoses[0].y * (1 - principal) + tokenY * principal;
+  // DatedDollar's disc centre is (82, 82) in its cropped viewBox; its outer radius is 81.5.
+  const dropX = tokenLeft + activeSize * 82 / 170;
+  const dropY = activeY + activeSize * 81.5 / 170;
+  const ghostSize = 70 * unit;
   return <section className="film-coin" aria-label="Dated dollar">
     <div className="film-coin-kicker" style={{opacity: progress(beat.coin, .3) * dim}}>THE PRIMITIVE</div>
-    {on(beat.pair) && <svg className="film-coin-drop" width="100%" height="100%" style={{opacity: dim}}>
-      <path d={`M ${dropX} ${tokenY} V ${axisY} H ${markerX}`}/>
-    </svg>}
     <div className="film-coin-axis" style={{left: axisLeft, width: axisRight - axisLeft, top: axisY, opacity: dim}}>
       {on(beat.earlier) && <div className="film-coin-accepted" style={{
-        top: -40 * unit, height: 40 * unit, opacity: billOpacity,
+        left: dayX(originalDay), width: axisRight - dayX(originalDay),
+        top: -40 * unit, height: 40 * unit, opacity: verdictOpacity,
         clipPath: `inset(0 ${(1 - accepted) * 100}% 0 0)`,
       }}/>}
       <div className="film-coin-hairline" style={{transform: `scaleX(${progress(beat.coin, .6)})`}}/>
       <div className="film-coin-elapsed" style={{width: `${100 / 3}%`, transform: `scaleX(${Math.min(1, 3 * progress(beat.coin, .6))})`}}/>
       {extending && <div className="film-coin-extension" style={{left: `${100 / 3}%`, width: `${extension.addedDays / 90 * 100}%`}}/>}
     </div>
+    {on(beat.pair) && <svg className="film-coin-drop" width="100%" height="100%" style={{opacity: dim}}>
+      <path d={`M ${dropX} ${dropY} V ${axisY} H ${markerX}`}/>
+    </svg>}
     {on(beat.coin) && <div className="film-coin-marker" style={{left: markerX, top: axisY, opacity: dim}}/>}
     <div className="film-coin-annotations" style={{opacity: dim}}>
       {[0, 30, 90].map(day => <div key={day} className="film-coin-tick" style={{
@@ -182,21 +190,40 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
         <i/>
         <span className="film-coin-day" style={{transform: `translateX(${day === 0 ? 0 : day === 90 ? -100 : -50}%)`}}>DAY {day}</span>
         {day === 30 && on(beat.date) && <span className="film-coin-redeemable">REDEEMABLE</span>}
-        {day === 90 && on(beat.earlier) && <span className="film-coin-bill-due" style={{opacity: billOpacity}}>BILL DUE</span>}
         {day !== 0 && on(beat.face) && <span className="film-coin-face" style={{transform: `translateX(${day === 90 ? -100 : -50}%)`}}>1.00</span>}
       </div>)}
-      {on(beat.yield) && <span className="film-coin-yield" style={{left: (dayX(30) + dayX(maturityDay)) / 2, top: axisY - 28 * unit}}>
-        {extension.addedDays} days of yield
-      </span>}
+      <div className="film-coin-bills" style={{opacity: verdictOpacity}}>
+        {on(billsStart) && <span className="film-coin-bills-label" style={{left: dayX((15 + 84) / 2), top: axisY - 74 * unit}}>BILLS DUE</span>}
+        {billDays.map((day, index) => {
+          const start = billsStart + index * judgementSeconds * fps;
+          const judgement = progress(start, judgementSeconds);
+          const payable = day >= originalDay;
+          return on(start) && <svg key={day} className={`film-coin-bill${payable ? '' : ' film-coin-bill-rejected'}`}
+            width={18 * unit} height={26 * unit} role="img" aria-label={`Bill due day ${day}: ${payable ? 'payable' : 'not payable'}`}
+            style={{left: dayX(day) - 9 * unit, top: axisY - 26 * unit, opacity: payable ? .9 : .5}}>
+            <rect x={1} y={1} width={18 * unit - 2} height={26 * unit - 2} fillOpacity={payable ? judgement : 0}/>
+            {!payable && <line x1={0} y1={26 * unit} x2={18 * unit} y2={0} opacity={judgement}/>}
+          </svg>;
+        })}
+      </div>
+      {extending && <div className="film-coin-yield" style={{left: (dayX(originalDay) + dayX(maturityDay)) / 2, top: axisY - 30 * unit}}>
+        <span>+{extension.addedDays} DAYS</span>
+        {on(beat.yield) && <span>YIELD</span>}
+      </div>}
     </div>
     {on(beat.pair) && <>
+      {/* The pair resolves into one token on 'one USDC'; two tokens after that would contradict the line. */}
       {principal < 1 && token(pairPoses[1].left, pairPoses[1].y, pairSize, 30, undefined, 1 - principal)}
       {token(
-        tokenLeft,
-        pairPoses[0].y * (1 - principal) + tokenY * principal,
+        tokenLeft, activeY,
         activeSize, maturityDay, on(beat.date) ? illustrativeDate(maturityDay) : undefined,
       )}
     </>}
+    {extending && <div className="film-coin-ghost" style={{
+      left: dayX(originalDay) - ghostSize * 82 / 170, top: axisY - 96 * unit - ghostSize, opacity: .6 * dim,
+    }}>
+      <DatedDollar days={originalDay} isoDate={illustrativeDate(originalDay)} size={ghostSize}/>
+    </div>}
     {/* SVG text supplies an exact baseline and keeps every caption to one line. */}
     <svg className="film-coin-caption" width="100%" height="100%">
       <text x={0} y={axisY + 110 * unit} opacity={dim}>{caption}</text>
