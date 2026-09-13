@@ -24,7 +24,12 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'dated-dollar-fallback', phrase: 'dollar'},
     {cue: 'not-cash', phrase: 'cash'},
   ],
-  5: [{cue: 'cascade-open', phrase: 'Watch'}, {cue: 'window-mirror', phrase: '$450 million'}],
+  5: [
+    {cue: 'cascade-open', phrase: 'Watch'},
+    {cue: 'same-dollars', phrase: 'same dated dollars'},
+    {cue: 'nine-invoices', phrase: 'Nine invoices'},
+    {cue: 'window-mirror', phrase: '$450 million'},
+  ],
   6: [
     {cue: 'deposited-value', phrase: '$100 million'},
     {cue: 'committed-counter', phrase: 'deposited'},

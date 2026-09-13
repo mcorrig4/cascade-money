@@ -26,6 +26,16 @@
 .app.film-app-surface.film-presentation .film-hook-sources span {color: #abc0bd;}
 .app.film-app-surface.film-presentation .film-hook-close {display: flex; align-items: baseline; justify-content: center; gap: calc(32 * var(--film-unit));}
 .app.film-app-surface.film-presentation .wordmark-icon {width: .7em; height: .7em; margin-right: .2em; color: #69e6c0;}
+.app.film-app-surface.film-presentation .film-cascade-spine {
+  margin-left: calc(16 * var(--film-unit)); width: calc(560 * var(--film-unit));
+  flex-shrink: 0; text-align: left;
+}
+.app.film-app-surface.film-presentation .film-cascade-spine-drawing {
+  display: block; overflow: hidden; font-family: inherit; fill: currentColor;
+}
+.app.film-app-surface.film-presentation .film-cascade-source {fill: #8297a5;}
+.app.film-app-surface.film-presentation .film-cascade-hop {fill: var(--line);}
+.app.film-app-surface.film-presentation .film-cascade-hop-fill {fill: var(--money, #69e6c0);}
 .app.film-app-surface.film-presentation .film-totals {
   /* The pane supplies 32 logical pixels; the remaining 16 match the app's 48px gutter. */
   margin-left: calc(16 * var(--film-unit)); width: calc(560 * var(--film-unit));

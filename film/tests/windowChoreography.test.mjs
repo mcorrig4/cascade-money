@@ -11,10 +11,18 @@ const module={exports:{}};
 new Function('require','module','exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(
   name=>require(name==='../cues'?'../src/cues.ts':'../src/components/windowGeometry.ts'),module,module.exports);
 const {sceneWindowSpec, sourceFit, requiredCueFrame, FLAT_RIGHT}=module.exports;
-const cues={'cascade-open':0.2,'window-mirror':10,'window-flatten':10,'window-center':0.1,'zoom-out-again':0.1};
+const cues={'cascade-open':0.2,'same-dollars':12.1,'window-mirror':16.1,'window-flatten':10,'window-center':0.1,'zoom-out-again':0.1};
 
 test('W2 holds locked window decisions and joins every continuous middle boundary',()=>{
   for(const fps of [15,30]) {
+    const mirrorStart=Math.round(cues['same-dollars']*fps);
+    const cascadeSpec={from:'centerLarge',to:'skewRight',startFrame:mirrorStart,durationInFrames:Math.round(1.2*fps)};
+    for(let frame=0;frame<=1000;frame++) {
+      const spec=sceneWindowSpec(5,frame,fps,cues);
+      assert.deepEqual(spec,cascadeSpec,'scene 5 has one move, on same-dollars only');
+      if(frame<=mirrorStart) assert.deepEqual(windowStateAt(spec,frame),WINDOW_PRESETS.centerLarge);
+      if(frame>=mirrorStart+cascadeSpec.durationInFrames) assert.deepEqual(windowStateAt(spec,frame),WINDOW_PRESETS.skewRight);
+    }
     for(const scene of [2,3,4,6,7]) for(const frame of [0,1000])
       assert.deepEqual(windowStateAt(sceneWindowSpec(scene,frame,fps,cues),frame),WINDOW_PRESETS[scene===2?'centerSmall':scene<=4?'centerLarge':'skewRight']);
     for(const [outgoing,incoming] of [[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10]])

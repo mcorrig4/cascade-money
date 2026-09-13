@@ -14,9 +14,7 @@ export const sceneWindowSpec = (scene: number, frame: number, fps: number, cues:
     ({from, to, startFrame: requiredCueFrame(cues, cue, fps), durationInFrames: Math.round(seconds * fps)});
   if (scene === 2) return {preset: 'centerSmall'};
   if (scene === 3 || scene === 4) return {preset: 'centerLarge'};
-  if (scene === 5) return frame < requiredCueFrame(cues, 'window-mirror', fps)
-    ? move('centerLarge', 'centerSmall', 'cascade-open')
-    : move('centerSmall', 'skewRight', 'window-mirror');
+  if (scene === 5) return move('centerLarge', 'skewRight', 'same-dollars', 1.2);
   if (scene === 6 || scene === 7) return {preset: 'skewRight'};
   if (scene === 8) return move('skewRight', FLAT_RIGHT, 'window-flatten', 0.45);
   if (scene === 9) return move(FLAT_RIGHT, 'centerLarge', 'window-center');
