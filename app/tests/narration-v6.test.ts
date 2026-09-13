@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { SHOTS, buildShots, applyNarrationDurations, parseNarrationDurations, loadNarrationDurations, playFilm, playShot, narrationTime, DEFAULT_CASCADE, CASCADE_FIGURES, straightProofPayments, proofMaturity } from '../src/director/shots.ts';
+import { SHOTS, buildShots, applyNarrationDurations, parseNarrationDurations, loadNarrationDurations, playFilm, playShot, nextShot, narrationTime, DEFAULT_CASCADE, CASCADE_FIGURES, straightProofPayments, proofMaturity } from '../src/director/shots.ts';
 import { PlaybackEngine } from '../src/playback/engine.ts';
 import { createIndex, appendEvent, finishIndex } from '../src/data/index.ts';
 import { parseLine } from '../src/data/adapters.ts';
@@ -12,20 +12,36 @@ finishIndex(index);
 
 test('each v6 scene title, word count and provisional duration comes from its narration',async()=>{
  const script=await readFile(new URL('../../docs/script-v6-liam.md',import.meta.url),'utf8');
- const scenes=[...script.matchAll(/Scene (\d+) — ([^\n]+)\n([\s\S]*?)(?=\nScene |$)/g)];
- assert.equal(scenes.length,17);
- for(const [i,scene] of scenes.entries()){
-  const words=scene[3].match(/\b[\w]+(?:[’'-][\w]+)*\b/g)?.length??0;
-  assert.equal(SHOTS[i].title,scene[2]);assert.equal(SHOTS[i].words,words);
-  assert.equal(SHOTS[i].baseSeconds,Math.round((words*.4+1)*10)/10);
+ const allScenes=[...script.matchAll(/Scene (\d+) — ([^\n]+)\n([\s\S]*?)(?=\nScene |$)/g)];
+ assert.equal(allScenes.length,17);
+ // Scenes 3 (Rewind), 5 (The contradiction), 12 (Stress test) and 13 (The
+ // rules survive) were cut before the reorder-to-13 pass; scene 15 (New
+ // York) is cut by the scene-11-delete pass (2026-09-13, Liam 04:15 EDT).
+ // The surviving 12 play in SHOTS' own order, which is the REORDERED play
+ // order (reorder-to-13 pass), not the script doc's own scene order — e.g.
+ // "A dollar with a date" now plays before "Run the year", the reverse of
+ // the script — so look each SHOTS title up by name rather than zipping by
+ // position.
+ const cutTitles=new Set(['Rewind','The contradiction','Stress test','The rules survive','New York']);
+ const byTitle=new Map(allScenes.filter(scene=>!cutTitles.has(scene[2])).map(scene=>[scene[2],scene]));
+ assert.equal(byTitle.size,12);assert.equal(SHOTS.length,12);
+ for(const shot of SHOTS){
+  const scene=byTitle.get(shot.title);
+  assert.ok(scene,`no script scene named "${shot.title}"`);
+  const words=scene![3].match(/\b[\w]+(?:[’'-][\w]+)*\b/g)?.length??0;
+  assert.equal(shot.words,words);
+  assert.equal(shot.baseSeconds,Math.round((words*.4+1)*10)/10);
  }
- assert.equal(SHOTS.reduce((n,s)=>n+s.words,0),603);
+ const scriptWords=[...byTitle.values()].reduce((n,scene)=>n+(scene[3].match(/\b[\w]+(?:[’'-][\w]+)*\b/g)?.length??0),0);
+ assert.equal(SHOTS.reduce((n,s)=>n+s.words,0),scriptWords);
 });
 
 test('duration maps validate scene keys, units and positivity; partial takes retain fallback scenes',()=>{
- assert.deepEqual(parseNarrationDurations({durations:{'1':8.25,'17':6}}),{'1':8.25,'17':6});
+ // Scenes run 1-12 (scene-11-delete pass, 2026-09-13) — '13' (valid before
+ // it) now joins '18' as an out-of-range key.
+ assert.deepEqual(parseNarrationDurations({durations:{'1':8.25,'12':6}}),{'1':8.25,'12':6});
  assert.deepEqual(parseNarrationDurations({'1':8.25}),{'1':8.25});
- for(const value of [null,[],{durations:[]},{durations:{'0':2}},{durations:{'18':2}},{'1':0},{'1':-2},{'1':NaN},{'1':Infinity},{'1':'8s'}])assert.throws(()=>parseNarrationDurations(value));
+ for(const value of [null,[],{durations:[]},{durations:{'0':2}},{durations:{'13':2}},{durations:{'18':2}},{'1':0},{'1':-2},{'1':NaN},{'1':Infinity},{'1':'8s'}])assert.throws(()=>parseNarrationDurations(value));
  const shots=buildShots({'1':8.25});assert.equal(shots[0].seconds,8.25);
  assert.equal(shots[1].seconds,16.2);assert.equal(shots[1].startTime,8.25);
 });
@@ -84,12 +100,16 @@ test('unpaid arcs grow then stay dashed without retiring or incrementing settlem
  pool.tick(20000,false);assert.equal(pool.arcs.length,0);
 });
 
-test('vault glimpse is bounded by its scene and New York invokes the calibrated descent',()=>{
+test('vault glimpse is bounded by its scene and Beneath it invokes the calibrated descent',()=>{
+ // Shot 10 ("New York", the store flight + stair descent) is cut
+ // (scene-11-delete pass, 2026-09-13) — shot 19 (Beneath it) now performs
+ // this same fly-in + interior-camera-hook choreography unconditionally,
+ // since there's no longer a preceding shot to hand off from.
  const e=new PlaybackEngine(index);playShot(e,18);e.tick(16);
- assert.equal(e.state.onchainGlimpse,true);playShot(e,9);assert.equal(e.state.onchainGlimpse,false);
+ assert.equal(e.state.onchainGlimpse,true);playShot(e,nextShot(18));assert.equal(e.state.onchainGlimpse,false);
  let duration=0;e.subsurfaceInteriorCameraHook=ms=>{duration=ms;return true;};
- playShot(e,10);e.tick(e.state.shotDuration*.28);
- assert.ok(Math.abs(duration-11.4*1000*.72)<1e-7);
+ playShot(e,19);e.tick(e.state.shotDuration*.28);
+ assert.ok(Math.abs(duration-10.2*1000*.72)<1e-7);
  assert.equal(e.state.camera.site,'fifth-avenue');
 });
 

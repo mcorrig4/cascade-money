@@ -6,7 +6,7 @@ import { separateSiteSurfaces } from '../src/globe/site-surfaces.ts';
 import { clampCamera, cameraClearance, cameraGround, splineAt, orbitAt, EARTH_METERS } from '../src/camera/primitives.ts';
 import { createIndex, finishIndex } from '../src/data/index.ts';
 import { PlaybackEngine } from '../src/playback/engine.ts';
-import { playFilm, playShot, sceneTextAt } from '../src/director/shots.ts';
+import { playFilm, playShot } from '../src/director/shots.ts';
 import { calloutMotion } from '../src/director/cues.ts';
 import { companyCues } from '../src/director/company-cues.ts';
 
@@ -45,13 +45,16 @@ test('campus surfaces separate once without changing shared wall material',()=>{
  assert.notEqual(plate.material,shared);assert.equal(wall.material,shared);assert.equal(shared.polygonOffset,false);
  for(const mesh of [plate,floor,wall]){mesh.geometry.dispose();mesh.material.dispose();}
 });
-test('rewind finishes in two seconds and explicit date cues override authored times',()=>{
- const engine=new PlaybackEngine(index);playShot(engine,13);assert.equal(engine.state.position,364.999);
- engine.tick(1);assert.ok(Math.abs(engine.state.position-182.4995)<1e-8);
- engine.tick(1);assert.equal(engine.state.position,0);assert.equal(engine.state.timelapse?.elapsed,2000);
- engine.cue('date-card',undefined,5000);assert.equal(sceneTextAt(13,2.6,engine.state.cues),null);
- assert.equal(sceneTextAt(13,5.1,engine.state.cues)?.text,'September 9, 2025');
- assert.equal(sceneTextAt(13,5,engine.state.cues)?.opacity,0);
+test('explicit cues validate their name and record an elapsed offset',()=>{
+ // Rewind (the old shot 13: a 2s global reverse-timelapse into a date-card
+ // cue) was cut as a standalone scene well before the scene-11-delete pass
+ // — its playShot branch (dead: no table entry ever called it) was removed
+ // alongside this test's update. `engine.cue` itself is still live (used by
+ // every scene's narration-timed reveals), so keep validating it generically
+ // rather than through a shot that no longer exists.
+ const engine=new PlaybackEngine(index);playShot(engine,1);
+ engine.cue('date-card',undefined,5000);
+ assert.equal(engine.state.cues['date-card'],5000);
  assert.throws(()=>engine.cue('invalid' as 'date-card'),/Unknown cue/);
 });
 test('company cues retain explicit legacy brand support and freeze at sampled time',()=>{

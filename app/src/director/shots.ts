@@ -261,12 +261,6 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
     geo(appleParkShotCamera(EARTH_METERS,13.7).position,1.2)],(pullOutAt-orbitUntil)*scale*1000,'apple-park-arch');
   });
   at(pullOutAt,()=>engine.snapAndPullOut(APPLE,.00005,shot.end.altitude,(shot.baseSeconds-pullOutAt)*scale*1000,{kind:'cubic-out',handoff:.25}));
- }else if(id===13){
-  engine.timelapse('global',365,'reverse',2000);
-  engine.playRange(364.999,0,2);
-  engine.after(2,()=>engine.flashToWhite(250));
-  engine.after(2.25,()=>{engine.fadeFromWhite(300);engine.update({timelapse:null});engine.setPosition(0,true);});
-  at(12.3,()=>fly(shot.end,(shot.baseSeconds-12.3)*scale*1000));
  }else if(id===3){
   const orders=appleOrders(engine.index),branch=branchedProofPayments(engine.index,engine.state.story);
   const downstream=branch.slice(1);

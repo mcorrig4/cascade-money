@@ -7,15 +7,19 @@ import {createIndex,appendEvent,finishIndex} from '../src/data/index.ts';
 import {parseLine} from '../src/data/adapters.ts';
 import {easeAt,longitudeDelta,orbitAt,splineAt,sampleCamera,EARTH_METERS,SUBSURFACE_INTERIOR_CAMERA_HOOK} from '../src/camera/primitives.ts';
 const index=createIndex();(await readFile(new URL('./fixtures/events-v1.ndjson',import.meta.url),'utf8')).trim().split('\n').forEach(l=>appendEvent(index,parseLine(l)));finishIndex(index);
-test('17 scenes cover narration v6, preserve API IDs and connect every declared boundary',()=>{
- assert.ok(Math.abs(FILM_SECONDS-258.2)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,17);
- assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,19.8,20.2,16.6,8.2,23,13,18.2,27.8,20.6,11.8,12.2,17.8,11.4,10.2,4.6]);
+test('12 scenes cover narration v6, preserve API IDs and connect every declared boundary',()=>{
+ // Scene-11-delete pass (2026-09-13, Liam 04:15 EDT): shot 10 ("New York",
+ // the store flight + stair descent) is cut — the store beat is dropped.
+ // Scene 8 ("Underneath it", shot 18) STAYS. 12 shots remain: ids 1, 2, 3,
+ // 16, 4, 17, 6, 18, 5, 11, 19, 12 (in play order).
+ assert.ok(Math.abs(FILM_SECONDS-186.4)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,12);
+ assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,20.2,8.2,23,13,27.8,20.6,18.2,17.8,10.2,4.6]);
  for(let i=0;i<SHOTS.length;i++){
   const shot=SHOTS[i];assert.ok(shot.motion && !shot.motion.includes('hold'));
   if(i){assert.deepEqual(shot.start,SHOTS[i-1].end);assert.equal(shot.startTime,SHOTS[i-1].endTime);}
  }
- assert.equal(SHOTS.find(s=>s.id===6)?.scene,10);assert.equal(SHOTS.find(s=>s.id===9)?.scene,12);
- assert.equal(SHOTS.find(s=>s.id===10)?.scene,15);assert.equal(SHOTS.find(s=>s.id===11)?.seconds,17.8);
+ assert.equal(SHOTS.find(s=>s.id===6)?.scene,7);assert.equal(SHOTS.find(s=>s.id===18)?.scene,8);
+ assert.equal(SHOTS.find(s=>s.id===19)?.scene,11);assert.equal(SHOTS.find(s=>s.id===11)?.seconds,17.8);
  assert.equal(COMPOSABLE_BEATS.at(-1)?.title,'Derivatives');assert.ok(COIN_BEATS.every((b,i)=>!i||b.at-COIN_BEATS[i-1].at<=8));
 });
 test('cubic and bezier moves are monotone, bounded and respect forced hemisphere travel',()=>{
@@ -45,12 +49,15 @@ test('film advances exact boundaries without zero-duration camera cuts and expos
  assert.equal(e.state.shotRunning,false);assert.equal(e.state.shot,12);
  assert.ok(changes.every(c=>c.duration>0));assert.equal(SUBSURFACE_INTERIOR_CAMERA_HOOK,'subsurface-interior-camera');
 });
-test('large ticks match frame-by-frame film timing; flash and pause preserve the camera clock',()=>{
+test('large ticks match frame-by-frame film timing; pause preserves the camera clock',()=>{
+ // The old Rewind shot (id 13's global reverse-timelapse + flash) was cut
+ // long before the scene-11-delete pass and has no table entry any more —
+ // dropped the flash/exposure assertions that exercised its now-dead
+ // playShot branch (removed alongside this test update) along with it.
  const a=new PlaybackEngine(index),b=new PlaybackEngine(index);playFilm(a);playFilm(b);
  a.tick(FILM_SECONDS);for(let i=0;i<Math.round(FILM_SECONDS*30);i++)b.tick(1/30);
  assert.equal(a.state.shot,b.state.shot);assert.ok(Math.abs(a.state.shotElapsed-b.state.shotElapsed)<1e-7);
- const e=new PlaybackEngine(index);playFilm(e);e.tick(SHOTS[2].startTime+2.25);assert.equal(e.state.shot,13);assert.ok(Math.abs(e.state.exposure-1)<1e-9);
- e.tick(.7);assert.ok(e.state.exposure<1e-8);playShot(e,3);e.tick(1);e.toggle();const before=sampleCamera(e.state.camera,e.state.cameraElapsed);e.tick(2);assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),before);
+ const e=new PlaybackEngine(index);playShot(e,3);e.tick(1);e.toggle();const before=sampleCamera(e.state.camera,e.state.cameraElapsed);e.tick(2);assert.deepEqual(sampleCamera(e.state.camera,e.state.cameraElapsed),before);
 });
 
 test('every camera command inherits the preceding sampled pose at its exact cue boundary',()=>{

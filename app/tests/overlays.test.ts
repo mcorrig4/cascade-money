@@ -57,7 +57,7 @@ test('new display chain drives proof counters and Asan camera without unrelated 
   assert.equal(engine.storyEvents?.length,4);
 });
 test('all overlay shots start independently, pause and cancel scheduled flights', () => {
-  const engine = new PlaybackEngine(makeIndex()); assert.equal(SHOTS.length, 17);
+  const engine = new PlaybackEngine(makeIndex()); assert.equal(SHOTS.length, 12);
   for (const {id:shot} of SHOTS) {
     playShot(engine, shot); assert.equal(engine.state.shot, shot);
     engine.tick(0.1); engine.toggle(); const elapsed = engine.state.shotElapsed;
@@ -65,7 +65,10 @@ test('all overlay shots start independently, pause and cancel scheduled flights'
     engine.stopShot(); const camera = engine.state.camera.id;
     engine.tick(60); assert.equal(engine.state.camera.id, camera);
   }
-  playShot(engine, 10); engine.tick(4); assert.equal(engine.state.stage, 'cube');
+  // Shot 10 ("New York", the store flight) is cut (scene-11-delete pass,
+  // 2026-09-13) — shot 19 (Beneath it) now performs this fifth-avenue
+  // fly-in itself.
+  playShot(engine, 19); engine.tick(4); assert.equal(engine.state.stage, 'cube');
   assert.equal(engine.state.camera.altitude, 8 / 6_371_000);
   assert.equal(engine.state.camera.site, 'fifth-avenue');
   engine.tick(1.7); assert.equal(engine.state.stage, 'cube');

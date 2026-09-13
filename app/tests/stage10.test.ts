@@ -41,11 +41,14 @@ test('shot 6 holds the primitive simulation day while pause freezes narration',a
 
 test('scene captions contain only locations and narration fades on the shot clock', async () => {
   const { SCENE_LOCATIONS, SCENE_TEXT_BEATS, sceneTextAt } = await import('../src/director/shots.ts');
+  // Shot 10 ("New York") is cut (scene-11-delete pass, 2026-09-13) — shot
+  // 19 (Beneath it) now opens the fifth-avenue site itself. The stale
+  // shot-13 "Apple Park" entry (dead well before this pass — no shot 13
+  // exists in the table) is dropped rather than left pointing nowhere.
   assert.deepEqual(SCENE_LOCATIONS, [
     {shot:1,name:'Apple Park',place:'Cupertino, California'},
     {shot:2,name:'Apple Park',place:'Cupertino, California'},
-    {shot:13,name:'Apple Park',place:'Cupertino, California'},
-    {shot:10,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
+    {shot:19,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
   ]);
   for (const cue of SCENE_TEXT_BEATS) {
     assert.equal(sceneTextAt(cue.shot,cue.at - .01),null);
@@ -55,7 +58,6 @@ test('scene captions contain only locations and narration fades on the shot cloc
     assert.ok(sceneTextAt(cue.shot,cue.until - .1)!.opacity < .41);
     assert.equal(sceneTextAt(cue.shot,cue.until),null);
   }
-  assert.equal(sceneTextAt(13,2.6)?.text,'September 9, 2025');
   assert.equal(sceneTextAt(11,13)?.text,'Money plus time');
   assert.equal(sceneTextAt(11,16)?.text,'a second dimension to money');
   assert.equal(sceneTextAt(null,1.5),null);
