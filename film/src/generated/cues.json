@@ -75,6 +75,7 @@
     "stress-flash": 16.416,
     "stress-flash-fallback": 17.256,
     "stress-operations": 17.588,
+    "zero-violations": 20.94,
     "stress-end": 24.702,
     "ui-origin": 25.404
   },
