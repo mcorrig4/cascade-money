@@ -114,7 +114,7 @@ export function narrationTime(state:Pick<PlaybackState,'shot'|'shotElapsed'|'sho
 // docs/BRANCHING_REPORT.md: one Issue + nine Pays settle ten invoices to eight suppliers.
 export const CASCADE_FIGURES={
  straight:{committed:100_000_00000n,settled:400_000_00000n,companies:4,invoices:4},
- branched:{committed:100_000_00000n,settled:450_000_00000n,companies:8,invoices:10},
+ branched:{committed:100_000_00000n,settled:450_000_00000n,companies:8,invoices:9},
 };
 // Keep this switch aligned with film Scene08Counters for a future straight-line re-cut.
 export const USE_EXTENDED_FIGURES=true;

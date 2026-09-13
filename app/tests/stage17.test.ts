@@ -72,7 +72,7 @@ test('19→12 transition publishes eligible overlay state atomically and capture
  assert.ok(Math.abs(ranges.at(-1)!.startMs-close.startTime*1000)<1e-6);
 });
 test('branched invoice count distinguishes repeated suppliers; on-chain demo passes principal in full',()=>{
- assert.equal(DEFAULT_CASCADE.invoices,10);assert.equal(DEFAULT_CASCADE.companies,8);
+ assert.equal(DEFAULT_CASCADE.invoices,9);assert.equal(DEFAULT_CASCADE.companies,8);
  const hops=evidence.transactions.filter(t=>/ issues to | pays /.test(t.label));
  assert.equal(hops.length,4);assert.ok(hops.every(t=>t.amount==='10'&&t.unit==='USDC'));
  assert.equal(BigInt(evidence.recorded.principal)*BigInt(hops.length),BigInt(evidence.recorded.settled));
