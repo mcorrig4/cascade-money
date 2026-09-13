@@ -7,7 +7,9 @@
     "start": "remotion studio",
     "build": "remotion render src/index.ts CascadeFilm out/cascade-film.mp4",
     "still": "remotion still",
-    "scene-frames": "node scripts/scene-frames.mjs"
+    "scene-frames": "node scripts/scene-frames.mjs",
+    "render-scenes": "bash scripts/render-scenes.sh",
+    "splice-draft": "bash scripts/splice-draft.sh"
   },
   "dependencies": {
     "@remotion/cli": "4.0.484",

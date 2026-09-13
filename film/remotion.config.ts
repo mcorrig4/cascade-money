@@ -7,7 +7,11 @@ const filmDir = process.cwd();
 Config.setVideoImageFormat('jpeg');
 Config.setOverwriteOutput(true);
 Config.setChromiumOpenGlRenderer('angle');
-Config.setDelayRenderTimeoutInMilliseconds(300_000);
+// Two concurrent scene renders at concurrency=6 can leave a browser worker
+// CPU-starved for several minutes on the dev Mac. Readiness is deterministic,
+// so allow the worker to resume instead of mistaking scheduler delay for a
+// missing texture/font/model.
+Config.setDelayRenderTimeoutInMilliseconds(1_200_000);
 Config.overrideWebpackConfig(current => ({
   ...current,
   resolve: {

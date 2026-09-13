@@ -10,12 +10,13 @@ export const FRAME_DRIVEN_STATE_SOURCES = [
 let loggedSources = false;
 
 /** Deterministically reconstruct a scene at an absolute timeline position. */
-export function seekTo(tMs: number, scene = LIVE_SCENE) {
+export function seekTo(tMs: number, scene = LIVE_SCENE, absoluteTimeline = false) {
   const engine = window.__cascade?.engine;
   if (!engine) throw new Error('Cascade is not ready to seek');
   const shot = SHOTS.find(candidate => candidate.scene === scene);
   if (!shot) throw new Error(`Cascade scene ${scene} is missing`);
-  const elapsedMs = Math.max(0, Math.min(tMs, shot.seconds * 1000));
+  const requestedElapsedMs = absoluteTimeline ? tMs - shot.startTime * 1000 : tMs;
+  const elapsedMs = Math.max(0, Math.min(requestedElapsedMs, shot.seconds * 1000));
 
   engine.setClockMode('manual');
   if (!loggedSources) {

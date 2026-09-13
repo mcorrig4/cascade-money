@@ -60,14 +60,14 @@ set -- "${POSITIONAL[@]}"
 if [[ "$MODE" == "final" ]]; then
   OUT_DIR="$FILM_DIR/out/parts-final"
   SCALE_ARGS=()
-  PROPS_ARGS=(--props='{"reviewLabels":false,"fps":30}')
+  PROPS_ARGS=(--props='{"reviewLabels":false,"fps":30,"source":"live"}')
   RENDER_FPS=30
 else
   OUT_DIR="$FILM_DIR/out/parts"
   SCALE_ARGS=(--scale="0.3333333333333333")
   # Draft profile: 360p AND 15fps (product owner decision 2026-09-11 22:59
   # ET) — half the frames to encode for the same wall-clock preview.
-  PROPS_ARGS=(--props='{"reviewLabels":true,"fps":15}')
+  PROPS_ARGS=(--props='{"reviewLabels":true,"fps":15,"source":"live"}')
   RENDER_FPS=15
 fi
 mkdir -p "$OUT_DIR"
@@ -103,7 +103,15 @@ frame_range_for() {
   ' "$FRAMES_JSON" "$scene_num"
 }
 
-for num in "${SCENE_NUMS[@]}"; do
+TIMING_FILE="$FILM_DIR/../out/${LIVE_TAG:-live-v2}-timing.txt"
+mkdir -p "$(dirname "$TIMING_FILE")"
+START_ALL=$(perl -MTime::HiRes=time -e 'print time')
+: > "$TIMING_FILE"
+
+render_scene() {
+  local num="$1"
+  local started ended padded range raw_out final_out
+  started=$(perl -MTime::HiRes=time -e 'print time')
   padded=$(printf "%02d" "$num")
   range="$(frame_range_for "$num")"
   raw_out="$OUT_DIR/scene-${padded}.raw.mp4"
@@ -113,7 +121,7 @@ for num in "${SCENE_NUMS[@]}"; do
   npx remotion render CascadeFilm "$raw_out" \
     --frames="$range" \
     ${SCALE_ARGS[@]+"${SCALE_ARGS[@]}"} \
-    ${PROPS_ARGS[@]+"${PROPS_ARGS[@]}"}
+    ${PROPS_ARGS[@]+"${PROPS_ARGS[@]}"} --concurrency=3
 
   echo "-- Re-encoding scene $padded to $MODE profile --" >&2
   if [[ "$MODE" == "final" ]]; then
@@ -132,6 +140,20 @@ for num in "${SCENE_NUMS[@]}"; do
   rm -f "$raw_out"
 
   echo "-> $final_out" >&2
+  ended=$(perl -MTime::HiRes=time -e 'print time')
+  perl -e 'printf "scene_%s_seconds=%.3f\n",$ARGV[0],$ARGV[2]-$ARGV[1]' "$padded" "$started" "$ended" > "$OUT_DIR/scene-${padded}.seconds"
+}
+
+for ((i=0;i<${#SCENE_NUMS[@]};i+=2)); do
+  render_scene "${SCENE_NUMS[$i]}" & left=$!
+  right=""
+  if ((i+1<${#SCENE_NUMS[@]})); then render_scene "${SCENE_NUMS[$((i+1))]}" & right=$!; fi
+  wait "$left"
+  if [[ -n "$right" ]]; then wait "$right"; fi
 done
+
+for num in "${SCENE_NUMS[@]}"; do padded=$(printf "%02d" "$num"); cat "$OUT_DIR/scene-${padded}.seconds" >> "$TIMING_FILE"; done
+END_ALL=$(perl -MTime::HiRes=time -e 'print time')
+perl -e 'printf "render_total_seconds=%.3f\n",$ARGV[1]-$ARGV[0]' "$START_ALL" "$END_ALL" >> "$TIMING_FILE"
 
 echo "Done: ${#SCENE_NUMS[@]} scene(s) rendered ($MODE) to $OUT_DIR" >&2

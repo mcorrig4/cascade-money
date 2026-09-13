@@ -49,6 +49,7 @@ import {ConservationLaws} from './motion-graphics/ConservationLaws';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
 import {Scene17Close} from './motion-graphics/Scene17Close';
 import {Hook} from './motion-graphics/Hook';
+import {AppFrame} from '../live/AppFrame';
 
 ensureFontsLoaded();
 
@@ -78,7 +79,10 @@ export interface CascadeFilmProps extends Record<string, unknown> {
    * never this field directly.
    */
   fps?: 15 | 30;
+  source?: 'live' | 'captures';
 }
+
+export type FilmSource = 'live' | 'captures';
 
 /** Every named slide-reveal/card timestamp resolved from narration word timings — see cues.ts and scripts/cues-from-words.mjs. */
 const CUE_TIMES = cueTimesData as Record<number, Record<string, number>>;
@@ -415,14 +419,67 @@ const Scene4DateCornerLabel: React.FC = () => {
   );
 };
 
+export interface CascadeLiveSceneProps extends Record<string, unknown> {
+  sceneIndex: number;
+  fps?: 15 | 30;
+  source?: FilmSource;
+  narration?: NarrationMap;
+  captureOverrides?: Record<number, boolean>;
+  narrationControls?: NarrationControls;
+  includeAudio?: boolean;
+}
+
+/** A scene-local render target. App visuals own app overlays; film-only layers remain above them. */
+export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
+  sceneIndex,
+  source = 'live',
+  narration = {},
+  captureOverrides = {},
+  narrationControls = DEFAULT_NARRATION_CONTROLS,
+  includeAudio = true,
+}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const durations = resolveSceneDurations(narration, fps);
+  const duration = durations[sceneIndex - 1];
+  const sc = sceneByNum(sceneIndex);
+  const progress = framingRamp(sc, frame, duration, fps);
+  const loadingFrames = sceneIndex === 1 ? fps : 0;
+  let filmOverlay: React.ReactNode = null;
+  if(sceneIndex===2) filmOverlay=<Hook durationInFrames={duration} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />;
+  else if(sceneIndex===3) filmOverlay=<RewindSequence durationInFrames={duration} cues={CUE_TIMES[3]} />;
+  else if(sceneIndex===4) filmOverlay=<Scene4DateCornerLabel />;
+  else if(sceneIndex===6) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[6]} />;
+  else if(sceneIndex===17) filmOverlay=<Scene17Close durationInFrames={duration} />;
+
+  let visual: React.ReactNode;
+  if(source==='live'){
+    const app=<AppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
+    if(sceneIndex===1){
+      const pullbackFrames=at30(SCENE1_PULLBACK_FRAMES_AT_30,fps);
+      const pullback=interpolate(frame,[0,pullbackFrames],[0,1],{...CLAMP,easing:Easing.out(Easing.cubic)});
+      const reveal=cueFrame(CUE_TIMES[1],'phone-reveal',fps,cueFrame(CUE_TIMES[1],'phone-reveal-fallback',fps,scene1PhoneRevealFrame(duration)));
+      const lead=Math.round((SCENE1_PHONE_FADE_MS/1000)*fps),start=Math.max(loadingFrames,reveal-lead);
+      visual=<><BrowserFrame mode="framed" progress={pullback} chrome="browser" targetScale={SCENE1_WINDOW_TARGET_SCALE} anchorLeftFrac={SCENE1_WINDOW_LEFT_MARGIN_FRAC} skewYDeg={SCENE1_WINDOW_SKEW_DEG} perspectivePx={SCENE1_WINDOW_PERSPECTIVE_PX}>{app}</BrowserFrame><Sequence from={start} durationInFrames={duration-start} layout="none"><PhoneRevealOverlay cueFrame={reveal-start}/></Sequence></>;
+    }else visual=<BrowserFrame mode={sc.frame as FrameMode} progress={progress}>{app}{filmOverlay}</BrowserFrame>;
+  }else{
+    const cap=captureFor(sc,captureOverrides,duration);
+    visual=cap?<CaptureBeat sc={sc} duration={duration} cap={cap}>{filmOverlay}</CaptureBeat>:<GraphicBeat sc={sc} duration={duration}>{filmOverlay??<AbsoluteFill />}</GraphicBeat>;
+  }
+  return <AbsoluteFill style={{background:color.bgOuter}}>{visual}{includeAudio?<SceneVO num={sceneIndex} narration={narration} narrationControls={narrationControls}/>:null}</AbsoluteFill>;
+};
+
 export const CascadeFilm: React.FC<CascadeFilmProps> = ({
   narration,
   captureOverrides,
   narrationControls,
   reviewLabels = false,
+  source = 'live',
 }) => {
   const {fps} = useVideoConfig();
   const durations = resolveSceneDurations(narration, fps);
+
+  if(source==='live')return <AbsoluteFill style={{background:color.bgOuter}}><Series>{SCENES.map((sc,index)=><Series.Sequence key={sc.id} name={`Scene ${sc.num} — ${sc.title}`} durationInFrames={durations[index]}><CascadeLiveScene sceneIndex={sc.num} source="live" narration={narration} captureOverrides={captureOverrides} narrationControls={narrationControls}/></Series.Sequence>)}</Series>{reviewLabels?<ReviewLabelOverlay durations={durations}/>:null}</AbsoluteFill>;
 
   const sc15 = sceneByNum(15);
   const sc16 = sceneByNum(16);
