@@ -61,10 +61,10 @@
   .app .ledger-bottom strong {font-size:calc(34 * var(--film-unit))}
   .app .ledger-bottom>span,.app .ledger-annotation {font-size:calc(26 * var(--film-unit))}
   .app .ledger-toggle {display:none}
-  .app.recording-hud .ledger {top:auto;bottom:var(--film-bottom);left:calc(36 * var(--film-unit));right:calc(36 * var(--film-unit));width:auto;height:var(--film-log);padding:0 calc(8 * var(--film-unit));z-index:28;overflow:hidden}
-  .app.recording-hud .ledger-heading,.app.recording-hud .ledger-columns,.app.recording-hud .ledger-foot {display:none}
+  .app.recording-hud:not(.ledger-sidebar) .ledger {top:auto;bottom:var(--film-bottom);left:calc(36 * var(--film-unit));right:calc(36 * var(--film-unit));width:auto;height:var(--film-log);padding:0 calc(8 * var(--film-unit));z-index:28;overflow:hidden}
+  .app.recording-hud:not(.ledger-sidebar) .ledger-heading,.app.recording-hud:not(.ledger-sidebar) .ledger-columns,.app.recording-hud:not(.ledger-sidebar) .ledger-foot {display:none}
   .app.recording-hud .ledger-scroll {overflow:hidden}
-  .app.recording-hud .ledger-log-line {font-size:calc(40 * var(--film-unit));grid-template-columns:calc(150 * var(--film-unit)) minmax(0,1fr) calc(220 * var(--film-unit)) calc(190 * var(--film-unit));gap:calc(20 * var(--film-unit))}
+  .app.recording-hud:not(.ledger-sidebar) .ledger-log-line {font-size:calc(40 * var(--film-unit));grid-template-columns:calc(150 * var(--film-unit)) minmax(0,1fr) calc(220 * var(--film-unit)) calc(190 * var(--film-unit));gap:calc(20 * var(--film-unit))}
   .app .scene-heading {top:calc(150 * var(--film-unit));left:calc(48 * var(--film-unit))}
   .app .scene-heading h1 {font-size:calc(68 * var(--film-unit))}
   .app .scene-heading p {font-size:calc(34 * var(--film-unit))}

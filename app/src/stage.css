@@ -74,8 +74,8 @@
 .app.recording-hud .shot-overlay,.app.recording-hud .scene-narration{inset:var(--film-top) 0 calc(var(--film-bottom) + var(--film-log) + 8px)}
 .recording-hud .overlay-card{max-width:100%;max-height:100%;overflow:hidden}
 .app.recording-hud .scene-location{bottom:calc(var(--film-bottom) + var(--film-log) + 12px)}
-.recording-hud.overlay-active .ledger{top:auto;bottom:var(--film-bottom);left:12px;right:12px;width:auto;height:var(--film-log);padding:0 8px;z-index:28;overflow:hidden}
-.recording-hud.overlay-active .ledger-heading,.recording-hud.overlay-active .ledger-columns,.recording-hud.overlay-active .ledger-foot{display:none}
+.recording-hud.overlay-active:not(.ledger-sidebar) .ledger{top:auto;bottom:var(--film-bottom);left:12px;right:12px;width:auto;height:var(--film-log);padding:0 8px;z-index:28;overflow:hidden}
+.recording-hud.overlay-active:not(.ledger-sidebar) .ledger-heading,.recording-hud.overlay-active:not(.ledger-sidebar) .ledger-columns,.recording-hud.overlay-active:not(.ledger-sidebar) .ledger-foot{display:none}
 .recording-hud.overlay-active .ledger-scroll{overflow:hidden}
 .recording-hud .globe-dimmer{position:fixed;inset:0;z-index:-1}
 .clean-frame .scene-location{bottom:20px}
