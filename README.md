@@ -54,8 +54,8 @@ and its invariant test suite, and the globe app were all built for this event:
 
 ## Verify it
 
-- **Vault contract (verified on Arc testnet):** `0x57838A35f05a43aD519204D7A6Ce63F52d7C1987`
-  — [view on Arcscan](https://testnet.arcscan.app/address/0x57838a35f05a43ad519204d7a6ce63f52d7c1987#code)
+- **Vault contract (verified on Arc testnet):** `0x4E7D5b438d38b93b811F7f847613100023d7DafE`
+  — [view on Arcscan](https://testnet.arcscan.app/address/0x4e7d5b438d38b93b811f7f847613100023d7dafe#code)
 - **On-chain run report:** [`contracts/deployments/testnet-demo-run.md`](contracts/deployments/testnet-demo-run.md)
 - **Verify on Arc panel:** open the app and use its Verify on Arc panel — it reads the
   four-invoice chain's actors, transactions, and explorer links live from Arc testnet,

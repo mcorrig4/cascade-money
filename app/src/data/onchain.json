@@ -1,235 +1,249 @@
 {
   "chainId": 5042002,
-  "vault": "0x57838a35f05a43ad519204d7a6ce63f52d7c1987",
+  "vault": "0x4e7d5b438d38b93b811f7f847613100023d7dafe",
   "usdc": "0x3600000000000000000000000000000000000000",
   "rpcUrl": "https://rpc.testnet.arc.io",
-  "sourceUrl": "https://testnet.arcscan.app/address/0x57838a35f05a43ad519204d7a6ce63f52d7c1987#code",
+  "sourceUrl": "https://testnet.arcscan.app/address/0x4e7d5b438d38b93b811f7f847613100023d7dafe#code",
   "actors": [
     {
       "name": "Apple",
-      "address": "0x4A06663381bBee7Fe7fD4aF86C3B13ac51dAEe91",
+      "address": "0xbbaDACbfbd9A513f0aE1f1d6A780154D1bF1d684",
       "role": "Principal depositor / buyer",
-      "url": "https://testnet.arcscan.app/address/0x4A06663381bBee7Fe7fD4aF86C3B13ac51dAEe91"
+      "url": "https://testnet.arcscan.app/address/0xbbaDACbfbd9A513f0aE1f1d6A780154D1bF1d684"
     },
     {
-      "name": "Foxconn",
-      "address": "0xA3CB8560a162Aae9eF7E8083BA42E0fdb984F56b",
+      "name": "Samsung Display",
+      "address": "0xC219C4C0FC9Daa0906b5bE33154CED051e273D8B",
       "role": "Supplier 1",
-      "url": "https://testnet.arcscan.app/address/0xA3CB8560a162Aae9eF7E8083BA42E0fdb984F56b"
-    },
-    {
-      "name": "TSMC",
-      "address": "0x33Bd599E985dA5B1ea6C37B9d269Cb60Cc106A12",
-      "role": "Supplier 2",
-      "url": "https://testnet.arcscan.app/address/0x33Bd599E985dA5B1ea6C37B9d269Cb60Cc106A12"
+      "url": "https://testnet.arcscan.app/address/0xC219C4C0FC9Daa0906b5bE33154CED051e273D8B"
     },
     {
       "name": "Corning",
-      "address": "0xDfe6dAB7944ba2be53eC9eAA18bAff246829775F",
-      "role": "Supplier 3",
-      "url": "https://testnet.arcscan.app/address/0xDfe6dAB7944ba2be53eC9eAA18bAff246829775F"
+      "address": "0xEb8678dC23E979Eb7D5b96ebf0774b60CD89B351",
+      "role": "Supplier 2",
+      "url": "https://testnet.arcscan.app/address/0xEb8678dC23E979Eb7D5b96ebf0774b60CD89B351"
     },
     {
-      "name": "Glass supplier",
-      "address": "0x9610Fe61dFa03A3A8e4b1e8256d15dA5c9648f16",
+      "name": "Silica supplier",
+      "address": "0xaCA76f0D109E848ed80E55b37116Abd4c64C04b7",
+      "role": "Supplier 3",
+      "url": "https://testnet.arcscan.app/address/0xaCA76f0D109E848ed80E55b37116Abd4c64C04b7"
+    },
+    {
+      "name": "Freight carrier",
+      "address": "0xF9d828799C7724638D3bA8ecdFF7D99DD1811F71",
       "role": "Supplier 4",
-      "url": "https://testnet.arcscan.app/address/0x9610Fe61dFa03A3A8e4b1e8256d15dA5c9648f16"
+      "url": "https://testnet.arcscan.app/address/0xF9d828799C7724638D3bA8ecdFF7D99DD1811F71"
     }
   ],
   "transactions": [
     {
       "label": "Gas funding Apple",
-      "hash": "0x340778307387a8a1166a450d7ef03f3a133af2c135dacdce2808b80d2a7f940b",
-      "explorer": "https://testnet.arcscan.app/tx/0x340778307387a8a1166a450d7ef03f3a133af2c135dacdce2808b80d2a7f940b",
+      "hash": "0x94dcfa7a4d6c40175dc2b0e69dda6b672ea608d8dd9f1bae1ee4ebd0f6c24aef",
+      "explorer": "https://testnet.arcscan.app/tx/0x94dcfa7a4d6c40175dc2b0e69dda6b672ea608d8dd9f1bae1ee4ebd0f6c24aef",
       "status": "success",
+      "blockNumber": 61837677,
+      "gasUsed": "21000",
       "step": 1,
       "amount": "0.1",
       "unit": "USDC",
       "date": null,
-      "url": "https://testnet.arcscan.app/tx/0x340778307387a8a1166a450d7ef03f3a133af2c135dacdce2808b80d2a7f940b"
+      "url": "https://testnet.arcscan.app/tx/0x94dcfa7a4d6c40175dc2b0e69dda6b672ea608d8dd9f1bae1ee4ebd0f6c24aef"
     },
     {
-      "label": "Gas funding Foxconn",
-      "hash": "0xbc679225f2c55ff62e2b575a4c8c601c43f157ded361fce930f2afa8a7ec4146",
-      "explorer": "https://testnet.arcscan.app/tx/0xbc679225f2c55ff62e2b575a4c8c601c43f157ded361fce930f2afa8a7ec4146",
+      "label": "Gas funding Samsung Display",
+      "hash": "0xd75ad59ea3e3d02eec3400b62184bea41cac399a4023fad304819d82daa63cd9",
+      "explorer": "https://testnet.arcscan.app/tx/0xd75ad59ea3e3d02eec3400b62184bea41cac399a4023fad304819d82daa63cd9",
       "status": "success",
+      "blockNumber": 61837695,
+      "gasUsed": "21000",
       "step": 2,
       "amount": "0.1",
       "unit": "USDC",
       "date": null,
-      "url": "https://testnet.arcscan.app/tx/0xbc679225f2c55ff62e2b575a4c8c601c43f157ded361fce930f2afa8a7ec4146"
+      "url": "https://testnet.arcscan.app/tx/0xd75ad59ea3e3d02eec3400b62184bea41cac399a4023fad304819d82daa63cd9"
     },
     {
-      "label": "Gas funding TSMC",
-      "hash": "0xdd11b8e065943a0aa75f3fd8293de946e00d6a4e951778be782705165e838289",
-      "explorer": "https://testnet.arcscan.app/tx/0xdd11b8e065943a0aa75f3fd8293de946e00d6a4e951778be782705165e838289",
+      "label": "Gas funding Corning",
+      "hash": "0xffc12bf1763264a6d2c6252e77c08d809549d02d7b640bbe2c8efaf3cea39012",
+      "explorer": "https://testnet.arcscan.app/tx/0xffc12bf1763264a6d2c6252e77c08d809549d02d7b640bbe2c8efaf3cea39012",
       "status": "success",
+      "blockNumber": 61837713,
+      "gasUsed": "21000",
       "step": 3,
       "amount": "0.1",
       "unit": "USDC",
       "date": null,
-      "url": "https://testnet.arcscan.app/tx/0xdd11b8e065943a0aa75f3fd8293de946e00d6a4e951778be782705165e838289"
+      "url": "https://testnet.arcscan.app/tx/0xffc12bf1763264a6d2c6252e77c08d809549d02d7b640bbe2c8efaf3cea39012"
     },
     {
-      "label": "Gas funding Corning",
-      "hash": "0x179c2c6317a3eded42266ced87813d5cbf2d7d9689806980b664977792d5f497",
-      "explorer": "https://testnet.arcscan.app/tx/0x179c2c6317a3eded42266ced87813d5cbf2d7d9689806980b664977792d5f497",
+      "label": "Gas funding Silica supplier",
+      "hash": "0x186f00f3aa9218709dd72bbc2a67132a78c14aa993028bea11ea42945c504195",
+      "explorer": "https://testnet.arcscan.app/tx/0x186f00f3aa9218709dd72bbc2a67132a78c14aa993028bea11ea42945c504195",
       "status": "success",
+      "blockNumber": 61837730,
+      "gasUsed": "21000",
       "step": 4,
       "amount": "0.1",
       "unit": "USDC",
       "date": null,
-      "url": "https://testnet.arcscan.app/tx/0x179c2c6317a3eded42266ced87813d5cbf2d7d9689806980b664977792d5f497"
+      "url": "https://testnet.arcscan.app/tx/0x186f00f3aa9218709dd72bbc2a67132a78c14aa993028bea11ea42945c504195"
     },
     {
-      "label": "Gas funding Glass supplier",
-      "hash": "0x9e17ecde8c66ddfbee87cd4975eeea9e779fe3db840847e19494460b3fa8a891",
-      "explorer": "https://testnet.arcscan.app/tx/0x9e17ecde8c66ddfbee87cd4975eeea9e779fe3db840847e19494460b3fa8a891",
+      "label": "Gas funding Freight carrier",
+      "hash": "0x71a05a8916815eb7ed1153469760ab21d7864706cf18005ef02ee1a436bd85ff",
+      "explorer": "https://testnet.arcscan.app/tx/0x71a05a8916815eb7ed1153469760ab21d7864706cf18005ef02ee1a436bd85ff",
       "status": "success",
+      "blockNumber": 61837740,
+      "gasUsed": "21000",
       "step": 5,
       "amount": "0.1",
       "unit": "USDC",
       "date": null,
-      "url": "https://testnet.arcscan.app/tx/0x9e17ecde8c66ddfbee87cd4975eeea9e779fe3db840847e19494460b3fa8a891"
+      "url": "https://testnet.arcscan.app/tx/0x71a05a8916815eb7ed1153469760ab21d7864706cf18005ef02ee1a436bd85ff"
     },
     {
       "label": "Principal funding Apple",
-      "hash": "0x1cee0ca01e7dd43145c0054c141c7e5850d283987cbeea23546e1b1464b5f550",
-      "explorer": "https://testnet.arcscan.app/tx/0x1cee0ca01e7dd43145c0054c141c7e5850d283987cbeea23546e1b1464b5f550",
+      "hash": "0x0324aa6f5b2c6961632e6870163efd335c59b909d5b0f3df6964c2dcd17ab147",
+      "explorer": "https://testnet.arcscan.app/tx/0x0324aa6f5b2c6961632e6870163efd335c59b909d5b0f3df6964c2dcd17ab147",
       "status": "success",
+      "blockNumber": 61837757,
+      "gasUsed": "48950",
       "step": 6,
       "amount": "10",
       "unit": "USDC",
       "date": null,
-      "url": "https://testnet.arcscan.app/tx/0x1cee0ca01e7dd43145c0054c141c7e5850d283987cbeea23546e1b1464b5f550"
+      "url": "https://testnet.arcscan.app/tx/0x0324aa6f5b2c6961632e6870163efd335c59b909d5b0f3df6964c2dcd17ab147"
     },
     {
       "label": "Apple approves vault",
-      "hash": "0x838828e20eb4e437e97a9b35e07ee937cb0c67c16ec3c8e75b52868d79d62880",
-      "explorer": "https://testnet.arcscan.app/tx/0x838828e20eb4e437e97a9b35e07ee937cb0c67c16ec3c8e75b52868d79d62880",
+      "hash": "0x69dc27e09389b5338963328da9842618126fb9e238ff8eb992d2bc37444d7278",
+      "explorer": "https://testnet.arcscan.app/tx/0x69dc27e09389b5338963328da9842618126fb9e238ff8eb992d2bc37444d7278",
       "status": "success",
+      "blockNumber": 61837775,
+      "gasUsed": "55426",
       "step": 7,
       "amount": "10",
       "unit": "USDC",
       "date": null,
-      "url": "https://testnet.arcscan.app/tx/0x838828e20eb4e437e97a9b35e07ee937cb0c67c16ec3c8e75b52868d79d62880"
+      "url": "https://testnet.arcscan.app/tx/0x69dc27e09389b5338963328da9842618126fb9e238ff8eb992d2bc37444d7278"
     },
     {
-      "label": "Foxconn registers invoice",
-      "hash": "0x6aa880f17608748d4f42823004507e520d110738c00d67f51935fa4ba4d6ad0d",
-      "explorer": "https://testnet.arcscan.app/tx/0x6aa880f17608748d4f42823004507e520d110738c00d67f51935fa4ba4d6ad0d",
+      "label": "Samsung Display registers invoice: folding OLED panels",
+      "hash": "0x11db70573c8cd96cf1d2a902094d655d12abc414245e74e81815c97e4f3db61b",
+      "explorer": "https://testnet.arcscan.app/tx/0x11db70573c8cd96cf1d2a902094d655d12abc414245e74e81815c97e4f3db61b",
       "status": "success",
-      "blockNumber": 61711908,
-      "gasUsed": "177068",
+      "blockNumber": 61837793,
+      "gasUsed": "177018",
       "step": 8,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +90",
-      "url": "https://testnet.arcscan.app/tx/0x6aa880f17608748d4f42823004507e520d110738c00d67f51935fa4ba4d6ad0d"
+      "url": "https://testnet.arcscan.app/tx/0x11db70573c8cd96cf1d2a902094d655d12abc414245e74e81815c97e4f3db61b"
     },
     {
-      "label": "TSMC registers invoice",
-      "hash": "0x169d9702675335a09adc307bf51ccb25b8f789f55bdd05f00a8fad5190ce20c6",
-      "explorer": "https://testnet.arcscan.app/tx/0x169d9702675335a09adc307bf51ccb25b8f789f55bdd05f00a8fad5190ce20c6",
+      "label": "Corning registers invoice: ultra-thin cover glass",
+      "hash": "0xb162056429b5e6ba89a8aebb7f4777e49f322e9a56e8431a40bb1af9036f452a",
+      "explorer": "https://testnet.arcscan.app/tx/0xb162056429b5e6ba89a8aebb7f4777e49f322e9a56e8431a40bb1af9036f452a",
       "status": "success",
-      "blockNumber": 61711917,
-      "gasUsed": "177068",
+      "blockNumber": 61837803,
+      "gasUsed": "177018",
       "step": 9,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +90",
-      "url": "https://testnet.arcscan.app/tx/0x169d9702675335a09adc307bf51ccb25b8f789f55bdd05f00a8fad5190ce20c6"
+      "url": "https://testnet.arcscan.app/tx/0xb162056429b5e6ba89a8aebb7f4777e49f322e9a56e8431a40bb1af9036f452a"
     },
     {
-      "label": "Corning registers invoice",
-      "hash": "0xa301e3ce6412b2a276177e348570a5fec42b6d74d13e7ffee15638109ac95162",
-      "explorer": "https://testnet.arcscan.app/tx/0xa301e3ce6412b2a276177e348570a5fec42b6d74d13e7ffee15638109ac95162",
+      "label": "Silica supplier registers invoice: silica feedstock",
+      "hash": "0xe305c7bffbaf00def1550a4eaf885cc4900db35cde80c2a719da744e6a04c84a",
+      "explorer": "https://testnet.arcscan.app/tx/0xe305c7bffbaf00def1550a4eaf885cc4900db35cde80c2a719da744e6a04c84a",
       "status": "success",
-      "blockNumber": 61711926,
-      "gasUsed": "177068",
+      "blockNumber": 61837820,
+      "gasUsed": "177018",
       "step": 10,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +90",
-      "url": "https://testnet.arcscan.app/tx/0xa301e3ce6412b2a276177e348570a5fec42b6d74d13e7ffee15638109ac95162"
+      "url": "https://testnet.arcscan.app/tx/0xe305c7bffbaf00def1550a4eaf885cc4900db35cde80c2a719da744e6a04c84a"
     },
     {
-      "label": "Glass supplier registers invoice",
-      "hash": "0x5c272ef37c1490a6e318b443626fa09ac6dc2d7de5859fccbdfcdc4e140b49a0",
-      "explorer": "https://testnet.arcscan.app/tx/0x5c272ef37c1490a6e318b443626fa09ac6dc2d7de5859fccbdfcdc4e140b49a0",
+      "label": "Freight carrier registers invoice: freight",
+      "hash": "0x41d2de16b32fa3b3abbdf82ed26c99d5f3c3446556a8647037d0d3e321172b92",
+      "explorer": "https://testnet.arcscan.app/tx/0x41d2de16b32fa3b3abbdf82ed26c99d5f3c3446556a8647037d0d3e321172b92",
       "status": "success",
-      "blockNumber": 61711935,
-      "gasUsed": "177068",
+      "blockNumber": 61837830,
+      "gasUsed": "177018",
       "step": 11,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +120",
-      "url": "https://testnet.arcscan.app/tx/0x5c272ef37c1490a6e318b443626fa09ac6dc2d7de5859fccbdfcdc4e140b49a0"
+      "url": "https://testnet.arcscan.app/tx/0x41d2de16b32fa3b3abbdf82ed26c99d5f3c3446556a8647037d0d3e321172b92"
     },
     {
-      "label": "Apple issues to Foxconn",
-      "hash": "0x70fa7b0e7a2f77dd51c8e23f41919e4e909c5f54230b4b590db8bf2017f6ef2c",
-      "explorer": "https://testnet.arcscan.app/tx/0x70fa7b0e7a2f77dd51c8e23f41919e4e909c5f54230b4b590db8bf2017f6ef2c",
+      "label": "Apple issues to Samsung Display",
+      "hash": "0xddb123f602e2f1fa4ada0f28e475c36d1b5af9c1b0c2bde64c75cbdf2b2ef6b6",
+      "explorer": "https://testnet.arcscan.app/tx/0xddb123f602e2f1fa4ada0f28e475c36d1b5af9c1b0c2bde64c75cbdf2b2ef6b6",
       "status": "success",
-      "blockNumber": 61711944,
-      "gasUsed": "351613",
+      "blockNumber": 61837839,
+      "gasUsed": "523677",
       "step": 12,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +90",
-      "url": "https://testnet.arcscan.app/tx/0x70fa7b0e7a2f77dd51c8e23f41919e4e909c5f54230b4b590db8bf2017f6ef2c"
+      "url": "https://testnet.arcscan.app/tx/0xddb123f602e2f1fa4ada0f28e475c36d1b5af9c1b0c2bde64c75cbdf2b2ef6b6"
     },
     {
-      "label": "Foxconn pays TSMC",
-      "hash": "0x7d95fb4b18b0b0ae616c665408cab1304606219b3e675abe71426123df3d1619",
-      "explorer": "https://testnet.arcscan.app/tx/0x7d95fb4b18b0b0ae616c665408cab1304606219b3e675abe71426123df3d1619",
+      "label": "Samsung Display pays Corning",
+      "hash": "0xc6e86f75cbfecbfdf1bd0699384ef3a8a8bbd882b8969136d121f66a4bbfdcd9",
+      "explorer": "https://testnet.arcscan.app/tx/0xc6e86f75cbfecbfdf1bd0699384ef3a8a8bbd882b8969136d121f66a4bbfdcd9",
       "status": "success",
-      "blockNumber": 61711954,
-      "gasUsed": "150479",
+      "blockNumber": 61837856,
+      "gasUsed": "161102",
       "step": 13,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +90",
-      "url": "https://testnet.arcscan.app/tx/0x7d95fb4b18b0b0ae616c665408cab1304606219b3e675abe71426123df3d1619"
+      "url": "https://testnet.arcscan.app/tx/0xc6e86f75cbfecbfdf1bd0699384ef3a8a8bbd882b8969136d121f66a4bbfdcd9"
     },
     {
-      "label": "TSMC pays Corning",
-      "hash": "0xb43e2d93ca18c142c1e252910c80f5eebbadd7d7598e282c078687461283542c",
-      "explorer": "https://testnet.arcscan.app/tx/0xb43e2d93ca18c142c1e252910c80f5eebbadd7d7598e282c078687461283542c",
+      "label": "Corning pays Silica supplier",
+      "hash": "0x3fa20bb3082861f4eed5c1ada2e94e6b4edbbe9a2c0d53b556245d4ee2cd2047",
+      "explorer": "https://testnet.arcscan.app/tx/0x3fa20bb3082861f4eed5c1ada2e94e6b4edbbe9a2c0d53b556245d4ee2cd2047",
       "status": "success",
-      "blockNumber": 61711962,
-      "gasUsed": "150479",
+      "blockNumber": 61837873,
+      "gasUsed": "161102",
       "step": 14,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +90",
-      "url": "https://testnet.arcscan.app/tx/0xb43e2d93ca18c142c1e252910c80f5eebbadd7d7598e282c078687461283542c"
+      "url": "https://testnet.arcscan.app/tx/0x3fa20bb3082861f4eed5c1ada2e94e6b4edbbe9a2c0d53b556245d4ee2cd2047"
     },
     {
-      "label": "Corning extends +90 to +120",
-      "hash": "0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7",
-      "explorer": "https://testnet.arcscan.app/tx/0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7",
+      "label": "Silica supplier extends +90 to +120",
+      "hash": "0xf79dd29e18d2d70e5c6c3382459105d2937e66e685df2fb47e589033463d891f",
+      "explorer": "https://testnet.arcscan.app/tx/0xf79dd29e18d2d70e5c6c3382459105d2937e66e685df2fb47e589033463d891f",
       "status": "success",
-      "blockNumber": 61711972,
-      "gasUsed": "250935",
+      "blockNumber": 61837883,
+      "gasUsed": "431383",
       "step": 15,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +90 → +120",
-      "url": "https://testnet.arcscan.app/tx/0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7"
+      "url": "https://testnet.arcscan.app/tx/0xf79dd29e18d2d70e5c6c3382459105d2937e66e685df2fb47e589033463d891f"
     },
     {
-      "label": "Corning pays glass supplier",
-      "hash": "0xc7ab543c8b736e254b37516c74e566502721af1f68de6ca36b51028b84660b46",
-      "explorer": "https://testnet.arcscan.app/tx/0xc7ab543c8b736e254b37516c74e566502721af1f68de6ca36b51028b84660b46",
+      "label": "Silica supplier pays Freight carrier",
+      "hash": "0xb164443044cbc0be3b1acb6b8f004e25aa5407960f9a141f15f94fd8edce0369",
+      "explorer": "https://testnet.arcscan.app/tx/0xb164443044cbc0be3b1acb6b8f004e25aa5407960f9a141f15f94fd8edce0369",
       "status": "success",
-      "blockNumber": 61711981,
-      "gasUsed": "150479",
+      "blockNumber": 61837892,
+      "gasUsed": "161102",
       "step": 16,
       "amount": "10",
       "unit": "USDC",
       "date": "Run day +120",
-      "url": "https://testnet.arcscan.app/tx/0xc7ab543c8b736e254b37516c74e566502721af1f68de6ca36b51028b84660b46"
+      "url": "https://testnet.arcscan.app/tx/0xb164443044cbc0be3b1acb6b8f004e25aa5407960f9a141f15f94fd8edce0369"
     }
   ],
   "recorded": {
@@ -250,7 +264,7 @@
     ]
   },
   "supplyView": "eb274347",
-  "extensionTransaction": "0x76128b8bd8775bc693248770e7250b4bda0a66e50026a9bcffbfcf94e1ec8ff7",
+  "extensionTransaction": "0xf79dd29e18d2d70e5c6c3382459105d2937e66e685df2fb47e589033463d891f",
   "command": "cd contracts\nnode scripts/demo.mjs --live --broadcast --seed <testnet-seed>",
   "faucet": "https://faucet.circle.com/",
   "reportUrl": "https://github.com/mcorrig4/cascade-money/blob/main/contracts/deployments/testnet-demo-run.md",

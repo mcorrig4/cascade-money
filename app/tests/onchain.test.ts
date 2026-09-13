@@ -1,27 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile,readdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { parseOnchain } from '../scripts/onchain-manifest.ts';
 import data from '../src/data/onchain.json' with {type:'json'};
+import fixtureRun from '../src/data/demo-run.json' with {type:'json'};
 import { readArc,usdc } from '../src/data/arc-read.ts';
 const root=new URL('../../contracts/',import.meta.url),read=(path:string)=>readFile(new URL(path,root),'utf8');
 const deployment=JSON.parse(await read('deployments/5042002.json'));
-const runs=await Promise.all((await readdir(new URL('deployments/',root))).filter(f=>/^demo-5042002-.*\.json$/.test(f)).map(async f=>JSON.parse(await read(`deployments/${f}`))));
+const runs=[fixtureRun];
 const report=await read('deployments/testnet-demo-run.md'),readme=await read('README.md'),source=await read('src/CascadeVault.sol');
 test('manifest parser selects the complete reported run without duplicating resumed receipts',()=>{
   const parsed=parseOnchain(deployment,runs,report,readme,source);
   assert.deepEqual(parsed,data);assert.equal(data.transactions.length,16);assert.equal(new Set(data.transactions.map(t=>t.hash)).size,16);
-  assert.deepEqual(data.actors.map(a=>a.name),['Apple','Foxconn','TSMC','Corning','Glass supplier']);
+  assert.deepEqual(data.actors.map(a=>a.name),['Apple','Samsung Display','Corning','Silica supplier','Freight carrier']);
   assert.equal(data.transactions[0].amount,'0.1');assert.equal(data.transactions[14].date,'Run day +90 → +120');
   assert.equal(data.supplyView,'eb274347');assert.equal(data.recorded.deficit,'0');assert.equal(data.recorded.principalMatched,true);
   assert.ok(readme.includes(data.command.split('\n')[1]));assert.ok(data.transactions.every(t=>t.url.endsWith(t.hash)));
 });
-test('parser fails closed on incomplete, failed, wrong-chain or mismatched evidence',()=>{
+test('parser fails closed on incomplete, failed, wrong-chain, wrong-vault, short, or mismatched evidence',()=>{
   assert.throws(()=>parseOnchain({...deployment,chainId:1},runs,report,readme,source));
   assert.throws(()=>parseOnchain(deployment,[],report,readme,source));
-  assert.throws(()=>parseOnchain(deployment,runs,report.replace('deficit == 0','unknown'),readme,source));
+  assert.throws(()=>parseOnchain(deployment,runs,report.replaceAll('deficit == 0','unknown'),readme,source));
   const failed=structuredClone(runs);failed.forEach(r=>r.transactions[0].status='failed');
   assert.throws(()=>parseOnchain(deployment,failed,report,readme,source));
+  const wrongVault=structuredClone(runs);wrongVault.forEach(r=>r.vault='0x0000000000000000000000000000000000000000');
+  assert.throws(()=>parseOnchain(deployment,wrongVault,report,readme,source));
+  const fewerSteps=structuredClone(runs);fewerSteps.forEach(r=>r.transactions=r.transactions.slice(0,15));
+  assert.throws(()=>parseOnchain(deployment,fewerSteps,report,readme,source));
 });
 const word=(n:number)=>n.toString(16).padStart(64,'0');
 test('live read decodes actual date IDs and pins all view calls to one block',async()=>{
