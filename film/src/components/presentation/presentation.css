@@ -168,7 +168,62 @@
   font-family: inherit; font-size: calc(36 * var(--film-unit)); font-weight: 400; fill: #abc0bd;
 }
 .app.film-app-surface.film-presentation .film-coin-final {font-size: calc(45 * var(--film-unit));}
-.app.film-app-surface.film-presentation .film-backing .asset-composition {display: flex; flex-direction: column; align-items: flex-start;}
+/* Scene 8 uses film-owned selectors. Reviewed the app's .eyebrow,
+   .ledger-columns, .location-card h2 and removed .asset-composition usage
+   against app-surface-containment.json and W0's containment table: the source
+   selectors and their scoped-subject policies are unchanged. Typography below
+   preserves the app's weights/colours/tracking, with presentation-scale sizes. */
+.app.film-app-surface.film-presentation .film-backing {
+  /* Match scene 6's bars: pane padding 32 + 16 = the app's 48px gutter. */
+  position: absolute; left: calc(16 * var(--film-unit)); right: 0;
+  display: flex; flex-direction: column; text-align: left;
+}
+.app.film-app-surface.film-presentation .film-backing-eyebrow {
+  display: block; color: var(--muted); font-weight: 500; text-transform: uppercase;
+  font-size: calc(15 * var(--film-unit)); letter-spacing: calc(2.6 * var(--film-unit)); line-height: 1.2;
+}
+.app.film-app-surface.film-presentation .film-backing-heading {
+  margin: calc(12 * var(--film-unit)) 0; color: #e6eceb;
+  font-size: calc(64 * var(--film-unit)); letter-spacing: calc(-2 * var(--film-unit)); font-weight: 400; line-height: 1.2;
+}
+.app.film-app-surface.film-presentation .film-backing-register {
+  margin-top: auto; flex-shrink: 0; width: 100%;
+}
+.app.film-app-surface.film-presentation .film-backing-columns {
+  display: flex; justify-content: space-between; align-items: end;
+  height: calc(40 * var(--film-unit)); padding-bottom: calc(15 * var(--film-unit));
+  border-bottom: calc(1 * var(--film-unit)) solid var(--line);
+  font-size: calc(14 * var(--film-unit)); letter-spacing: calc(1.8 * var(--film-unit));
+  color: #718692; text-transform: uppercase; line-height: 1;
+}
+.app.film-app-surface.film-presentation .film-backing-row {
+  display: flex; justify-content: space-between; align-items: center;
+  height: calc(64 * var(--film-unit));
+  font-size: calc(30 * var(--film-unit)); font-weight: 400; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.app.film-app-surface.film-presentation .film-backing-row + .film-backing-row {
+  border-top: calc(1 * var(--film-unit)) solid rgba(170,199,204,.08);
+}
+.app.film-app-surface.film-presentation .film-backing-id {color: var(--money, #69e6c0);}
+.app.film-app-surface.film-presentation .film-backing-date {color: #abc0bd; text-align: right;}
+.app.film-app-surface.film-presentation .film-backing-rule {
+  height: calc(1 * var(--film-unit)); flex-shrink: 0; background: var(--line);
+}
+.app.film-app-surface.film-presentation .film-backing-reserve {
+  display: flex; align-items: baseline; justify-content: space-between;
+  height: calc(64 * var(--film-unit)); padding-top: calc(18 * var(--film-unit)); flex-shrink: 0;
+  white-space: nowrap; line-height: 1;
+}
+.app.film-app-surface.film-presentation .film-backing-asset {
+  position: relative; font-size: calc(38 * var(--film-unit)); font-weight: 400; color: #e6eceb;
+}
+.app.film-app-surface.film-presentation .film-backing-role {
+  font-size: calc(20 * var(--film-unit)); color: #8ba0ad; text-align: right;
+}
+.app.film-app-surface.film-presentation .film-backing-underline {
+  position: absolute; left: 0; right: 0; bottom: calc(-7 * var(--film-unit));
+  height: calc(1 * var(--film-unit)); background: var(--money, #69e6c0);
+}
 .app.film-app-surface.film-presentation .film-composable .composable-items {grid-template-columns: minmax(0, 1fr);}
 .app.film-app-surface.film-presentation .film-composable .composable-items li::before {display: none;}
 .app.film-app-surface.film-presentation .film-composable .composable-items li {grid-column: auto;}

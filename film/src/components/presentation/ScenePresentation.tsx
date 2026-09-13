@@ -234,12 +234,64 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
   </section>;
 };
 
-const BackingPresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('backing-card') ? null :
-  <section className="overlay-card backing-card film-backing" aria-label="Vault backing">
-    <h2>A vault on Arc.</h2>
-    {shown('contract') && <p className="contract-line">ERC-1155{shown('maturity-day') && <> · a token id for each UTC maturity day.</>}</p>}
-    {shown('reserve') && <div className="asset-composition"><b>USYC{shown('reserve-role') && <small>yield-bearing reserve</small>}</b></div>}
+const BackingPresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const unit = geometry.width / 1920;
+  const pane = presentationRect(geometry, 'left', 32 * filmUnitFor(geometry.width, geometry.height));
+  const footerTop = geometry.height - geometry.height * (252 / 1080);
+  const heading = at('backing-card'), contract = at('contract'), maturity = at('maturity-day');
+  const reserve = at('reserve'), role = at('reserve-role');
+  const riseFrames = 6 * fps / 30;
+  const stampDelay = 3 * fps / 30;
+  const rowFrames = (1.4 * fps - stampDelay) / 4;
+  const progress = (start: number, duration: number) => interpolate(frame, [start, start + duration], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  const rise = (start: number): React.CSSProperties => ({
+    opacity: progress(start, riseFrames),
+    transform: `translateY(${12 * unit * (1 - progress(start, riseFrames))}px)`,
+  });
+  const draw = (start: number): React.CSSProperties => ({
+    clipPath: `inset(0 ${(1 - progress(start, .4 * fps)) * 100}% 0 0)`,
+  });
+  // Both columns come from the same UTC date, including across month boundaries.
+  const rows = [...[30, 31, 32, 33].map(day => {
+    const date = illustrativeDate(day);
+    const [year, month, maturityDay] = date.split('-').map(Number);
+    return {id: String(Math.floor(Date.UTC(year, month - 1, maturityDay) / 86400000)), date};
+  }), {id: '…', date: '…'}];
+  return <section className="film-backing" aria-label="Vault token IDs by UTC maturity day"
+    style={{top: pane.height * .22, bottom: pane.bottom - footerTop}}>
+    <div style={rise(heading)}>
+      <div className="film-backing-eyebrow">THE VAULT</div>
+      <h2 className="film-backing-heading">ERC-1155</h2>
+    </div>
+    <div className="film-backing-register" role="table" aria-label="Token ID to maturity date mapping">
+      <div className="film-backing-columns" role="row" style={draw(contract)}>
+        <span role="columnheader">TOKEN ID</span><span role="columnheader">MATURITY · UTC</span>
+      </div>
+      {rows.map((row, index) => {
+        const start = maturity + index * rowFrames;
+        return <div className="film-backing-row" role="row" key={row.id} style={{
+          // Finish the downward wipe before stamping the complete date.
+          clipPath: `inset(0 0 ${(1 - progress(start, stampDelay)) * 100}% 0)`,
+        }}>
+          <span className="film-backing-id" role="cell">{row.id}</span>
+          <span className="film-backing-date" role="cell" style={{
+            // A one-frame stamp, gated at the full three-frame delay.
+            visibility: progress(start + stampDelay - 1, 1) === 1 ? 'visible' : 'hidden',
+          }}>{row.date}</span>
+        </div>;
+      })}
+    </div>
+    <div className="film-backing-rule" style={draw(reserve)}/>
+    <div className="film-backing-reserve" style={rise(reserve)}>
+      <span className="film-backing-asset">USYC<i className="film-backing-underline" style={draw(role)}/></span>
+      <span className="film-backing-role" style={{opacity: progress(role, riseFrames)}}>yield-bearing reserve</span>
+    </div>
   </section>;
+};
 
 const StressPresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('stress-flash') || shown('stress-end') ? null :
   <section className="overlay-card film-inset-card film-stress" aria-label="Year simulation and separate adversarial test">
@@ -264,7 +316,7 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
   const inset = scene === 3 || scene === 4 || scene === 9;
   const content = scene === 3 ? <ExamplePresentation shown={shown}/> : scene === 4 ? <QuestionPresentation shown={shown}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
     : scene === 7 ? <CoinPresentation at={at} geometry={geometry}/>
-    : scene === 8 ? <BackingPresentation shown={shown}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
+    : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
     {scene === 2 ? <HookPresentation shown={shown} geometry={geometry}/>
       : inset ? <div className="film-presentation-inset" style={{position: 'absolute', left: geometry.rect.left + 84 * unit, top: geometry.rect.top + 403 * unit, width: 980 * unit, height: 380 * unit}}>{content}</div>
