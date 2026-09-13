@@ -78,27 +78,29 @@ const TotalsPresentation: React.FC<{at: (name: string) => number; geometry: Wind
     style={{marginBottom: geometry.height * (252 / 1080)}}>
     <div className="film-totals-eyebrow" style={reveal(reserveValue)}>BACKING AND FLOW</div>
     <div className="film-totals-row">
-      <strong className="film-totals-figure" style={rise(reserveValue)}>$100M</strong>
+      <div className="film-totals-heading">
+        <strong className="film-totals-figure" style={rise(reserveValue)}>$100M</strong>
+        <span className="film-totals-label" style={reveal(reserveDraw + drawFrames)}>deposited · the reserve</span>
+      </div>
       <div className="film-totals-bar film-totals-reserve" style={{transform: `scaleX(${progress(reserveDraw, drawFrames)})`}}/>
-      <span className="film-totals-label" style={reveal(reserveDraw + drawFrames)}>deposited · the reserve</span>
     </div>
     <div className="film-totals-row">
-      <strong className="film-totals-figure" style={rise(settlementValue)}>$450M</strong>
+      <div className="film-totals-heading">
+        <strong className="film-totals-figure" style={rise(settlementValue)}>$450M</strong>
+        <span className="film-totals-label" style={reveal(settlementDraw + drawFrames)}>transacted</span>
+      </div>
       <div className="film-totals-bar film-totals-settlement" style={{transform: `scaleX(${progress(settlementDraw, drawFrames)})`}}
         role="img" aria-label="Nine settlements total 4.5 times the reserve">
         {Array.from({length: 9}, (_, i) => <div className="film-totals-segment" key={i}>
-          {/* Retract each mint bridge to expose the hairline gap beneath it. */}
+          {/* Retract each mint bridge to expose the ground-colour divider beneath it. */}
           {i > 0 && <i className="film-totals-divider" style={{transform: `scaleY(${1 - progress(segmentStart + i * tickFrames, tickFrames)})`}}/>}
         </div>)}
       </div>
-      <div className="film-totals-caption">
-        <span className="film-totals-label" style={reveal(settlementDraw + drawFrames)}>transacted</span>
-        <span className="film-totals-multiplier" style={{
-          visibility: frame < segmentStart ? 'hidden' : 'visible',
-          transform: `translateY(${12 * unit * (1 - multiplier)}px)`,
-        }}>4.5x the reserve</span>
-      </div>
     </div>
+    <span className="film-totals-multiplier" style={{
+      visibility: frame < segmentStart ? 'hidden' : 'visible',
+      transform: `translateY(${12 * unit * (1 - multiplier)}px)`,
+    }}>4.5x the reserve</span>
   </section>;
 };
 
