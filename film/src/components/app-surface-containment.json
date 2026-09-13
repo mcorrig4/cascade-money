@@ -4371,6 +4371,13 @@
     "file": "stage.css",
     "context": "",
     "kind": "selector",
+    "selector": ".app .question-card>.dated-dollar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
     "selector": ".app .coin-stage>.dated-dollar",
     "containment": "scoped-subject"
   },
@@ -4967,6 +4974,76 @@
     "context": "@media (min-aspect-ratio: 4/3)",
     "kind": "selector",
     "selector": ".app.recording-hud .ledger-log-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .ledger-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .ledger-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .ledger-foot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .ledger-scroll",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .ledger-log-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .ending-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud.ledger-sidebar .overlay-card",
     "containment": "scoped-subject"
   },
   {

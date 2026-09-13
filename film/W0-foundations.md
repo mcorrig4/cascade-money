@@ -806,6 +806,7 @@ An added selector, breakpoint, font face, or keyframe requires review.
 | `stage.css` | `(all)` | `.app .arc-coin` | `scoped-subject` |
 | `stage.css` | `(all)` | `.app .amount-layer` | `scoped-subject` |
 | `stage.css` | `(all)` | `.app .floating-amount strong` | `scoped-subject` |
+| `stage.css` | `(all)` | `.app .question-card>.dated-dollar` | `scoped-subject` |
 | `stage.css` | `(all)` | `.app .coin-stage>.dated-dollar` | `scoped-subject` |
 | `stage.css` | `(all)` | `.app .extension-ticks` | `scoped-subject` |
 | `stage.css` | `(all)` | `.extension-ticks i` | `scoped-subject` |
@@ -892,6 +893,16 @@ An added selector, breakpoint, font face, or keyframe requires review.
 | `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud .ledger-foot` | `scoped-subject` |
 | `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud .ledger-scroll` | `scoped-subject` |
 | `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud .ledger-log-line` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .ledger` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .ledger-heading` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .ledger-columns` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .ledger-foot` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .ledger-scroll` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .ledger-log-line` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .shot-overlay` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .scene-narration` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .ending-line` | `scoped-subject` |
+| `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app.recording-hud.ledger-sidebar .overlay-card` | `scoped-subject` |
 | `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app .scene-heading` | `scoped-subject` |
 | `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app .scene-heading h1` | `scoped-subject` |
 | `film.css` | `@media (min-aspect-ratio: 4/3)` | `.app .scene-heading p` | `scoped-subject` |

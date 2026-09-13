@@ -73,11 +73,23 @@ test('scene 2 preserves the complete browser tree and static centerSmall appeara
 test('scene integration keeps capture/phone expressions and derives all named window constants from the table', () => {
   const source=readFileSync(new URL('../src/compositions/CascadeFilm.tsx',import.meta.url),'utf8');
   const original=execFileSync('git',['show',`${baselineRevision}:film/src/compositions/CascadeFilm.tsx`],{encoding:'utf8'});
+  // What this guards is the phone's ANCHOR math — the W0 refactor moved the
+  // window constants into the preset table and could have silently changed
+  // where the phone lands. It deliberately no longer snapshots the whole
+  // component: the entrance styling is the product owner's to direct (Liam
+  // 2026-09-13 14:12 replaced the scale settle with a feathered edge and a
+  // single opacity ramp), and a source snapshot would make every such note a
+  // test failure rather than a review.
   const phone=s=>s.slice(s.indexOf('const PhoneRevealOverlay:'));
-  const expectedPhone=phone(original)
-    .replace("Window's settled right edge (Scene1AppWindow's SCENE1_WINDOW_* consts):", "Window's settled, unrotated right edge (the original phone anchor):")
-    .replace('SCENE1_WINDOW_LEFT_MARGIN_FRAC + SCENE1_WINDOW_TARGET_SCALE','WINDOW_PRESETS.skewLeft.anchorLeftFrac + WINDOW_PRESETS.skewLeft.targetScale');
-  assert.equal(phone(source),expectedPhone);
+  const anchorLines=s=>phone(s).split('\n').filter(line=>/windowRightEdgePx|overlapFrac|leftPx|SCENE1_PHONE_HEIGHT_FRAC|SCENE1_PHONE_ASPECT/.test(line)).join('\n');
+  assert.equal(
+    anchorLines(source),
+    anchorLines(original)
+      .replace('SCENE1_WINDOW_LEFT_MARGIN_FRAC + SCENE1_WINDOW_TARGET_SCALE','WINDOW_PRESETS.skewLeft.anchorLeftFrac + WINDOW_PRESETS.skewLeft.targetScale'),
+  );
+  // The entrance must stay a single motion: no transform beyond the vertical
+  // centring, and no scale settle (Liam: "it seems to grow and shrink").
+  assert.doesNotMatch(phone(source),/SCENE1_LAND_SETTLE_MS|scale\(\$\{scale\}\)/);
   assert.doesNotMatch(source,/const (SCENE1_WINDOW_|WINDOW_TARGET_SCALE|WINDOW_CENTER_ANCHOR)/);
   // W2 Stage 2 changes scene 2's card ownership while retaining its preset.
   const choreography=readFileSync(new URL('../src/compositions/windowChoreography.ts',import.meta.url),'utf8');
