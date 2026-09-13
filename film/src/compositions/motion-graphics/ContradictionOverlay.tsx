@@ -7,8 +7,9 @@
  * Two timelines, misaligned dots, per the brief.
  */
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {enter} from '../../motion/timing';
+import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {at30, enter} from '../../motion/timing';
+import {cueFrame, SceneCues} from '../../cues';
 import {color, font, scrim} from '../../brand/tokens';
 
 const ROWS = [
@@ -16,12 +17,14 @@ const ROWS = [
   {label: 'Corning — waiting on Samsung', at: 0.3, color: color.amber},
 ];
 
-export const ContradictionOverlay: React.FC<{durationInFrames: number}> = ({
+export const ContradictionOverlay: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
   durationInFrames: dur,
+  cues,
 }) => {
   const frame = useCurrentFrame();
-  const rowsIn = enter(frame, 30, 10, 'fade');
-  const line = enter(frame, 30, Math.round(dur * 0.55), 'fade');
+  const {fps} = useVideoConfig();
+  const rowsIn = enter(frame, fps, cueFrame(cues, 'rows-in', fps, at30(10, fps)), 'fade');
+  const line = enter(frame, fps, cueFrame(cues, 'dates-line', fps, Math.round(dur * 0.55)), 'fade');
 
   return (
     <AbsoluteFill style={{background: scrim}}>

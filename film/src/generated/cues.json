@@ -1,0 +1,39 @@
+{
+  "3": {
+    "date-card": 3.61,
+    "stat-suppliers": 7.67,
+    "stat-factories": 9.37,
+    "stat-countries": 11.31,
+    "stat-cost": 13.29
+  },
+  "5": {
+    "rows-in": 2.63,
+    "dates-line": 12.51
+  },
+  "6": {
+    "question-card": 0
+  },
+  "8": {
+    "committed-counter": 0,
+    "settled-counter": 2.35,
+    "tagline": 12.87
+  },
+  "12": {
+    "kicker": 4.19,
+    "op-extensions": 6.03,
+    "op-transfers": 7.53,
+    "op-redemptions": 8.03,
+    "op-sales": 8.59
+  },
+  "13": {
+    "law-ownership": 2.25,
+    "law-yield": 5.11
+  },
+  "14": {
+    "word-loans": 3.21,
+    "word-forwards": 4.01,
+    "word-bonds": 4.65,
+    "word-derivatives": 5.19,
+    "money-plus-time": 12.25
+  }
+}

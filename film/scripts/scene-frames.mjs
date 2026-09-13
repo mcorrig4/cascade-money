@@ -14,19 +14,22 @@
  * `fetch` to resolve those root-relative paths against it. That is transport
  * plumbing, not scene-duration logic.
  *
- * Usage: node scripts/scene-frames.mjs   (or: pnpm --dir film scene-frames)
+ * Usage: node scripts/scene-frames.mjs [fps]   (or: pnpm --dir film scene-frames -- 15)
+ * `fps` defaults to 30 (final profile); pass 15 for the draft profile so the
+ * printed frame ranges match what `--props='{"fps":15}'` will actually
+ * render (see render-scenes.sh).
  * Output: JSON array of {scene, title, from, to, frames, seconds} plus a
- * trailing {total: {frames, seconds}} entry, at 30fps.
+ * trailing {total: {frames, seconds}} entry, at the requested fps.
  */
 import http from 'node:http';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {createReadStream, existsSync, statSync} from 'node:fs';
 
-import {SCENES, applyDurationFloors} from '../src/compositions/schedule.ts';
+import {SCENES, resolveSceneDurations} from '../src/compositions/schedule.ts';
 import {loadNarration} from '../src/compositions/narration.ts';
 
-const FPS = 30;
+const FPS = Number(process.argv[2] ?? 30);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
@@ -72,9 +75,10 @@ const main = async () => {
     server.close();
   }
 
+  const sceneFrames = resolveSceneDurations(narration, FPS);
   let cursor = 0;
-  const rows = SCENES.map((sc) => {
-    const frames = applyDurationFloors(sc, narration[sc.num]?.durationInFrames ?? sc.estimateFrames);
+  const rows = SCENES.map((sc, i) => {
+    const frames = sceneFrames[i];
     const from = cursor;
     const to = cursor + frames - 1;
     cursor += frames;

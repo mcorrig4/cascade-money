@@ -76,8 +76,12 @@ else
       -movflags +faststart \
       "$OUT_FILE"
   else
+    # Draft parts render at 15fps now (render-scenes.sh's --props='{"fps":15}'
+    # draft profile, product owner decision 2026-09-11 22:59 ET) — this
+    # script only concats/re-encodes existing parts, so there's no --props
+    # flag here, but the fallback rate must still match them.
     ffmpeg -y -f concat -safe 0 -i "$CONCAT_LIST" \
-      -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r 30 \
+      -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r 15 \
       -c:a aac -b:a 128k \
       -movflags +faststart \
       "$OUT_FILE"

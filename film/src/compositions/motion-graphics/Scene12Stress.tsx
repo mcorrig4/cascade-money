@@ -6,16 +6,22 @@
  * and on the globe, the vault gauges under load").
  */
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {enter, stagger} from '../../motion/timing';
+import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {at30, enter, stagger} from '../../motion/timing';
+import {cueFrame, SceneCues} from '../../cues';
 import {color, font, scrim} from '../../brand/tokens';
 
 const OPS = ['Extensions', 'Transfers', 'Redemptions', 'Sales'];
+const OP_CUES = ['op-extensions', 'op-transfers', 'op-redemptions', 'op-sales'];
 
-export const Scene12Stress: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
+export const Scene12Stress: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
+  durationInFrames: dur,
+  cues,
+}) => {
   const frame = useCurrentFrame();
-  const kicker = enter(frame, 30, 0, 'fade');
-  const step = Math.max(10, Math.floor((dur * 0.5) / OPS.length));
+  const {fps} = useVideoConfig();
+  const kicker = enter(frame, fps, cueFrame(cues, 'kicker', fps, 0), 'fade');
+  const stepFallback = Math.max(at30(10, fps), Math.floor((dur * 0.5) / OPS.length));
 
   return (
     <AbsoluteFill style={{background: scrim, fontFamily: font.family, color: color.fg}}>
@@ -35,7 +41,8 @@ export const Scene12Stress: React.FC<{durationInFrames: number}> = ({durationInF
           </div>
           <div style={{display: 'flex', gap: 44}}>
             {OPS.map((op, i) => {
-              const e = enter(frame, 30, stagger(i, step, 12), 'pop');
+              const at = cueFrame(cues, OP_CUES[i], fps, stagger(i, stepFallback, at30(12, fps)));
+              const e = enter(frame, fps, at, 'pop');
               return (
                 <div
                   key={op}

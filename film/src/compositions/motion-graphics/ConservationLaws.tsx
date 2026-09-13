@@ -19,8 +19,9 @@
  * law that's currently on screen.
  */
 import React from 'react';
-import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
-import {enter, CLAMP} from '../../motion/timing';
+import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {enter, at30, CLAMP} from '../../motion/timing';
+import {cueFrame, SceneCues} from '../../cues';
 import {color, font, type, scrim} from '../../brand/tokens';
 
 const LAWS = [
@@ -35,9 +36,9 @@ const LAWS = [
     accent: color.money,
   },
 ];
+const LAW_CUES = ['law-ownership', 'law-yield'];
 
-const ENTER_DUR = 20;
-const EXIT_DUR = 16;
+const EXIT_DUR_AT_30 = 16;
 
 /** Fade + rise-away exit — the mirror of `enter(..., 'rise')`. */
 const exitUp = (frame: number, at: number, dur: number) => {
@@ -45,27 +46,39 @@ const exitUp = (frame: number, at: number, dur: number) => {
   return {opacity: 1 - p, transform: `translateY(${-28 * p}px)`};
 };
 
-export const ConservationLaws: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
+export const ConservationLaws: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
+  durationInFrames: dur,
+  cues,
+}) => {
   const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
   const n = LAWS.length;
-  // Pace the laws evenly across the whole scene: one exclusive slot each.
-  const slot = Math.floor(dur / n);
+  const exitDur = at30(EXIT_DUR_AT_30, fps);
+  // Pace the laws evenly across the whole scene by default (one exclusive
+  // slot each); a resolved cue moves a law's ENTRANCE to when the narration
+  // actually says it, and the PRECEDING law's exit is pinned to right
+  // before that (never two laws on screen at once — verified issue #1).
+  const slotFallback = Math.floor(dur / n);
+  const starts = LAW_CUES.map((cue, i) => cueFrame(cues, cue, fps, i * slotFallback));
 
-  const footerLine = enter(frame, 30, 24, 'fade');
+  // The persistent "10,000 operations · 0 violations" footer is intentionally
+  // NOT narration-keyed (see cues.ts): it is pinned for the whole scene by
+  // design, so it stays on the historical fixed-fraction offset.
+  const footerLine = enter(frame, fps, at30(24, fps), 'fade');
 
   return (
     <AbsoluteFill style={{background: scrim, fontFamily: font.family, color: color.fg}}>
       <AbsoluteFill style={{display: 'grid', placeItems: 'center'}}>
         <div style={{width: 970, height: 260, position: 'relative'}}>
           {LAWS.map((law, i) => {
-            const start = i * slot;
+            const start = starts[i];
             const isLast = i === n - 1;
-            const exitAt = start + slot - EXIT_DUR;
-            const e = enter(frame, 30, start, 'rise');
+            const exitAt = (isLast ? start + slotFallback : starts[i + 1]) - exitDur;
+            const e = enter(frame, fps, start, 'rise');
             let opacity = e.opacity;
             let transform = e.transform;
             if (!isLast && frame >= exitAt) {
-              const x = exitUp(frame, exitAt, EXIT_DUR);
+              const x = exitUp(frame, exitAt, exitDur);
               opacity = x.opacity;
               transform = x.transform;
             }

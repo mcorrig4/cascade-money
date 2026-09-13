@@ -46,7 +46,20 @@ export const DEFAULT_NARRATION_CONTROLS: NarrationControls = Array.from({length:
   gainDb: 0,
 }));
 
+/**
+ * Draft-vs-final render profile. The draft profile is 360p at 15fps (product
+ * owner decision, 2026-09-11 22:59 ET) until the final pass, which stays at
+ * 30fps/1080p. calculateMetadata (Root.tsx) scales durationInFrames so the
+ * film's wall-clock length is identical at either fps — see schedule.ts's
+ * scaleFrames/resolveSceneDurations — and every motion-graphics component reads
+ * its own frame constants through motion/timing.ts's `at30` against the
+ * REAL fps (useVideoConfig().fps), never a literal 30.
+ */
+export const fpsSchema = z.union([z.literal(15), z.literal(30)]);
+export const DEFAULT_FPS = 30 as const;
+
 /** CascadeFilm's Remotion Studio-editable input props (see Root.tsx's <Composition schema={cascadeFilmSchema} />). */
 export const cascadeFilmSchema = z.object({
   narrationControls: narrationControlsSchema,
+  fps: fpsSchema.default(DEFAULT_FPS),
 });

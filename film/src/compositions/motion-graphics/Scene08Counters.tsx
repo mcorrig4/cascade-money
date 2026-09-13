@@ -13,8 +13,9 @@
  * narration is re-cut to speak the extended line.
  */
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {countUp, enter} from '../../motion/timing';
+import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {at30, countUp, enter} from '../../motion/timing';
+import {cueFrame, SceneCues} from '../../cues';
 import {color, font, scrim, type} from '../../brand/tokens';
 
 /** Flip to true to show the extended figures ($450M / 8 companies). */
@@ -24,12 +25,20 @@ const COMMITTED = 100_000_000;
 const SETTLED = USE_EXTENDED_FIGURES ? 450_000_000 : 400_000_000;
 const COMPANIES = USE_EXTENDED_FIGURES ? 8 : 4;
 
-export const Scene08Counters: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
+export const Scene08Counters: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
+  durationInFrames: dur,
+  cues,
+}) => {
   const frame = useCurrentFrame();
-  const committed = countUp(frame, 10, 60, COMMITTED / 1_000_000);
-  const settled = countUp(frame, 70, 140, SETTLED / 1_000_000);
-  const companies = countUp(frame, 150, 190, COMPANIES);
-  const line = enter(frame, 30, Math.max(dur - 60, 200), 'rise');
+  const {fps} = useVideoConfig();
+  const committedStart = cueFrame(cues, 'committed-counter', fps, at30(10, fps));
+  const settledStart = cueFrame(cues, 'settled-counter', fps, at30(70, fps));
+  const companiesStart = cueFrame(cues, 'companies-counter', fps, at30(150, fps));
+  const committed = countUp(frame, committedStart, committedStart + at30(50, fps), COMMITTED / 1_000_000);
+  const settled = countUp(frame, settledStart, settledStart + at30(70, fps), SETTLED / 1_000_000);
+  const companies = countUp(frame, companiesStart, companiesStart + at30(40, fps), COMPANIES);
+  const lineAt = cueFrame(cues, 'tagline', fps, Math.max(dur - at30(60, fps), at30(200, fps)));
+  const line = enter(frame, fps, lineAt, 'rise');
 
   return (
     <AbsoluteFill style={{background: scrim, fontFamily: font.family, color: color.fg}}>

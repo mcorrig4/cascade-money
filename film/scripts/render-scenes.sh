@@ -10,18 +10,22 @@
 #   film/scripts/render-scenes.sh --final 3 7    # render scenes 3, 7 at final quality
 #   film/scripts/render-scenes.sh --profile final --full   # final quality, all scenes
 #
-# Each scene's frame range comes from `pnpm --dir film scene-frames`, which
-# reuses the composition's own duration logic (schedule.ts / narration.ts) —
-# so the ranges rendered here can never drift from what a full render would
-# produce for that scene.
+# Each scene's frame range comes from `node scripts/scene-frames.mjs <fps>`,
+# which reuses the composition's own duration logic (schedule.ts /
+# narration.ts) — so the ranges rendered here can never drift from what a
+# full render would produce for that scene. Cues (cues.ts's narration word
+# timestamps) are refreshed first, same reason.
 #
-# Draft profile (default): out/parts/scene-NN.mp4, 1/3 scale (640x360),
-# reviewLabels on (scene-number chip burned in), re-encoded to
-# H.264/crf26/yuv420p/tv-range/30fps + AAC 128k, +faststart.
+# Draft profile (default): out/parts/scene-NN.mp4, 1/3 scale (640x360) AT
+# 15fps (product owner decision 2026-09-11 22:59 ET — `--props='{"fps":15}'`
+# alongside the scale flag; wall-clock length is unchanged, half the frames
+# to render/encode), reviewLabels on (scene-number chip burned in),
+# re-encoded to H.264/crf26/yuv420p/tv-range/15fps + AAC 128k, +faststart.
 #
 # Final profile (--final / --profile final): out/parts-final/scene-NN.mp4,
-# native scale (no --scale), reviewLabels OFF, re-encoded to
-# H.264/preset-slow/crf18/yuv420p/tv-range/30fps + AAC 192k, +faststart.
+# native scale (no --scale), 30fps (`--props='{"fps":30}'`), reviewLabels
+# OFF, re-encoded to H.264/preset-slow/crf18/yuv420p/tv-range/30fps + AAC
+# 192k, +faststart.
 export PATH="/opt/homebrew/bin:$PATH"
 set -euo pipefail
 
@@ -56,11 +60,15 @@ set -- "${POSITIONAL[@]}"
 if [[ "$MODE" == "final" ]]; then
   OUT_DIR="$FILM_DIR/out/parts-final"
   SCALE_ARGS=()
-  PROPS_ARGS=(--props='{"reviewLabels":false}')
+  PROPS_ARGS=(--props='{"reviewLabels":false,"fps":30}')
+  RENDER_FPS=30
 else
   OUT_DIR="$FILM_DIR/out/parts"
   SCALE_ARGS=(--scale="0.3333333333333333")
-  PROPS_ARGS=(--props='{"reviewLabels":true}')
+  # Draft profile: 360p AND 15fps (product owner decision 2026-09-11 22:59
+  # ET) — half the frames to encode for the same wall-clock preview.
+  PROPS_ARGS=(--props='{"reviewLabels":true,"fps":15}')
+  RENDER_FPS=15
 fi
 mkdir -p "$OUT_DIR"
 
@@ -73,8 +81,14 @@ else
   SCENE_NUMS=("$@")
 fi
 
+echo "Refreshing narration word-timestamp cues..." >&2
+node "$FILM_DIR/scripts/cues-from-words.mjs" >&2
+
 echo "Reading scene frame ranges..." >&2
-FRAMES_JSON="$(pnpm --dir "$FILM_DIR" --silent scene-frames)"
+# node directly, not `pnpm scene-frames -- <fps>` — pnpm's `--dir` flag
+# leaves the literal "--" in argv (verified: without --dir it's stripped,
+# with it it isn't), which broke fps passthrough.
+FRAMES_JSON="$(node "$FILM_DIR/scripts/scene-frames.mjs" "$RENDER_FPS")"
 
 frame_range_for() {
   local scene_num="$1"
@@ -107,7 +121,7 @@ for num in "${SCENE_NUMS[@]}"; do
       "$final_out"
   else
     ffmpeg -y -i "$raw_out" \
-      -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r 30 \
+      -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r 15 \
       -c:a aac -b:a 128k \
       -movflags +faststart \
       "$final_out"

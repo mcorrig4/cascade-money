@@ -16,6 +16,18 @@ export const FPS = 30;
 /** One beat = 24 frames (0.8s). Scenes are 6–12 beats. */
 export const BEAT = 24;
 
+/**
+ * Every frame constant in this module and in the motion-graphics scenes
+ * (stagger steps, enter/exit delays and durations, spring durationInFrames)
+ * was authored and tuned at 30fps. `at30` converts one of those constants
+ * to the equivalent frame count at the composition's ACTUAL fps (15 for the
+ * draft profile, 30 for final — see CascadeFilmProps.fps / Root.tsx), so
+ * the wall-clock timing of every reveal is identical regardless of fps.
+ * Callers get the real fps from `useVideoConfig()` — never hard-code 30.
+ */
+export const at30 = (framesAuthoredAt30fps: number, fps: number): number =>
+  Math.round((framesAuthoredAt30fps * fps) / FPS);
+
 /* ---------------------------------------------------------------- springs */
 /** Text settle — NO overshoot. The workhorse for words and titles. */
 export const SPRING_SETTLE = {damping: 200} as const;

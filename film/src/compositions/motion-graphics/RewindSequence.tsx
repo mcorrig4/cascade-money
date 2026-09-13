@@ -15,31 +15,51 @@
  * Figures: ~200 suppliers, thousands of factories, 50+ countries, $194.1B
  * FY2025 product cost of sales ("almost two hundred billion") — all from
  * docs/verified-figures-v6.md.
+ *
+ * The title card and the four stat lines are keyed to when the narration
+ * actually SAYS each one (cues.ts / scripts/cues-from-words.mjs), not a
+ * fixed offset into the scene — see `cues` below. A stat whose cue hasn't
+ * resolved (no words file, or this VO cut doesn't say it) falls back to
+ * the original evenly-spaced slot.
  */
 import React from 'react';
-import {AbsoluteFill, interpolate, useCurrentFrame} from 'remotion';
-import {CLAMP, enter} from '../../motion/timing';
+import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {CLAMP, at30, enter} from '../../motion/timing';
+import {cueFrame, SceneCues} from '../../cues';
 import {bgGradient, color, font} from '../../brand/tokens';
 
 const STATS = ['Nearly 200 suppliers', 'Thousands of factories', '50+ countries', '~$200B in product costs'];
+const STAT_CUES = ['stat-suppliers', 'stat-factories', 'stat-countries', 'stat-cost'];
 const BANDS = 7;
 
-export const RewindSequence: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
+export const RewindSequence: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
+  durationInFrames: dur,
+  cues,
+}) => {
   const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  // Normalize the background scroll's frame-driven speed to a 30fps-equivalent
+  // counter so its on-screen rate doesn't change with the composition's fps.
+  const frame30 = frame * (30 / fps);
+
   const blurEnd = dur * 0.3;
   const flashEnd = dur * 0.38;
   const titleEnd = dur * 0.55;
 
-  const speed = interpolate(frame, [0, blurEnd], [2, 34], CLAMP);
+  const speed = interpolate(frame30, [0, blurEnd * (30 / fps)], [2, 34], CLAMP);
   const flashOpacity = interpolate(frame, [blurEnd, flashEnd], [0, 1], CLAMP);
-  const fromWhite = interpolate(frame, [flashEnd, flashEnd + 20], [1, 0], CLAMP);
+  const fromWhite = interpolate(frame, [flashEnd, flashEnd + at30(20, fps)], [1, 0], CLAMP);
 
-  const titleIn = interpolate(frame, [flashEnd + 8, flashEnd + 24], [0, 1], CLAMP);
-  const titleOut = interpolate(frame, [titleEnd - 20, titleEnd], [1, 0], CLAMP);
+  const titleInAt = cueFrame(cues, 'date-card', fps, flashEnd + at30(8, fps));
+  const titleIn = interpolate(frame, [titleInAt, titleInAt + at30(16, fps)], [0, 1], CLAMP);
+  const titleOut = interpolate(frame, [titleEnd - at30(20, fps), titleEnd], [1, 0], CLAMP);
   const titleOpacity = Math.min(titleIn, titleOut);
 
-  const statsPhase = frame > titleEnd;
-  const statSpan = (dur - titleEnd) / STATS.length;
+  const statSpanFallback = (dur - titleEnd) / STATS.length;
+  const statAt = STAT_CUES.map((cue, i) =>
+    cueFrame(cues, cue, fps, titleEnd + i * statSpanFallback),
+  );
+  const statsPhase = frame >= statAt[0];
 
   return (
     <AbsoluteFill style={{background: color.bgOuter, overflow: 'hidden'}}>
@@ -48,7 +68,7 @@ export const RewindSequence: React.FC<{durationInFrames: number}> = ({durationIn
           const y = (1080 / BANDS) * i;
           const h = 1080 / BANDS;
           const dir = i % 2 === 0 ? -1 : 1;
-          const x = ((frame * speed * dir) % 2400) - 1200;
+          const x = ((frame30 * speed * dir) % 2400) - 1200;
           return (
             <div
               key={i}
@@ -90,8 +110,9 @@ export const RewindSequence: React.FC<{durationInFrames: number}> = ({durationIn
           <AbsoluteFill style={{display: 'grid', placeItems: 'center'}}>
             <div style={{width: 1200, fontFamily: font.family}}>
               {STATS.map((stat, i) => {
-                const at = titleEnd + i * statSpan;
-                const e = enter(frame, 30, at + 4, 'rise');
+                const at = statAt[i];
+                const end = i + 1 < STATS.length ? statAt[i + 1] : dur;
+                const e = enter(frame, fps, at + at30(4, fps), 'rise');
                 return (
                   <div
                     key={stat}
@@ -102,10 +123,10 @@ export const RewindSequence: React.FC<{durationInFrames: number}> = ({durationIn
                       right: 0,
                       textAlign: 'center',
                       opacity:
-                        frame >= at && frame < at + statSpan
+                        frame >= at && frame < end
                           ? Math.min(
                               e.opacity,
-                              interpolate(frame, [at + statSpan - 14, at + statSpan], [1, 0], CLAMP),
+                              interpolate(frame, [end - at30(14, fps), end], [1, 0], CLAMP),
                             )
                           : 0,
                       transform: e.transform,

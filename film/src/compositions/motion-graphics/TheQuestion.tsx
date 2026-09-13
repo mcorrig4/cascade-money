@@ -6,15 +6,20 @@
  * length narration.json ultimately assigns this scene.
  */
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {enter, exit} from '../../motion/timing';
+import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {at30, enter, exit} from '../../motion/timing';
+import {cueFrame, SceneCues} from '../../cues';
 import {bgGradient, color, font} from '../../brand/tokens';
 
-export const TheQuestion: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
+export const TheQuestion: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
+  durationInFrames: dur,
+  cues,
+}) => {
   const frame = useCurrentFrame();
-  const e = enter(frame, 30, 4, 'settle');
-  const exitAt = Math.max(dur - 22, 10);
-  const x = exit(frame, exitAt, 16, 'fade');
+  const {fps} = useVideoConfig();
+  const e = enter(frame, fps, cueFrame(cues, 'question-card', fps, at30(4, fps)), 'settle');
+  const exitAt = Math.max(dur - at30(22, fps), at30(10, fps));
+  const x = exit(frame, exitAt, at30(16, fps), 'fade');
   const opacity = Math.min(e.opacity, x.opacity);
 
   return (

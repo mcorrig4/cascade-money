@@ -10,24 +10,33 @@
  * duration.
  */
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame} from 'remotion';
-import {enter, stagger} from '../../motion/timing';
+import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {at30, enter, stagger} from '../../motion/timing';
+import {cueFrame, SceneCues} from '../../cues';
 import {color, font, scrim} from '../../brand/tokens';
 
 const WORDS = ['Loans', 'Forwards', 'Bonds', 'Derivatives'];
+const WORD_CUES = ['word-loans', 'word-forwards', 'word-bonds', 'word-derivatives'];
 
-export const Scene14ZoomOut: React.FC<{durationInFrames: number}> = ({durationInFrames: dur}) => {
+export const Scene14ZoomOut: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
+  durationInFrames: dur,
+  cues,
+}) => {
   const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
   const wordsPhaseEnd = dur * 0.45;
-  const moneyTimeAt = dur * 0.52;
+  const moneyTimeAt = cueFrame(cues, 'money-plus-time', fps, Math.round(dur * 0.52));
   const moneyTimeOut = dur * 0.82;
-  const finalAt = dur * 0.86;
-  const step = Math.max(8, Math.floor(wordsPhaseEnd / WORDS.length));
+  const finalAt = cueFrame(cues, 'final-line', fps, Math.round(dur * 0.86));
+  const stepFallback = Math.max(at30(8, fps), Math.floor(wordsPhaseEnd / WORDS.length));
+  const wordAt = WORD_CUES.map((cue, i) =>
+    cueFrame(cues, cue, fps, stagger(i, stepFallback, at30(6, fps))),
+  );
 
-  const moneyTime = enter(frame, 30, moneyTimeAt, 'settle');
+  const moneyTime = enter(frame, fps, moneyTimeAt, 'settle');
   const moneyTimeFade =
-    frame > moneyTimeOut ? Math.max(0, 1 - (frame - moneyTimeOut) / 16) : 1;
-  const finalLine = enter(frame, 30, finalAt, 'fade');
+    frame > moneyTimeOut ? Math.max(0, 1 - (frame - moneyTimeOut) / at30(16, fps)) : 1;
+  const finalLine = enter(frame, fps, finalAt, 'fade');
 
   return (
     <AbsoluteFill style={{background: scrim, fontFamily: font.family, color: color.fg}}>
@@ -35,7 +44,7 @@ export const Scene14ZoomOut: React.FC<{durationInFrames: number}> = ({durationIn
         <AbsoluteFill style={{display: 'grid', placeItems: 'center'}}>
           <div style={{display: 'flex', gap: 50}}>
             {WORDS.map((w, i) => {
-              const e = enter(frame, 30, stagger(i, step, 6), 'pop');
+              const e = enter(frame, fps, wordAt[i], 'pop');
               return (
                 <div
                   key={w}

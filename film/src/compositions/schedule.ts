@@ -65,13 +65,29 @@ export const SCENES: SceneDef[] = [
 ];
 
 /**
+ * All the numbers on SCENES[] above (estimateFrames) and the floor just
+ * below (SCENE17_CLOSE_FLOOR_FRAMES) were authored assuming 30fps — that is
+ * this file's `FPS_BASE`. The composition itself can run at a different fps
+ * (the draft profile renders at 15fps — see CascadeFilmProps.fps in
+ * narrationControlsSchema.ts), so every consumer of these numbers goes
+ * through `resolveSceneDurations`/`filmDurationAtFps` below, which convert
+ * to the ACTUAL fps once, centrally — never re-derive frame math from these
+ * raw fields directly.
+ */
+export const FPS_BASE = 30;
+
+/** Convert a frame count authored at FPS_BASE to the equivalent at `fps`, preserving wall-clock duration. Rounds — for a SINGLE constant, not a whole scene list (see resolveSceneDurations for why the film's total needs cumulative rounding instead). */
+export const scaleFrames = (framesAtBase: number, fps: number): number =>
+  Math.round((framesAtBase * fps) / FPS_BASE);
+
+/**
  * Scene 17 (Close) is a held outro card: white -> tag -> wordmark beats need
  * a floor of screen time independent of how few words the VO speaks for it.
- * Applied everywhere a scene's resolved duration is computed (this file's
- * own ESTIMATED_TOTAL_DURATION, Root.tsx's calculateMetadata, and
- * CascadeFilm.tsx's durationFor) so the sizing and rendering numbers never
- * drift apart. Narration shorter than the floor just ends early and the
- * card holds silently for the remainder; narration longer than the floor is
+ * Applied everywhere a scene's resolved duration is computed
+ * (resolveSceneDurations below, used by both Root.tsx's calculateMetadata
+ * and CascadeFilm.tsx) so the sizing and rendering numbers never drift
+ * apart. Narration shorter than the floor just ends early and the card
+ * holds silently for the remainder; narration longer than the floor is
  * unaffected (the floor is a minimum, not a cap).
  *
  * An 8s (240-frame) floor was the first pass, but with the rest of the
@@ -80,15 +96,43 @@ export const SCENES: SceneDef[] = [
  * the largest floor that still lands the total at 3:54 (234.93s, verified
  * via `npx remotion compositions`).
  */
-export const SCENE17_CLOSE_FLOOR_FRAMES = 150; // 5s @ 30fps
+export const SCENE17_CLOSE_FLOOR_FRAMES = 150; // 5s @ FPS_BASE (30fps)
 
-export const applyDurationFloors = (sc: SceneDef, durationInFrames: number): number =>
-  sc.num === 17 ? Math.max(durationInFrames, SCENE17_CLOSE_FLOOR_FRAMES) : durationInFrames;
+type NarrationDurations = Record<number, {durationInFrames: number}>;
 
-export const ESTIMATED_TOTAL_DURATION = SCENES.reduce(
-  (a, sc) => a + applyDurationFloors(sc, sc.estimateFrames),
-  0,
-);
+/** A scene's UNROUNDED duration in frames at `fps` — real VO length (already fps-native, integer), else the word-count estimate scaled from FPS_BASE (fractional), with scene 17's floor applied to whichever one it is. */
+const rawDurationForScene = (sc: SceneDef, narration: NarrationDurations, fps: number): number => {
+  const raw = narration[sc.num]?.durationInFrames ?? (sc.estimateFrames * fps) / FPS_BASE;
+  return sc.num === 17 ? Math.max(raw, (SCENE17_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE) : raw;
+};
+
+/**
+ * The 17 scenes' resolved Sequence durations (integer frames) at `fps`.
+ * Rounding each scene independently (e.g. `Math.round(rawDurationForScene(...))`)
+ * would let up to 17 individual +/-0.5 frame roundings accumulate into a
+ * multi-frame drift on the film's total — at fps=15 that showed up as 3529
+ * frames instead of the exact half of 7048 (3524). Cumulative rounding
+ * (round the RUNNING TOTAL, take each scene's frames as the delta from the
+ * previous running total) guarantees the sum of these always equals
+ * `filmDurationAtFps`'s own rounding of the true total, at any fps.
+ */
+export const resolveSceneDurations = (narration: NarrationDurations, fps: number = FPS_BASE): number[] => {
+  let cumulative = 0;
+  let prevRounded = 0;
+  return SCENES.map((sc) => {
+    cumulative += rawDurationForScene(sc, narration, fps);
+    const rounded = Math.round(cumulative);
+    const frames = rounded - prevRounded;
+    prevRounded = rounded;
+    return frames;
+  });
+};
+
+export const filmDurationAtFps = (narration: NarrationDurations, fps: number = FPS_BASE): number =>
+  resolveSceneDurations(narration, fps).reduce((a, b) => a + b, 0);
+
+/** The default (30fps, no real narration yet) total — Root.tsx's static Composition durationInFrames fallback before calculateMetadata runs. */
+export const ESTIMATED_TOTAL_DURATION = filmDurationAtFps({}, FPS_BASE);
 
 export const sceneByNum = (num: number): SceneDef => {
   const sc = SCENES.find((s) => s.num === num);

@@ -1,26 +1,26 @@
 import React from 'react';
 import {CalculateMetadataFunction, Composition} from 'remotion';
 import {CascadeFilm, CascadeFilmProps} from './compositions/CascadeFilm';
-import {applyDurationFloors, ESTIMATED_TOTAL_DURATION, SCENES} from './compositions/schedule';
+import {ESTIMATED_TOTAL_DURATION, FPS_BASE, filmDurationAtFps, SCENES} from './compositions/schedule';
 import {loadCaptureOverrides, loadNarration} from './compositions/narration';
-import {cascadeFilmSchema, DEFAULT_NARRATION_CONTROLS} from './compositions/narrationControlsSchema';
-
-const FPS = 30;
+import {cascadeFilmSchema, DEFAULT_FPS, DEFAULT_NARRATION_CONTROLS} from './compositions/narrationControlsSchema';
 
 const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async ({props}) => {
+  // `fps` is a Studio/CLI-editable input prop (15 for the draft profile, 30
+  // for final — narrationControlsSchema.ts). It drives BOTH the actual
+  // composition fps AND the frame count schedule.ts scales to, so the
+  // film's wall-clock length never changes when fps does.
+  const fps = props.fps ?? DEFAULT_FPS;
   const [narration, captureOverrides] = await Promise.all([
-    loadNarration(FPS),
+    loadNarration(fps),
     loadCaptureOverrides(SCENES.map((sc) => sc.num)),
   ]);
-  const durationInFrames = SCENES.reduce(
-    (acc, sc) => acc + applyDurationFloors(sc, narration[sc.num]?.durationInFrames ?? sc.estimateFrames),
-    0,
-  );
+  const durationInFrames = filmDurationAtFps(narration, fps);
   // Spread the incoming props (defaultProps merged with any --props override,
   // e.g. reviewLabels from the CLI) so calculateMetadata only ever ADDS the
   // live-computed narration/captureOverrides — it never drops a prop the
   // caller passed in.
-  return {durationInFrames, props: {...props, narration, captureOverrides}};
+  return {durationInFrames, fps, props: {...props, narration, captureOverrides}};
 };
 
 export const RemotionRoot: React.FC = () => {
@@ -29,7 +29,7 @@ export const RemotionRoot: React.FC = () => {
       id="CascadeFilm"
       component={CascadeFilm}
       durationInFrames={ESTIMATED_TOTAL_DURATION}
-      fps={FPS}
+      fps={FPS_BASE}
       width={1920}
       height={1080}
       // reviewLabels: true renders a review-only top-left scene-number chip
@@ -40,12 +40,16 @@ export const RemotionRoot: React.FC = () => {
       // Remotion Studio's props sidebar (schema below) — see
       // narrationControlsSchema.ts. Every entry starts at the all-zero
       // no-op default, so this does not change any scene's timing.
+      //
+      // fps: 15 (draft) or 30 (final) — see narrationControlsSchema.ts and
+      // schedule.ts's scaleFrames/resolveSceneDurations/filmDurationAtFps.
       schema={cascadeFilmSchema}
       defaultProps={{
         narration: {},
         captureOverrides: {},
         reviewLabels: false,
         narrationControls: DEFAULT_NARRATION_CONTROLS,
+        fps: DEFAULT_FPS,
       }}
       calculateMetadata={calculateMetadata}
     />

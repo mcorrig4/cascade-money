@@ -21,9 +21,11 @@ import {color} from '../brand/tokens';
 import {CaptureScene} from '../components/CaptureScene';
 import {BrowserFrame, FrameMode} from '../components/BrowserFrame';
 import {PhoneHero} from '../components/PhoneHero';
-import {applyDurationFloors, SCENES, SceneDef, sceneByNum} from './schedule';
+import {resolveSceneDurations, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
+import {at30} from '../motion/timing';
+import cueTimesData from '../generated/cues.json';
 
 import {RewindSequence} from './motion-graphics/RewindSequence';
 import {TheQuestion} from './motion-graphics/TheQuestion';
@@ -56,14 +58,17 @@ export interface CascadeFilmProps extends Record<string, unknown> {
    *   npx remotion render CascadeFilm --props='{"reviewLabels":true}'
    */
   reviewLabels?: boolean;
+  /**
+   * Draft (15) or final (30) fps — narrationControlsSchema.ts. Baked into
+   * the composition's actual fps by Root.tsx's calculateMetadata; the
+   * component itself always reads the real value via useVideoConfig(),
+   * never this field directly.
+   */
+  fps?: 15 | 30;
 }
 
-/** The resolved duration for a scene: real VO length+0.4s, else the word-count estimate. */
-const durationFor = (sc: SceneDef, narration: NarrationMap): number =>
-  applyDurationFloors(sc, narration[sc.num]?.durationInFrames ?? sc.estimateFrames);
-
-export const filmDuration = (narration: NarrationMap): number =>
-  SCENES.reduce((acc, sc) => acc + durationFor(sc, narration), 0);
+/** Every named slide-reveal/card timestamp resolved from narration word timings — see cues.ts and scripts/cues-from-words.mjs. */
+const CUE_TIMES = cueTimesData as Record<number, Record<string, number>>;
 
 /** The resolved capture for a scene: the scene-NN.mp4 recapture if it exists, else the fallback. */
 const captureFor = (
@@ -83,22 +88,23 @@ const captureFor = (
   };
 };
 
-const RAMP = 24;
+const RAMP_AT_30 = 24;
 
 const isFramed = (num: number | undefined) =>
   num !== undefined && sceneByNum(num).frame === 'framed';
 
 /** Local-frame progress (0=bleed/tilt-out, 1=framed) for a scene's own BrowserFrame. */
-const framingRamp = (sc: SceneDef, localFrame: number, durationInFrames: number): number => {
+const framingRamp = (sc: SceneDef, localFrame: number, durationInFrames: number, fps: number): number => {
+  const ramp = at30(RAMP_AT_30, fps);
   const target = sc.frame === 'framed' ? 1 : 0;
   const enterFrom = isFramed(sc.num - 1) ? 1 : 0;
   const exitTo = isFramed(sc.num + 1) ? 1 : 0;
 
-  if (localFrame < RAMP && enterFrom !== target) {
-    return enterFrom + (target - enterFrom) * (localFrame / RAMP);
+  if (localFrame < ramp && enterFrom !== target) {
+    return enterFrom + (target - enterFrom) * (localFrame / ramp);
   }
-  if (localFrame > durationInFrames - RAMP && exitTo !== target) {
-    const t = (localFrame - (durationInFrames - RAMP)) / RAMP;
+  if (localFrame > durationInFrames - ramp && exitTo !== target) {
+    const t = (localFrame - (durationInFrames - ramp)) / ramp;
     return target + (exitTo - target) * Math.max(0, Math.min(1, t));
   }
   return target;
@@ -112,7 +118,8 @@ const CaptureBeat: React.FC<{
   children?: React.ReactNode;
 }> = ({sc, duration, cap, children}) => {
   const frame = useCurrentFrame();
-  const progress = framingRamp(sc, frame, duration);
+  const {fps} = useVideoConfig();
+  const progress = framingRamp(sc, frame, duration, fps);
   return (
     <CaptureScene
       src={cap.src}
@@ -133,7 +140,8 @@ const GraphicBeat: React.FC<{sc: SceneDef; duration: number; children: React.Rea
   children,
 }) => {
   const frame = useCurrentFrame();
-  const progress = framingRamp(sc, frame, duration);
+  const {fps} = useVideoConfig();
+  const progress = framingRamp(sc, frame, duration, fps);
   return (
     <BrowserFrame mode={sc.frame as FrameMode} progress={progress}>
       {children}
@@ -242,7 +250,8 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
   narrationControls,
   reviewLabels = false,
 }) => {
-  const durations = SCENES.map((sc) => durationFor(sc, narration));
+  const {fps} = useVideoConfig();
+  const durations = resolveSceneDurations(narration, fps);
 
   const sc15 = sceneByNum(15);
   const sc16 = sceneByNum(16);
@@ -285,7 +294,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
         </Series.Sequence>
 
         <Series.Sequence name="Scene 3 — Rewind" durationInFrames={durations[2]}>
-          <RewindSequence durationInFrames={durations[2]} />
+          <RewindSequence durationInFrames={durations[2]} cues={CUE_TIMES[3]} />
           <SceneVO num={3} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
@@ -309,7 +318,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             // one owner per element, capture wins (ac02b78). Only the
             // fallback (pre-overlay) shot-02-network capture needs this
             // component to draw the card itself.
-            const overlay = captureOverrides[5] ? null : <ContradictionOverlay durationInFrames={durations[4]} />;
+            const overlay = captureOverrides[5] ? null : <ContradictionOverlay durationInFrames={durations[4]} cues={CUE_TIMES[5]} />;
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[4]} cap={cap}>
                 {overlay}
@@ -325,7 +334,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
 
         <Series.Sequence name="Scene 6 — The question" durationInFrames={durations[5]}>
           <GraphicBeat sc={sceneByNum(6)} duration={durations[5]}>
-            <TheQuestion durationInFrames={durations[5]} />
+            <TheQuestion durationInFrames={durations[5]} cues={CUE_TIMES[6]} />
           </GraphicBeat>
           <SceneVO num={6} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
@@ -353,7 +362,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             // fallback path, when no scene-08 capture exists yet.
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[7]} cap={cap}>
-                {!captureOverrides[8] && <Scene08Counters durationInFrames={durations[7]} />}
+                {!captureOverrides[8] && <Scene08Counters durationInFrames={durations[7]} cues={CUE_TIMES[8]} />}
               </CaptureBeat>
             ) : null;
           })()}
@@ -397,7 +406,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             // headline; render it only in the fallback path.
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[11]} cap={cap}>
-                {!captureOverrides[12] && <Scene12Stress durationInFrames={durations[11]} />}
+                {!captureOverrides[12] && <Scene12Stress durationInFrames={durations[11]} cues={CUE_TIMES[12]} />}
               </CaptureBeat>
             ) : null;
           })()}
@@ -412,7 +421,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             // plus the ownership/yield/operations laws (app's 'laws'
             // overlay). ConservationLaws duplicates that; render it only
             // in the fallback path.
-            const overlay = captureOverrides[13] ? null : <ConservationLaws durationInFrames={durations[12]} />;
+            const overlay = captureOverrides[13] ? null : <ConservationLaws durationInFrames={durations[12]} cues={CUE_TIMES[13]} />;
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[12]} cap={cap}>
                 {overlay}
@@ -434,7 +443,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             // Loans/Forwards/Bonds/Derivatives + "Money plus time" beats
             // (app's 'composable' overlay). Scene14ZoomOut duplicates that;
             // render it only in the fallback path.
-            const overlay14 = captureOverrides[14] ? null : <Scene14ZoomOut durationInFrames={durations[13]} />;
+            const overlay14 = captureOverrides[14] ? null : <Scene14ZoomOut durationInFrames={durations[13]} cues={CUE_TIMES[14]} />;
             return cap ? (
               <CaptureBeat sc={sc} duration={durations[13]} cap={cap}>
                 {overlay14}
@@ -523,12 +532,16 @@ const scene1PhoneRevealFrame = (scene1DurationInFrames: number): number =>
       (SCENE1_PRE_MENTION_WORDS + SCENE1_MENTION_WORDS),
   );
 
+const TILT_RAMP_FRAMES_AT_30 = 70;
+
 /** Scene 1's entrance / scene 15's held-photo beat — the tilt eases 0->1 on scene 1 only. */
 const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> = ({
   durationInFrames,
   finished = false,
 }) => {
   const frame = useCurrentFrame();
-  const tilt = finished ? 1 : Math.max(0, Math.min(1, frame / 70));
+  const {fps} = useVideoConfig();
+  const tiltRampFrames = at30(TILT_RAMP_FRAMES_AT_30, fps);
+  const tilt = finished ? 1 : Math.max(0, Math.min(1, frame / tiltRampFrames));
   return <PhoneHero frame={frame} durationInFrames={durationInFrames} tilt={tilt} />;
 };
