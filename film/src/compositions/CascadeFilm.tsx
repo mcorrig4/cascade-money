@@ -156,13 +156,16 @@ const durationFor = (durations: number[], num: number): number => {
 const CAPTURE_TAIL_TRIM_SECONDS = 0.3;
 
 /**
- * Slowest the capture layer is allowed to run. Below this, a capture is so
- * much shorter than its scene that stretching it would read as slow motion;
- * the remainder holds on the last real frame instead (still never the next
- * shot's picture). Any scene that hits this floor wants a recapture at the
- * narration's own length, not a film-side fix.
+ * Slowest the capture layer is allowed to run. A mild stretch is invisible on
+ * these slow globe moves; past this it reads as slow motion, so a capture
+ * that far short of its scene holds on its last real frame instead (still
+ * never the next shot's picture — that is the whole point). Scene 1's
+ * cold-load capture is deliberately on the freeze side of this line: it is a
+ * loading screen the scene-1 lane already signed off holding. Any scene that
+ * lands here wants a recapture at the narration's own length, not a film-side
+ * fix — see shot 5's authored `seconds` in app/src/director/shots.ts.
  */
-const MIN_CAPTURE_PLAYBACK_RATE = 0.55;
+const MIN_CAPTURE_PLAYBACK_RATE = 0.75;
 
 /** The resolved capture for a scene: the scene-NN.mp4 recapture if it exists, else the fallback. */
 const captureFor = (
@@ -182,10 +185,8 @@ const captureFor = (
       return {src, captureDurationInFrames: resolvedDuration, startFrom: 0, playbackRate: 1};
     }
     const usableFrames = Math.max(1, Math.floor((measured - CAPTURE_TAIL_TRIM_SECONDS) * fps));
-    const playbackRate =
-      usableFrames >= resolvedDuration
-        ? 1
-        : Math.max(MIN_CAPTURE_PLAYBACK_RATE, usableFrames / resolvedDuration);
+    const fit = usableFrames / resolvedDuration;
+    const playbackRate = fit >= 1 || fit < MIN_CAPTURE_PLAYBACK_RATE ? 1 : fit;
     return {
       src,
       captureDurationInFrames: Math.min(resolvedDuration, Math.floor(usableFrames / playbackRate)),
