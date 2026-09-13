@@ -29,9 +29,9 @@ Display to Corning to a silica supplier to a freight carrier) — served to the
 app as a 32 MB filtered event stream and played on a live 3D globe at
 [cascade.vellum.network](https://cascade.vellum.network), with each company
 rendered under its own logo, a ledger that stays compact during playback and
-expands on pause, and scene labels naming each location. Over the year, 12,028
-invoices are registered and 6,923 settle, for $1.399B in gross settlement on
-$458.2M of committed principal. Two illustrative runs, clearly named: the
+expands on pause, and scene labels naming each location. Over the year, 12,029
+invoices are registered and 6,943 settle, for $1.449B in gross settlement on
+$508.2M of committed principal. Two illustrative runs, clearly named: the
 on-chain run proves the mechanism, the globe plays the year.
 
 Apple Park and the Fifth Avenue store appear as modeled 3D landmarks, reached

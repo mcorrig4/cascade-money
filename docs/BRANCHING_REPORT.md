@@ -61,10 +61,10 @@ These timings exclude other runner/world work. The 90-second goal needs further 
 | Metric | Result |
 |---|---:|
 | Suppliers | 2,000 |
-| Invoices | 12,028 |
+| Invoices | 12,029 |
 | Events | 254,358 |
-| Gross settled | $1,398,559,336.44 |
-| Principal committed | $458,228,500.00 |
+| Gross settled | $1,449,470,964.64 |
+| Principal committed | $508,228,500.00 |
 | Reuse ratio | 3.052100× |
 | Historical invoice funding deficit | $175,157,610.39 |
 | Pay operations linked to Extend | 23.7989% |

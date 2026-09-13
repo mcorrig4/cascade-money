@@ -3,7 +3,7 @@
 - Factories: thousands of supplier facilities; countries: 50+ (Apple 2025 Supply Chain Progress Report)
 - Product cost of sales FY2025: $194.1B ("almost two hundred billion")
 - Display cascade (apple-duo story, sim): $100,000,000 committed → $450,000,000 settled = 4.5×; 9 pay hops; 8 distinct payees (Samsung Display, Corning, Great Lakes Silica, Ohio Valley Chemicals, Superior Sands Refining, Pacific Freight, Dow, Great Plains Rail). The straight line before the branches reaches $400M / 4 payees.
-- Year run: 12,028 invoices registered; 6,923 settled; gross settled $1.399B on $458.2M committed (events.metrics.json)
+- Year run: 12,029 invoices registered; 6,943 settled; gross settled $1.449B on $508.2M committed (events.metrics.json, re-baked 2026-09-13 with the Apple->Sony order and the settlement events; supersedes the 12,028 / 6,923 / $1.399B / $458.2M figures from the pre-Sony stream)
 - Stress test: sim.scenarios.stress(ops=10000, seed=1) → 10,000 ops, 0 hard-invariant violations, 7,002 accepted, 2,998 expected rejections; hard invariants checked after every op.
 - Invariants named: yield_conservation (one owner per entitlement), principal_identity; interval accrual prevents overlapping yield claims.
 - Vault wording: "backed by USDC, designed to use USYC as its yield-bearing reserve" (USYC allowlist-gated on Arc testnet).
