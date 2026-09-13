@@ -106,6 +106,9 @@ export const scaleFrames = (framesAtBase: number, fps: number): number =>
  */
 export const SCENE13_CLOSE_FLOOR_FRAMES = 150; // 5s @ FPS_BASE (30fps)
 
+// Scene 12 picture-only tail: its narration ends naturally before the close completes.
+export const SCENE12_CLOSE_FLOOR_FRAMES = 180; // 6s @ FPS_BASE (30fps)
+
 /**
  * Scene 9 (Run the year)'s closing beat (reorder-to-13 pass, 2026-09-13,
  * product owner + Director/wingman 03:33 ET): old scenes 12 (Stress test)
@@ -133,7 +136,7 @@ const SCENE1_CAPTURE_DURATION_SECONDS = 26.53;
 
 type NarrationDurations = Record<number, {durationInFrames: number; rawDurationInFrames?: number}>;
 
-/** A scene's UNROUNDED duration in frames at `fps` — real VO length (already fps-native, integer), else the word-count estimate scaled from FPS_BASE (fractional), with scene 1's tail and scene 17's floor applied to whichever one it is. */
+/** A scene's UNROUNDED duration in frames at `fps` — real VO length (already fps-native, integer), else the word-count estimate scaled from FPS_BASE (fractional), with scene 1's tail and scenes 12/13's floors applied to whichever one it is. */
 const rawDurationForScene = (sc: SceneDef, narration: NarrationDurations, fps: number): number => {
   if (sc.num === 1 && narration[1]?.rawDurationInFrames !== undefined) {
     const withTail = narration[1].rawDurationInFrames! + SCENE1_TAIL_SECONDS * fps;
@@ -141,6 +144,7 @@ const rawDurationForScene = (sc: SceneDef, narration: NarrationDurations, fps: n
   }
   const raw = narration[sc.num]?.durationInFrames ?? (sc.estimateFrames * fps) / FPS_BASE;
   if (sc.num === 9) return raw + (SCENE9_CLOSE_FLASH_SECONDS * fps);
+  if (sc.num === 12) return Math.max(raw, (SCENE12_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE);
   return sc.num === 13 ? Math.max(raw, (SCENE13_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE) : raw;
 };
 

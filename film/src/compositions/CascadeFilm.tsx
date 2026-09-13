@@ -47,7 +47,7 @@ import {TheQuestion} from './motion-graphics/TheQuestion';
 import {Scene08Counters} from './motion-graphics/Scene08Counters';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
 import {Scene11Receipt} from './motion-graphics/Scene11Receipt';
-import {Scene12SupplierChain} from './motion-graphics/Scene12SupplierChain';
+import {Scene12Close} from './motion-graphics/Scene12Close';
 import {Hook} from './motion-graphics/Hook';
 import type {AppFrameProps} from '../live/AppFrame';
 
@@ -634,9 +634,9 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
 
   let visual: React.ReactNode;
   if(sceneIndex===11){
-    visual=<Scene11Receipt durationInFrames={duration} />;
+    visual=<Scene11Receipt durationInFrames={duration} cues={CUE_TIMES[11]} />;
   }else if(sceneIndex===12){
-    visual=<Scene12SupplierChain durationInFrames={duration} previousSceneDurationInFrames={durationFor(durations,11)} />;
+    visual=<Scene12Close durationInFrames={duration} />;
   }else if(source==='live'){
     const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
     if(sceneIndex===1){
@@ -849,12 +849,12 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
         </Series.Sequence>
 
         <Series.Sequence name="Scene 11 — New York" durationInFrames={dur11}>
-          <Scene11Receipt durationInFrames={dur11} />
+          <Scene11Receipt durationInFrames={dur11} cues={CUE_TIMES[11]} />
           <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 12 — Beneath it" durationInFrames={dur12}>
-          <Scene12SupplierChain durationInFrames={dur12} previousSceneDurationInFrames={dur11} />
+          <Scene12Close durationInFrames={dur12} />
           <SceneVO num={12} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
       </Series>
