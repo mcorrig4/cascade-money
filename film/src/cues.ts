@@ -76,6 +76,18 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'companies-counter', phrase: 'four companies'},
     {cue: 'tagline', phrase: 'that is the cascade'},
   ],
+  // Scene 9 — Run the year: three rostrum-camera moves on the capture layer
+  // (Liam round 2, msg 21778). Each primary phrase is followed immediately
+  // by its fallback phrase so a future re-narration that drops the primary
+  // word still resolves (cursor only advances on a successful match, so the
+  // fallback search starts from the same point the primary's would have).
+  9: [
+    {cue: 'push-in-scrubber', phrase: 'simulation'},
+    {cue: 'pan-to-ledger', phrase: 'invoices'},
+    {cue: 'pan-to-ledger-fallback', phrase: 'Thousands'},
+    {cue: 'pull-back-full', phrase: 'countries'},
+    {cue: 'pull-back-full-fallback', phrase: 'across'},
+  ],
   // Scene 12 — Stress test: the kicker, then each competing operation as it's named.
   12: [
     {cue: 'kicker', phrase: 'maturity day'},

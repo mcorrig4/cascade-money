@@ -17,20 +17,41 @@ export const CaptureScene: React.FC<{
   /** 0-1, precomputed by the caller (see CascadeFilm.tsx framing ramps). */
   progress?: number;
   vignette?: boolean;
+  /**
+   * Optional per-frame CSS transform applied ONLY to the video itself — not
+   * the browser chrome, not the vignette, not `children` overlays. Used for
+   * a rostrum-camera pan/zoom on the capture layer (see motion/rostrumCamera.ts,
+   * Scene 9). Undefined for every other caller — identity, no behavior change.
+   */
+  videoStyle?: React.CSSProperties;
   children?: React.ReactNode; // overlay content composited above the video
-}> = ({src, captureDurationInFrames, startFrom = 0, mode, progress = 0, vignette = false, children}) => {
+}> = ({
+  src,
+  captureDurationInFrames,
+  startFrom = 0,
+  mode,
+  progress = 0,
+  vignette = false,
+  videoStyle,
+  children,
+}) => {
   const frame = useCurrentFrame();
   const capFrame = Math.min(frame, captureDurationInFrames - 1);
 
   const video = (
-    <AbsoluteFill>
-      {frame < captureDurationInFrames ? (
-        <OffthreadVideo src={staticFile(`captures/${src}`)} startFrom={startFrom} />
-      ) : (
-        <Freeze frame={startFrom + capFrame}>
-          <OffthreadVideo src={staticFile(`captures/${src}`)} />
-        </Freeze>
-      )}
+    // overflow:hidden clips a zoomed (videoStyle-scaled) capture to the
+    // frame bounds — a no-op when videoStyle is undefined (unscaled content
+    // never extends past its own AbsoluteFill anyway).
+    <AbsoluteFill style={{overflow: 'hidden'}}>
+      <AbsoluteFill style={videoStyle}>
+        {frame < captureDurationInFrames ? (
+          <OffthreadVideo src={staticFile(`captures/${src}`)} startFrom={startFrom} />
+        ) : (
+          <Freeze frame={startFrom + capFrame}>
+            <OffthreadVideo src={staticFile(`captures/${src}`)} />
+          </Freeze>
+        )}
+      </AbsoluteFill>
       {vignette && (
         <AbsoluteFill
           style={{

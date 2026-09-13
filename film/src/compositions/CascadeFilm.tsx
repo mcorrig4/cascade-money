@@ -38,6 +38,7 @@ import {resolveSceneDurations, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
 import {at30, CLAMP} from '../motion/timing';
+import {cameraAt, cameraStyle, FULL_FRAME, RostrumMove} from '../motion/rostrumCamera';
 import {cueFrame} from '../cues';
 import cueTimesData from '../generated/cues.json';
 
@@ -129,8 +130,10 @@ const CaptureBeat: React.FC<{
   sc: SceneDef;
   duration: number;
   cap: {src: string; captureDurationInFrames: number; startFrom: number};
+  /** Rostrum-camera transform for the video layer only — see CaptureScene's videoStyle. Undefined for every caller but Scene 9. */
+  videoStyle?: React.CSSProperties;
   children?: React.ReactNode;
-}> = ({sc, duration, cap, children}) => {
+}> = ({sc, duration, cap, videoStyle, children}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const progress = framingRamp(sc, frame, duration, fps);
@@ -141,9 +144,87 @@ const CaptureBeat: React.FC<{
       startFrom={cap.startFrom}
       mode={sc.frame as FrameMode}
       progress={progress}
+      videoStyle={videoStyle}
     >
       {children}
     </CaptureScene>
+  );
+};
+
+/**
+ * Scene 9 — Run the year: rostrum-camera pan/zoom on the capture layer only
+ * (Liam round 2, msg 21778 — "Can we use Remotion to do that? Smooth zoom
+ * in on a UI piece and then zoom out and move over to a different UI
+ * piece"). Three moves, cue-timed off the real narration: push in on the
+ * bottom-left year scrubber ("simulation"), pan to the right-side
+ * transactions ledger ("invoices" / fallback "Thousands"), pull back to the
+ * full frame ("countries" / fallback "across") and stay wide through the
+ * cross-border close. See motion/rostrumCamera.ts for the transform math —
+ * the browser frame (this scene is 'bleed' mode, so there is none) and any
+ * overlay children never move, only the video.
+ */
+const Scene9Capture: React.FC<{
+  sc: SceneDef;
+  duration: number;
+  cap: {src: string; captureDurationInFrames: number; startFrom: number};
+}> = ({sc, duration, cap}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const progress = framingRamp(sc, frame, duration, fps);
+  const cues = CUE_TIMES[9];
+
+  // Fixed-second fallbacks are the real v7 VO timestamps for these words
+  // (measured directly off the narration transcript), used only if a
+  // future re-narration drops both the primary and fallback phrase.
+  const scrubberStart = cueFrame(cues, 'push-in-scrubber', fps, Math.round(3.23 * fps));
+  const ledgerStart = cueFrame(
+    cues,
+    'pan-to-ledger',
+    fps,
+    cueFrame(cues, 'pan-to-ledger-fallback', fps, Math.round(6.35 * fps)),
+  );
+  const pullBackStart = cueFrame(
+    cues,
+    'pull-back-full',
+    fps,
+    cueFrame(cues, 'pull-back-full-fallback', fps, Math.round(9.63 * fps)),
+  );
+
+  // A 1080p-final render (fps===30, per render-scenes.sh's profile coupling)
+  // caps the scrubber push-in at 2.0x to stay sharp; the 360p draft
+  // (fps===15) can push further to 2.2x (Liam round 2 brief). The ledger
+  // pan is capped at 2.0x at every profile.
+  const scrubberScale = fps === 30 ? 2.0 : 2.2;
+
+  const moves: RostrumMove[] = [
+    {
+      startFrame: scrubberStart,
+      durationInFrames: Math.round(0.9 * fps),
+      target: {xFrac: 0.19, yFrac: 0.87, scale: scrubberScale}, // day counter + scrubber start/playhead, bottom-left
+    },
+    {
+      startFrame: ledgerStart,
+      durationInFrames: Math.round(1.1 * fps),
+      target: {xFrac: 0.87, yFrac: 0.4, scale: 2.0}, // transactions/payment-flow column, right side
+    },
+    {
+      startFrame: pullBackStart,
+      durationInFrames: Math.round(1.0 * fps),
+      target: FULL_FRAME,
+    },
+  ];
+
+  const camera = cameraAt(frame, moves);
+
+  return (
+    <CaptureScene
+      src={cap.src}
+      captureDurationInFrames={cap.captureDurationInFrames}
+      startFrom={cap.startFrom}
+      mode={sc.frame as FrameMode}
+      progress={progress}
+      videoStyle={cameraStyle(camera)}
+    />
   );
 };
 
@@ -392,7 +473,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(9);
             const cap = captureFor(sc, captureOverrides, durations[8]);
-            return cap ? <CaptureBeat sc={sc} duration={durations[8]} cap={cap} /> : null;
+            return cap ? <Scene9Capture sc={sc} duration={durations[8]} cap={cap} /> : null;
           })()}
           <SceneVO num={9} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
