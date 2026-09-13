@@ -3,6 +3,7 @@ import {CalculateMetadataFunction, Composition} from 'remotion';
 import {CascadeFilm, CascadeFilmProps} from './compositions/CascadeFilm';
 import {applyDurationFloors, ESTIMATED_TOTAL_DURATION, SCENES} from './compositions/schedule';
 import {loadCaptureOverrides, loadNarration} from './compositions/narration';
+import {cascadeFilmSchema, DEFAULT_NARRATION_CONTROLS} from './compositions/narrationControlsSchema';
 
 const FPS = 30;
 
@@ -34,7 +35,18 @@ export const RemotionRoot: React.FC = () => {
       // reviewLabels: true renders a review-only top-left scene-number chip
       // (see CascadeFilm.tsx / ReviewLabelOverlay). Pick it up with:
       //   npx remotion render CascadeFilm --props='{"reviewLabels":true}'
-      defaultProps={{narration: {}, captureOverrides: {}, reviewLabels: false}}
+      //
+      // narrationControls: per-scene VO offset/trim/gain, editable in
+      // Remotion Studio's props sidebar (schema below) — see
+      // narrationControlsSchema.ts. Every entry starts at the all-zero
+      // no-op default, so this does not change any scene's timing.
+      schema={cascadeFilmSchema}
+      defaultProps={{
+        narration: {},
+        captureOverrides: {},
+        reviewLabels: false,
+        narrationControls: DEFAULT_NARRATION_CONTROLS,
+      }}
       calculateMetadata={calculateMetadata}
     />
   );

@@ -2,7 +2,11 @@
  * PhoneHero — the iPhone Duo product photo (public/assets/iphone-duo.jpg),
  * shared by two beats of script-v6-liam.md:
  *   Scene 1 "The object of desire" — the photo with a slow push, the
- *     browser frame tilting in over it (the film's opening gesture).
+ *     browser frame tilting in over it. Gated to reveal only once the
+ *     narration reaches "the iPhone Duo launches Monday" (the film's first
+ *     mention of the phone by name) — see scene1PhoneRevealFrame in
+ *     CascadeFilm.tsx — not visible during the scene's silent/lead-in
+ *     frames.
  *   Scene 15 "New York" — the photo again, held as "a finished phone" for
  *     a beat before the film cuts to the descent capture.
  * `tilt` (0-1) drives BrowserFrame's tilt-in; pass 1 for the scene 15 use

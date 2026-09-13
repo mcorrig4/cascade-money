@@ -23,6 +23,7 @@ import {BrowserFrame, FrameMode} from '../components/BrowserFrame';
 import {PhoneHero} from '../components/PhoneHero';
 import {applyDurationFloors, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
+import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
 
 import {RewindSequence} from './motion-graphics/RewindSequence';
 import {TheQuestion} from './motion-graphics/TheQuestion';
@@ -39,6 +40,12 @@ ensureFontsLoaded();
 export interface CascadeFilmProps extends Record<string, unknown> {
   narration: NarrationMap;
   captureOverrides: Record<number, boolean>;
+  /**
+   * Per-scene VO offset/trim/gain — see narrationControlsSchema.ts. Editable
+   * in Remotion Studio's props sidebar (Root.tsx wires the zod schema onto
+   * this Composition). All-zero defaults are a no-op.
+   */
+  narrationControls: NarrationControls;
   /**
    * REVIEW-ONLY. When true, overlays a fixed top-left chip on every frame
    * showing the scene number/title and scene-local timecode (e.g.
@@ -134,10 +141,44 @@ const GraphicBeat: React.FC<{sc: SceneDef; duration: number; children: React.Rea
   );
 };
 
-const SceneVO: React.FC<{num: number; narration: NarrationMap}> = ({num, narration}) => {
+/** dB -> linear gain; 0dB (the default) is unity, matching Audio's own un-set volume. */
+const dbToVolume = (gainDb: number): number => 10 ** (gainDb / 20);
+
+const SceneVO: React.FC<{num: number; narration: NarrationMap; narrationControls: NarrationControls}> = ({
+  num,
+  narration,
+  narrationControls,
+}) => {
   const entry = narration[num];
   if (!entry) return null;
-  return <Audio src={staticFile(`narration/${entry.file}`)} />;
+  const {fps} = useVideoConfig();
+  const controls = narrationControls[num - 1] ?? DEFAULT_NARRATION_CONTROLS[num - 1];
+
+  const offsetFrames = Math.round(controls.offsetSec * fps);
+  const trimBefore = Math.round(controls.trimStartSec * fps);
+  // trimAfter is an ABSOLUTE frame position into the raw clip (see
+  // calculate-media-duration.js), not a duration trimmed off the end —
+  // so "cut trimEndSec off the end" is rawDurationInFrames minus that,
+  // never below trimBefore.
+  const trimAfter = Math.max(
+    trimBefore,
+    entry.rawDurationInFrames - Math.round(controls.trimEndSec * fps),
+  );
+  const volume = dbToVolume(controls.gainDb);
+
+  return (
+    // from can be negative: a negative offsetSec means the clip is already
+    // partway through by the time the scene starts, not that it plays
+    // before the scene's own Series.Sequence exists.
+    <Sequence from={offsetFrames} durationInFrames={Infinity} layout="none">
+      <Audio
+        src={staticFile(`narration/${entry.file}`)}
+        trimBefore={trimBefore}
+        trimAfter={trimAfter}
+        volume={volume}
+      />
+    </Sequence>
+  );
 };
 
 const pad2 = (n: number): string => String(n).padStart(2, '0');
@@ -195,7 +236,12 @@ const ReviewLabelOverlay: React.FC<{durations: number[]}> = ({durations}) => {
   );
 };
 
-export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverrides, reviewLabels = false}) => {
+export const CascadeFilm: React.FC<CascadeFilmProps> = ({
+  narration,
+  captureOverrides,
+  narrationControls,
+  reviewLabels = false,
+}) => {
   const durations = SCENES.map((sc) => durationFor(sc, narration));
 
   const sc15 = sceneByNum(15);
@@ -218,8 +264,15 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
     <AbsoluteFill style={{background: color.bgOuter}}>
       <Series>
         <Series.Sequence name="Scene 1 — The object of desire" durationInFrames={durations[0]}>
-          <PhoneHeroScene durationInFrames={durations[0]} />
-          <SceneVO num={1} narration={narration} />
+          <AbsoluteFill style={{background: color.bgOuter}} />
+          <Sequence
+            from={scene1PhoneRevealFrame(durations[0])}
+            durationInFrames={durations[0] - scene1PhoneRevealFrame(durations[0])}
+            layout="none"
+          >
+            <PhoneHeroScene durationInFrames={durations[0] - scene1PhoneRevealFrame(durations[0])} />
+          </Sequence>
+          <SceneVO num={1} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 2 — Apple Park" durationInFrames={durations[1]}>
@@ -228,12 +281,12 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
             const cap = captureFor(sc, captureOverrides, durations[1]);
             return cap ? <CaptureBeat sc={sc} duration={durations[1]} cap={cap} /> : null;
           })()}
-          <SceneVO num={2} narration={narration} />
+          <SceneVO num={2} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 3 — Rewind" durationInFrames={durations[2]}>
           <RewindSequence durationInFrames={durations[2]} />
-          <SceneVO num={3} narration={narration} />
+          <SceneVO num={3} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 4 — The hidden supply chain" durationInFrames={durations[3]}>
@@ -242,7 +295,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
             const cap = captureFor(sc, captureOverrides, durations[3]);
             return cap ? <CaptureBeat sc={sc} duration={durations[3]} cap={cap} /> : null;
           })()}
-          <SceneVO num={4} narration={narration} />
+          <SceneVO num={4} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 5 — The contradiction" durationInFrames={durations[4]}>
@@ -267,14 +320,14 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
               </GraphicBeat>
             );
           })()}
-          <SceneVO num={5} narration={narration} />
+          <SceneVO num={5} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 6 — The question" durationInFrames={durations[5]}>
           <GraphicBeat sc={sceneByNum(6)} duration={durations[5]}>
             <TheQuestion durationInFrames={durations[5]} />
           </GraphicBeat>
-          <SceneVO num={6} narration={narration} />
+          <SceneVO num={6} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 7 — The cascade" durationInFrames={durations[6]}>
@@ -283,7 +336,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
             const cap = captureFor(sc, captureOverrides, durations[6]);
             return cap ? <CaptureBeat sc={sc} duration={durations[6]} cap={cap} /> : null;
           })()}
-          <SceneVO num={7} narration={narration} />
+          <SceneVO num={7} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 8 — Let it land" durationInFrames={durations[7]}>
@@ -304,7 +357,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
               </CaptureBeat>
             ) : null;
           })()}
-          <SceneVO num={8} narration={narration} />
+          <SceneVO num={8} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 9 — Run the year" durationInFrames={durations[8]}>
@@ -313,7 +366,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
             const cap = captureFor(sc, captureOverrides, durations[8]);
             return cap ? <CaptureBeat sc={sc} duration={durations[8]} cap={cap} /> : null;
           })()}
-          <SceneVO num={9} narration={narration} />
+          <SceneVO num={9} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 10 — A dollar with a date" durationInFrames={durations[9]}>
@@ -322,7 +375,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
             const cap = captureFor(sc, captureOverrides, durations[9]);
             return cap ? <CaptureBeat sc={sc} duration={durations[9]} cap={cap} /> : null;
           })()}
-          <SceneVO num={10} narration={narration} />
+          <SceneVO num={10} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 11 — Underneath it" durationInFrames={durations[10]}>
@@ -331,7 +384,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
             const cap = captureFor(sc, captureOverrides, durations[10]);
             return cap ? <CaptureBeat sc={sc} duration={durations[10]} cap={cap} /> : null;
           })()}
-          <SceneVO num={11} narration={narration} />
+          <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 12 — Stress test" durationInFrames={durations[11]}>
@@ -348,7 +401,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
               </CaptureBeat>
             ) : null;
           })()}
-          <SceneVO num={12} narration={narration} />
+          <SceneVO num={12} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 13 — The rules survive" durationInFrames={durations[12]}>
@@ -370,7 +423,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
               </GraphicBeat>
             );
           })()}
-          <SceneVO num={13} narration={narration} />
+          <SceneVO num={13} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 14 — Zoom out" durationInFrames={durations[13]}>
@@ -392,7 +445,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
               </GraphicBeat>
             );
           })()}
-          <SceneVO num={14} narration={narration} />
+          <SceneVO num={14} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 15 — New York" durationInFrames={dur15}>
@@ -416,7 +469,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
               </Sequence>
             </>
           )}
-          <SceneVO num={15} narration={narration} />
+          <SceneVO num={15} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 16 — Beneath it" durationInFrames={dur16}>
@@ -435,18 +488,40 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({narration, captureOverr
           >
             <ChainOfPromises durationInFrames={dur16} />
           </CaptureBeat>
-          <SceneVO num={16} narration={narration} />
+          <SceneVO num={16} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
         <Series.Sequence name="Scene 17 — Close" durationInFrames={durations[16]}>
           <Scene17Close durationInFrames={durations[16]} />
-          <SceneVO num={17} narration={narration} />
+          <SceneVO num={17} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
       </Series>
       {reviewLabels ? <ReviewLabelOverlay durations={durations} /> : null}
     </AbsoluteFill>
   );
 };
+
+/**
+ * Scene 1's narration (script-v6-liam.md, Scene 1 — "The object of desire")
+ * is two lines:
+ *   "After years of rumors, leaked documents, and patent filings…" (9 words)
+ *   "the iPhone Duo launches Monday." (5 words)
+ * The phone photo is the film's first mention of the product by name, so it
+ * must not be on screen for the lead-in line — it reveals exactly when the
+ * narration reaches "the iPhone Duo launches Monday," not at the scene's
+ * (and film's) frame 0. There is no word-level VO timing available (see
+ * narration.ts — only a per-scene total duration), so the split is
+ * estimated the same way schedule.ts estimates scene durations: by word
+ * count, at a constant speaking rate, so it moves with the real VO length
+ * if scene 1's actual clip differs from the word-count estimate.
+ */
+const SCENE1_PRE_MENTION_WORDS = 9;
+const SCENE1_MENTION_WORDS = 5;
+const scene1PhoneRevealFrame = (scene1DurationInFrames: number): number =>
+  Math.round(
+    (scene1DurationInFrames * SCENE1_PRE_MENTION_WORDS) /
+      (SCENE1_PRE_MENTION_WORDS + SCENE1_MENTION_WORDS),
+  );
 
 /** Scene 1's entrance / scene 15's held-photo beat — the tilt eases 0->1 on scene 1 only. */
 const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> = ({

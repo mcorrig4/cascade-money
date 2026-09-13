@@ -25,7 +25,14 @@ export interface NarrationEntry {
   duration: number; // seconds
 }
 
-export type NarrationMap = Record<number, {file: string; durationInFrames: number}>;
+export type NarrationMap = Record<
+  number,
+  {
+    file: string;
+    durationInFrames: number; // scene's resolved Sequence duration: raw clip + settle pad
+    rawDurationInFrames: number; // the clip's own length, no settle pad — what narrationControls trims against
+  }
+>;
 
 export const NARRATION_SETTLE_SECONDS = 0.4;
 
@@ -39,6 +46,7 @@ export const loadNarration = async (fps: number): Promise<NarrationMap> => {
       map[e.scene] = {
         file: e.file,
         durationInFrames: Math.round((e.duration + NARRATION_SETTLE_SECONDS) * fps),
+        rawDurationInFrames: Math.round(e.duration * fps),
       };
     }
     return map;
