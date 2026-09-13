@@ -4,6 +4,8 @@ import {CascadeFilm, CascadeFilmProps, CascadeLiveScene, CascadeLiveSceneProps} 
 import {ESTIMATED_TOTAL_DURATION, FPS_BASE, filmDurationAtFps, resolveSceneDurations, SCENES} from './compositions/schedule';
 import {loadCaptureOverrides, loadNarration} from './compositions/narration';
 import {cascadeFilmSchema, DEFAULT_FPS, DEFAULT_NARRATION_CONTROLS} from './compositions/narrationControlsSchema';
+import {W0LayoutProbe, w0ProbeSchema} from './compositions/W0LayoutProbe';
+import {W0_PROBE_SHOTS, W0_PROBE_SHOT_FRAMES} from './compositions/w0ProbeSchedule';
 import {AppFrame} from './live/AppFrame';
 
 const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async ({props}) => {
@@ -33,6 +35,9 @@ const calculateSceneMetadata: CalculateMetadataFunction<CascadeLiveSceneProps> =
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+    <Composition id="W0LayoutProbe" component={W0LayoutProbe} width={1920} height={1080} fps={30}
+      durationInFrames={W0_PROBE_SHOTS.length * W0_PROBE_SHOT_FRAMES}
+      schema={w0ProbeSchema} defaultProps={{debugOutlines:true}}/>
     <Composition
       id="CascadeFilm"
       component={CascadeFilm}

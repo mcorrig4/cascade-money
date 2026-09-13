@@ -14,6 +14,20 @@ Config.setChromiumOpenGlRenderer('angle');
 Config.setDelayRenderTimeoutInMilliseconds(1_200_000);
 Config.overrideWebpackConfig(current => ({
   ...current,
+  module: {
+    ...current.module,
+    rules: [
+      ...(current.module?.rules ?? []),
+      // W0: scope before css-loader parses the app's rules. Raw imports on the
+      // existing live path retain their original behaviour for scene parity.
+      {
+        test: /\.css$/,
+        resourceQuery: /app-surface/,
+        enforce: 'pre',
+        use: [resolve(filmDir, 'scripts/app-surface-loader.cjs')],
+      },
+    ],
+  },
   resolve: {
     ...current.resolve,
     alias: {

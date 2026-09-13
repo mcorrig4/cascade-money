@@ -9,7 +9,8 @@
     "still": "remotion still",
     "scene-frames": "node scripts/scene-frames.mjs",
     "render-scenes": "bash scripts/render-scenes.sh",
-    "splice-draft": "bash scripts/splice-draft.sh"
+    "splice-draft": "bash scripts/splice-draft.sh",
+    "test:w0": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "3d-tiles-renderer": "0.5.2",
@@ -26,6 +27,9 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@types/three": "0.183.1",
+    "postcss": "8.5.28",
+    "postcss-selector-parser": "7.1.6",
+    "react-test-renderer": "19.2.7",
     "typescript": "5.9.3",
     "webpack": "5.105.0"
   }

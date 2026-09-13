@@ -1,0 +1,6015 @@
+[
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ":root",
+    "containment": "local-document"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "*",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "body",
+    "containment": "local-document"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "input",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "button:disabled",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "button:focus-visible",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "a:focus-visible",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "input:focus-visible",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "button:hover:not(:disabled)",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".globe-scene",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-scene",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".amount-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".globe-scene canvas",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-scene canvas",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-attribution",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-attribution[hidden]",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-google-logo",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-google-credits",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".brand",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".brand svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".brand-dot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".brand-subtitle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".story-selector",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".story-selector button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".story-selector button[aria-pressed=true]",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".network-status",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".status-dot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-heading h1",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-heading p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".globe-coordinate span:first-child",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .location-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .cube-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".app .location-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".clean-frame .cube-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-heading h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".count",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-scroll",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-row-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".operation-dot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".invoice_registered .operation-dot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".extend .operation-dot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".operation_rejected .operation-dot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".sequence",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-parties",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-parties>span:not(.arrow)",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".arrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-bottom",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-bottom strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".invoice_registered .ledger-bottom strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-bottom>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-annotation",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-foot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-empty",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".empty-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".timeline-region",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".timeline-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".date-block",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".date-block strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".series-key",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".series-key span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".series-key i",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".key-purchases",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".key-settled",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".chart-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".volume-chart",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".volume-chart svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".chart-ceiling",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scrubber",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scrubber::-webkit-slider-runnable-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scrubber::-webkit-slider-thumb",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scrubber::-moz-range-thumb",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".timeline-months",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".transport",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".play-button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".play-button:hover:not(:disabled)",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".icon-button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".speed-options",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".speed-options button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".speed-options button[aria-pressed=true]",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".speed-options button:last-child",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".playback-state",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".headline-counters",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".headline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".headline:first-child>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ratio",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ratio strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ratio span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".floating-amount",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".floating-amount strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".floating-amount span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".location-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".location-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".location-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app:has(.location-card) .scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app:has(.location-card) .globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".debt-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".debt-card span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".debt-card strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".year-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-head",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-head h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-list",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-list button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-list button[aria-pressed=true]",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-number",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-description",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-description strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-description small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-duration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-controls",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-controls button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".record-button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-help",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-warning",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording input",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .ledger-toggle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .company-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .amount-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .location-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .site-attribution",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".loading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".loading h1",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".loading p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".loading button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".loading-dot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".globe-error",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".ledger-parties",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".ledger-row-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".ledger-annotation",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".scene-heading h1",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".series-key",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (min-width:1800px)",
+    "kind": "selector",
+    "selector": ".date-block strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".brand-subtitle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".network-status",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".story-selector",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".scene-heading h1",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".scene-heading p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".scene-heading .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".headline-counters",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".headline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".series-key",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".date-block",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".date-block strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".date-block .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".director",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:1300px)",
+    "kind": "selector",
+    "selector": ".year-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ledger-parties",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ledger-bottom strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ledger-heading h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".headline-counters",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".headline",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".headline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ratio",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ratio span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".date-block",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".date-block strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".series-key",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".speed-options button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".transport",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".playback-state",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".timeline-months",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".brand",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".brand svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".story-selector button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".director",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".year-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card .fine-print",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-layout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".dated-coin>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".dated-coin small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".dated-coin strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-date",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".date-interval",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".interval-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".yield-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".yield-track>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".meter-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-grid",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-empty",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".law",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".law>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".law strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".law p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-columns dl",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-columns dl>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-columns dt",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-columns dd",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".invariant-list>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".invariant-list>.eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".check-light",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".check-pass",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".check-fail",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cube-overlay .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cube-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cube-caption h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".reframe-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".reframe-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".reframe-card h2 span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".architecture-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".architecture-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".architecture-card img",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".architecture-card a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card h2>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card nav",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card a:hover",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card a span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-footer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .topbar .story-selector",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .network-status",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card a svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "html",
+    "containment": "local-document"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": "#root",
+    "containment": "local-document"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-toggle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".globe-placeholder",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".topbar>*",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".brand",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".brand svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".story-selector",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".story-selector button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".network-status",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".timeline-region",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".timeline-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".date-block",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".date-block .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".date-block strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".series-key",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".volume-chart",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".chart-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".timeline-months",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".transport",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".transport .play-button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".transport .icon-button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".speed-options",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".speed-options button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".headline-counters",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".headline",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".headline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ratio",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ratio strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ratio span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-toggle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-toggle span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-open .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-heading h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".ledger-foot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".director",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".shot-list",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".director-head h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".director-help",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".director-controls",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".shot-list button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".shot-description small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".clean-frame .brand",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".year-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".location-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".location-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".debt-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".debt-card strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".overlay-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".overlay-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".overlay-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".overlay-card .fine-print",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".coin-layout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".dated-coin strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".dated-coin>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".coin-date",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".date-interval",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".meter-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".curve-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".curve-empty",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".curve-card svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".law",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".law strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".law p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".vault-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".vault-columns dl>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".reframe-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".reframe-card h2 span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".close-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".close-card nav",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".close-card a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".close-footer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".cube-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".cube-caption h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-disc",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-disc svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-disc img",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-label>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".floating-amount>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .company-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".company-disc",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".company-disc svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".company-disc img",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "@media (max-width:600px)",
+    "kind": "selector",
+    "selector": ".company-label>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".opening-cover",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".opening-cover.opening-reveal",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@font-face Inter",
+    "containment": "film-inter"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@font-face 'Coin Date Condensed'",
+    "containment": "coin-font"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (max-width:600px)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (min-width:1800px)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (max-width:1300px)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "styles.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (max-width:850px)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-compact",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-compact .ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-log-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-log-line time",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".log-unit",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".log-parties",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-log-line strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-columns button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-expanded .ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card .fine-print",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-card .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".law strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".law>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".law p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".vault-columns dl>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".invariant-list>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card .close-wordmark",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card .close-phrase",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-card .onchain-trigger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".close-footer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-layout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-copy",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-date",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".fungible-equals",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-date~small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".claim-rule",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-date .dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-extend .dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".date-interval",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".meter-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".beat-pending",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".beat-visible",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".architecture-card>a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".volume-chart",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".ledger-compact .ledger-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".ledger-compact .ledger-heading h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".ledger-compact .ledger-foot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".headline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".series-key",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".speed-options button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".date-block .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".timeline-months",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".chart-ceiling",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".speed-options button:last-child",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".ratio span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".ledger-row-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".ledger-annotation",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".date-block strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (min-width:851px) and (min-height:600px)",
+    "kind": "selector",
+    "selector": ".location-card .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ledger-compact",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ledger-log-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".overlay-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".overlay-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".overlay-card .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".overlay-card .fine-print",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".composable-items",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".composable-items li",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".composable-items strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".composable-items p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".close-card .close-wordmark",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".close-card .close-phrase",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".curve-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".invariant-list>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".vault-columns dl>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".date-interval",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".meter-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".law strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".law>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".law p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".close-card a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".close-card .onchain-trigger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".close-footer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".ledger-compact",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".composable-items",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".architecture-card>a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".coin-layout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".fungible-equals",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-location strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-location span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-narration p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".scene-location strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".scene-location span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ledger-inspecting",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:850px)",
+    "kind": "selector",
+    "selector": ".ledger-inspecting",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".ledger-inspecting",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-active .scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-active .globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .timeline-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .chart-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .timeline-months",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .speed-options",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .playback-state",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .timeline-region",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .transport",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .headline-counters",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .headline",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .headline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .ratio span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .ratio strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.recording-hud) .ratio",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .overlay-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .ledger-toggle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-clean:not(.recording-hud) .topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-clean:not(.recording-hud) .bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-clean:not(.recording-hud) .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-clean:not(.recording-hud) .ledger-toggle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-clean .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-clean .scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-clean .scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".network-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".catch-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".network-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".catch-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-overlay-coin .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-overlay-treasury .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-overlay-network .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-stage",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".twin-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-fungibility .dated-coin:first-child",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ghost-bill",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ghost-bill strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ghost-bill span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".coin-claim .dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".asset-composition",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".asset-composition b",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".asset-composition small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-ghost",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".treasury-dates",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".treasury-dates>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".treasury-dates strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".treasury-dates span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".treasury-gap",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".gap-highlight",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card svg .curve-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".curve-card svg .curve-grid",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".film-exposure",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".film-black",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-line p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .close-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .close-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .close-card nav",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .close-card a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .close-card button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".ending-wordmark .close-footer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".time-lapse-blur .globe-scene",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".wordmark-icon",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".treasury-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".yield-axis-bridge",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li:nth-child(4)",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li:nth-child(5)",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li:nth-child(2)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li:nth-child(3)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li:nth-child(4)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".composable-items li:nth-child(5)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.scene-clean) .scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active:not(.scene-clean) .scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-cue-context",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".payment-timeline",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".payment-timeline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".promise-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".promise-track i",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".promise-track b",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".question-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".question-card .dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".date-stamp",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cascade-totals",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cascade-stat",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cascade-stat strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cascade-stat span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".cascade-totals h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".backing-card small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".backing-card .asset-composition",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-overlay-promises .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".promises-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".promise-graph",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".promises-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-overlay-composable .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (max-aspect-ratio:1/1)",
+    "kind": "selector",
+    "selector": ".cascade-totals",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (max-aspect-ratio:1/1)",
+    "kind": "selector",
+    "selector": ".cascade-totals h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (max-aspect-ratio:1/1)",
+    "kind": "selector",
+    "selector": ".backing-card .asset-composition",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (max-aspect-ratio:1/1)",
+    "kind": "selector",
+    "selector": ".payment-timeline",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (max-aspect-ratio:1/1)",
+    "kind": "selector",
+    "selector": ".question-card .dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording .story-selector",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording .network-status",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording .director",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud .topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud .bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.recording-hud .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.recording-hud .scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud .overlay-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.recording-hud .scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud.overlay-active .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud.overlay-active .ledger-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud.overlay-active .ledger-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud.overlay-active .ledger-foot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud.overlay-active .ledger-scroll",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud .globe-dimmer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".clean-frame .scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "@media (max-width:600px) and (min-height:481px)",
+    "kind": "selector",
+    "selector": ".recording-hud",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording-hud .ending-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-orders",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-orders>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-orders strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-orders span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-cascade",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-cascade>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-cascade span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".scene-cascade strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".dated-dollar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .arc-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .amount-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .floating-amount strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .coin-stage>.dated-dollar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .extension-ticks",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".extension-ticks i",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .date-interval",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .coin-fungibility",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".same-date-stage",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".swap-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".swap-coin .dated-dollar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app:has(.same-date-stage)>:not(.shot-overlay)",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app:has(.same-date-stage) .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .cascade-stat",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .cascade-totals h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .contract-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .shot-overlay *",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app .shot-overlay .coin-fungibility",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@keyframes card-in",
+    "containment": "namespaced-keyframes"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@keyframes coin-float",
+    "containment": "namespaced-keyframes"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (min-width:851px) and (min-height:600px)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (max-width:850px)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (max-width:600px) and (min-height:481px)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@keyframes date-flip",
+    "containment": "namespaced-keyframes"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@keyframes pay-bill",
+    "containment": "namespaced-keyframes"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@keyframes bill-paid",
+    "containment": "namespaced-keyframes"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (max-width:600px) and (max-aspect-ratio:1/1)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "stage.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@keyframes coin-enter",
+    "containment": "namespaced-keyframes"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .brand",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .brand svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .brand-subtitle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .story-selector",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .story-selector button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .topbar>.onchain-trigger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .bottom-panel",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .timeline-region",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .timeline-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .date-block",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .date-block strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .date-block .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .series-key",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .series-key span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .chart-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .volume-chart",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .chart-ceiling",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scrubber",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .timeline-months",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .timeline-months span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .transport",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .play-button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .transport .icon-button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .transport svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .speed-options",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .speed-options button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .speed-options button:last-child",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .playback-state",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .headline-counters",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .headline",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .headline>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .headline>strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ratio",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ratio strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ratio span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-heading h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-heading .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-foot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .count",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-compact .ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-log-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-row-top",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .sequence",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-parties",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-bottom strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-bottom>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-annotation",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ledger-toggle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .ledger-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .ledger-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .ledger-foot",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .ledger-scroll",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .ledger-log-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-heading h1",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-heading p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-heading .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .shot-overlay",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .scene-narration",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .overlay-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .overlay-card>.eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .overlay-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .overlay-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .overlay-card .fine-print",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app.recording-hud .scene-location",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-location strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-location span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-narration p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .scene-cue-context",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ending-line",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ending-line p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .coin-layout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .coin-stage",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .dated-coin strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .dated-coin>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .dated-coin small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .coin-date",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .date-interval",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .meter-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .extension-ticks",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .yield-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .claim-rule",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .fungible-equals",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ghost-bill",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ghost-bill strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .ghost-bill span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .question-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .question-card .dated-coin",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .question-card .dated-coin strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .contradiction-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .contradiction-card>.eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .contradiction-card>h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .payment-timeline",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .promise-track",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .promise-track i",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .promise-track b",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .cascade-totals",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .cascade-stat",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .cascade-stat strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .cascade-stat span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .asset-composition",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .asset-composition b",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .asset-composition small",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .backing-card>.onchain-trigger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .laws-card .law",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .laws-card .law>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .laws-card .law strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .laws-card .law p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .vault-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .vault-columns",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .vault-columns dl>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .vault-columns dt",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .vault-columns dd",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .invariant-list",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .invariant-list>.eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .invariant-list>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .check-light",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items li",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items li>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items li:nth-child(2)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items li:nth-child(3)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items li:nth-child(4)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .composable-items li:nth-child(5)::before",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .promise-graph",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .promises-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .close-card .close-wordmark",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .close-card .close-phrase",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .close-card nav",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .close-card a",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .close-card .onchain-trigger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .close-footer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .curve-card svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .curve-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .curve-empty",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .treasury-dates",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .treasury-dates strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .treasury-dates span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .treasury-gap",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .year-caption",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .site-attribution",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .location-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .location-card h2",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .location-card p",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .location-card .eyebrow",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .debt-card",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .debt-card span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .debt-card strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .floating-amount",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .floating-amount strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .floating-amount span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .company-disc",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .company-disc svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .company-disc img",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio: 4/3)",
+    "kind": "selector",
+    "selector": ".app .company-label>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".director-active .overlay-card *",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording .ledger",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".recording .ledger-row",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-callout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-callout[hidden]",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-callout img",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-callout strong",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-callout span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".rewind-readout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".rewind-readout svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".rewind-readout>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".rewind-readout time",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".rewind-readout b",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".company-callout>div",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .company-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".overlay-active .company-label",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-navigation",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-navigation button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-navigation svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-focused .scene-heading",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".site-focused .globe-coordinate",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .brand-subtitle",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .network-status",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .site-navigation",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .site-navigation button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .site-navigation svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .topbar",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .story-selector",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (min-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".app .story-selector button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (max-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".site-navigation",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (max-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".site-navigation button",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "@media (max-aspect-ratio:4/3)",
+    "kind": "selector",
+    "selector": ".site-navigation svg",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.california-hook .company-layer",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.california-hook .company-callout",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.california-hook .company-label[data-firm=\"Apple\"] .company-disc",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.california-hook .company-label[data-firm=\"Apple\"] .company-logo",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "selector",
+    "selector": ".app.california-hook .company-label[data-firm=\"Apple\"]>span",
+    "containment": "scoped-subject"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (min-aspect-ratio: 4/3)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (min-aspect-ratio:4/3)",
+    "containment": "scoped-conditional"
+  },
+  {
+    "file": "film.css",
+    "context": "",
+    "kind": "at-rule",
+    "selector": "@media (max-aspect-ratio:4/3)",
+    "containment": "scoped-conditional"
+  }
+]

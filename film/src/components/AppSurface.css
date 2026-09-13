@@ -1,0 +1,26 @@
+/* W0 containment inventory: app-surface-containment.json is the reviewed list
+   of every unscoped selector and at-rule, including media ancestry. The query
+   loader restricts ALL selectors (even .app selectors) to this surface before
+   these final overrides run; a global reset cannot undo arbitrary class leaks. */
+.film-app-surface {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-height: 0;
+  background: transparent;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* App cards explicitly restore pointer-events:auto; descendants must opt out
+   too. Browser animations cannot advance independently of Remotion's frame. */
+.film-app-surface,
+.film-app-surface *,
+.film-app-surface *::before,
+.film-app-surface *::after {
+  pointer-events: none !important;
+  animation: none !important;
+  transition: none !important;
+}

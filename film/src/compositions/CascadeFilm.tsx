@@ -35,6 +35,8 @@ import {ensureFontsLoaded} from '../brand/fonts';
 import {color, font} from '../brand/tokens';
 import {CaptureScene} from '../components/CaptureScene';
 import {BrowserFrame, FrameMode} from '../components/BrowserFrame';
+import {WindowLayout, useWindowGeometry, WINDOW_PRESETS} from '../components/WindowLayout';
+import {transitionProgress, type WindowGeometry} from '../components/windowGeometry';
 import {resolveSceneDurations, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
@@ -238,11 +240,6 @@ const framingRamp = (sc: SceneDef, localFrame: number, durationInFrames: number,
 // Scenes 4/10 retain their authored framing; 9 retains its rostrum camera.
 // Scene 12 is intentionally excluded: it authors a closing card, not an app capture.
 const WINDOWED_SCENES = new Set([2, 3, 5, 6, 7, 8, 11]);
-const WINDOW_TARGET_SCALE = 0.62;
-// At progress=1: left=19%, width=62%, right=19% (364.8px each at 1920px).
-const WINDOW_CENTER_ANCHOR_FRAC = (1 - WINDOW_TARGET_SCALE) / 2;
-const WINDOW_SKEW_DEG = 0;
-const WINDOW_PERSPECTIVE_PX = 1800;
 type SceneCapture = {src: string; captureDurationInFrames: number; startFrom: number; playbackRate: number};
 
 /** App content is windowed; film overlays retain full-frame coordinates and timing. */
@@ -252,17 +249,9 @@ const WindowedBeat: React.FC<{
   children?: React.ReactNode;
 }> = ({cap, app, children}) => (
   <>
-    <BrowserFrame
-      mode="framed"
-      progress={1}
-      chrome="browser"
-      targetScale={WINDOW_TARGET_SCALE}
-      anchorLeftFrac={WINDOW_CENTER_ANCHOR_FRAC}
-      skewYDeg={WINDOW_SKEW_DEG}
-      perspectivePx={WINDOW_PERSPECTIVE_PX}
-    >
+    <WindowLayout preset="centerSmall">
       {app ?? (cap ? <CaptureScene {...cap} mode="bleed" /> : <AbsoluteFill style={{background: color.bgOuter}} />)}
-    </BrowserFrame>
+    </WindowLayout>
     {children}
   </>
 );
@@ -1060,11 +1049,6 @@ const scene1PhoneRevealFrame = (scene1DurationInFrames: number): number =>
  * flat and centres at the same scale, sharing progress with the phone fade.
  */
 const SCENE1_PULLBACK_FRAMES_AT_30 = 36; // ~1.2s ease into the framed window
-const SCENE1_WINDOW_TARGET_SCALE = WINDOW_TARGET_SCALE; // ~62% of frame width
-const SCENE1_WINDOW_LEFT_MARGIN_FRAC = 0.04; // ~4% left margin
-const SCENE1_WINDOW_SKEW_DEG = 8; // rotateY at settle — left closer, right recedes (round 4: sign flip from round 3's -8°)
-const SCENE1_WINDOW_PERSPECTIVE_PX = WINDOW_PERSPECTIVE_PX;
-
 const SCENE1_SWING_FRAMES_AT_30 = 27; // 0.9s between endpoints, finishing on D-1
 
 /** Compute the exit once in scene time, before the phone's offset Sequence. */
@@ -1077,12 +1061,12 @@ const Scene1Beat: React.FC<{
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const endFrame = duration - 1;
-  const swingProgress = interpolate(
-    frame,
-    [endFrame - at30(SCENE1_SWING_FRAMES_AT_30, fps), endFrame],
-    [0, 1],
-    {...CLAMP, easing: Easing.inOut(Easing.cubic)},
-  );
+  const swingStart = endFrame - at30(SCENE1_SWING_FRAMES_AT_30, fps);
+  const swingDuration = at30(SCENE1_SWING_FRAMES_AT_30, fps);
+  const swingProgress = transitionProgress(frame, swingStart, swingDuration);
+  const swingGeometry = useWindowGeometry({
+    from: 'skewLeft', to: 'centerSmall', startFrame: swingStart, durationInFrames: swingDuration,
+  });
   const reveal = cueFrame(
     CUE_TIMES[1], 'phone-reveal', fps,
     cueFrame(CUE_TIMES[1], 'phone-reveal-fallback', fps, scene1PhoneRevealFrame(duration)),
@@ -1092,7 +1076,7 @@ const Scene1Beat: React.FC<{
   const start = Math.max(phoneEarliestFrame, reveal - lead);
   return (
     <>
-      <Scene1AppWindow cap={cap} app={app} swingProgress={swingProgress} />
+      <Scene1AppWindow cap={cap} app={app} swingGeometry={swingGeometry} />
       <Sequence from={start} durationInFrames={duration - start} layout="none">
         <PhoneRevealOverlay cueFrame={reveal - start} swingProgress={swingProgress} />
       </Sequence>
@@ -1103,14 +1087,10 @@ const Scene1Beat: React.FC<{
 const Scene1AppWindow: React.FC<{
   cap: SceneCapture | null;
   app?: React.ReactNode;
-  swingProgress: number;
-}> = ({cap, app, swingProgress}) => {
+  swingGeometry: WindowGeometry;
+}> = ({cap, app, swingGeometry}) => {
   const {fps} = useVideoConfig();
   const pullbackFrames = at30(SCENE1_PULLBACK_FRAMES_AT_30, fps);
-  const progress = interpolate(useCurrentFrame(), [0, pullbackFrames], [0, 1], {
-    ...CLAMP,
-    easing: Easing.out(Easing.cubic),
-  });
 
   const video = cap ? (
     <AbsoluteFill>
@@ -1121,17 +1101,13 @@ const Scene1AppWindow: React.FC<{
   );
 
   return (
-    <BrowserFrame
-      mode="framed"
-      progress={progress}
-      chrome="browser"
-      targetScale={SCENE1_WINDOW_TARGET_SCALE}
-      anchorLeftFrac={SCENE1_WINDOW_LEFT_MARGIN_FRAC + (WINDOW_CENTER_ANCHOR_FRAC - SCENE1_WINDOW_LEFT_MARGIN_FRAC) * swingProgress}
-      skewYDeg={SCENE1_WINDOW_SKEW_DEG + (WINDOW_SKEW_DEG - SCENE1_WINDOW_SKEW_DEG) * swingProgress}
-      perspectivePx={SCENE1_WINDOW_PERSPECTIVE_PX}
+    <WindowLayout
+      from="fullscreen" to={swingGeometry}
+      startFrame={0} durationInFrames={pullbackFrames}
+      easing={Easing.out(Easing.cubic)} legacyFrameAppearance
     >
       {app ?? video}
-    </BrowserFrame>
+    </WindowLayout>
   );
 };
 
@@ -1143,7 +1119,7 @@ const Scene1AppWindow: React.FC<{
  *
  * The phone sits at ~80% frame height on the right, positioned so its own
  * left ~12% overlaps IN FRONT of the (now left-anchored, ~62%-wide)
- * window's right edge — see Scene1AppWindow's SCENE1_WINDOW_* constants,
+ * window's right edge — see WindowLayout's skewLeft preset,
  * which this reads to place that overlap correctly.
  *
  * `cueFrame` (prop) is the LOCAL frame — inside this component's own
@@ -1175,11 +1151,11 @@ const PhoneRevealOverlay: React.FC<{cueFrame: number; swingProgress: number}> = 
 
   const height = 1080 * SCENE1_PHONE_HEIGHT_FRAC;
   const width = height * SCENE1_PHONE_ASPECT;
-  // Window's settled right edge (Scene1AppWindow's SCENE1_WINDOW_* consts):
+  // Window's settled, unrotated right edge (the original phone anchor):
   // left margin + width, in the same 1920-wide frame. The phone's left
   // edge sits 12% of its own width inside that (overlapping IN FRONT of
   // the window), the rest extending right.
-  const windowRightEdgePx = 1920 * (SCENE1_WINDOW_LEFT_MARGIN_FRAC + SCENE1_WINDOW_TARGET_SCALE);
+  const windowRightEdgePx = 1920 * (WINDOW_PRESETS.skewLeft.anchorLeftFrac + WINDOW_PRESETS.skewLeft.targetScale);
   const overlapFrac = 0.12;
   const leftPx = windowRightEdgePx - overlapFrac * width;
 

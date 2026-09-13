@@ -34,6 +34,7 @@
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
 import {color, font} from '../brand/tokens';
+import {windowFrameStyle, type WindowGeometry} from './windowGeometry';
 
 export type FrameMode = 'tilt' | 'bleed' | 'framed';
 export type ChromeStyle = 'simple' | 'browser';
@@ -73,6 +74,9 @@ export const BrowserFrame: React.FC<{
   anchorLeftFrac?: number;
   skewYDeg?: number;
   perspectivePx?: number;
+  /** WindowLayout supplies resolved geometry; omitted preserves legacy callers. */
+  geometry?: WindowGeometry;
+  legacyFrameAppearance?: boolean;
   children: React.ReactNode;
 }> = ({
   mode,
@@ -82,6 +86,8 @@ export const BrowserFrame: React.FC<{
   anchorLeftFrac,
   skewYDeg = 0,
   perspectivePx = 2400,
+  geometry,
+  legacyFrameAppearance = false,
   children,
 }) => {
   if (mode === 'bleed') {
@@ -113,7 +119,7 @@ export const BrowserFrame: React.FC<{
     return (
       <AbsoluteFill
         style={{
-          perspective: perspectivePx,
+          perspective: geometry?.perspective ?? perspectivePx,
           background: color.bgOuter,
         }}
       >
@@ -131,6 +137,7 @@ export const BrowserFrame: React.FC<{
             boxShadow: `0 ${60 * p}px ${140 * p}px rgba(0,0,0,${0.55 * p})`,
             border: `1px solid rgba(170,199,204,${0.22 * chromeOpacity})`,
             background: color.bgOuter,
+            ...(geometry ? windowFrameStyle(geometry, legacyFrameAppearance) : {}),
           }}
         >
           {/* title bar: window controls + one-tab tab strip */}
@@ -222,8 +229,8 @@ export const BrowserFrame: React.FC<{
               position: 'absolute',
               top: chromeH * chromeOpacity,
               left: 0,
-              width: 1920,
-              height: 1080,
+              width: geometry?.width ?? 1920,
+              height: geometry?.height ?? 1080,
               overflow: 'hidden',
             }}
           >
