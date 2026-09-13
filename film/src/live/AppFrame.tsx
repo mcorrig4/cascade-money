@@ -8,6 +8,7 @@ import cueTimes from '../generated/cues.json';
 
 type LiveCascade = {
   frameDriven?: boolean;
+  engine?: {update: (state: {recording: boolean}) => void};
   ready?: () => Promise<void>;
   renderFrame?: (tMs: number) => unknown;
   models?: () => {id: string; pending: boolean; missing: boolean; loaded: boolean; fade: number}[];
@@ -68,6 +69,8 @@ export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFr
     const sceneStartMs = SHOTS.find((shot) => shot.scene === scene)?.startTime ?? 0;
     const tMs = localMs + (absoluteTimeline ? sceneStartMs * 1000 : 0);
     seekTo(tMs, scene, absoluteTimeline, Object.fromEntries(Object.entries((cueTimes as Record<string,Record<string,number>>)[String(scene)]??{}).map(([name,seconds])=>[name,seconds*1000])));
+    // W2 Stage 2: seek resets recording; only the unlocked middle delegates cards to the film.
+    if (scene >= 2 && scene <= 10) browserWindow.__cascade?.engine?.update({recording: true});
     // Rendering phases are authored scene-locally even though the public seek
     // coordinate is the absolute film timeline.
     const sample=browserWindow.__cascade?.renderFrame?.(localMs);

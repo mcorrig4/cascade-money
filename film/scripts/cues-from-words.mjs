@@ -36,7 +36,8 @@ const wordsDir = process.argv[2] ?? process.env.CASCADE_WORDS_DIR ?? DEFAULT_WOR
 const NARRATION_DIR = join(FILM_DIR, 'public/narration');
 const OUT_PATH = join(FILM_DIR, 'src/generated/cues.json');
 const LOCK_PATH = join(FILM_DIR, 'src/generated/cues.lock.json');
-const REVEAL_LEAD_SECONDS = 0.15; // reveals fire 150ms before the word starts
+// W2 preserves approved locked-scene timing while rebuilt scenes have zero lead.
+const LOCKED_SCENES = new Set([1, 11, 12]);
 
 const fail = (message) => {
   console.error(`cues-from-words: ${message} (words directory: ${wordsDir})`);
@@ -65,35 +66,14 @@ const findPhrase = (words, phraseTokens, fromIndex) => {
         break;
       }
     }
-    if (matched) return {start: words[i].start, endIndex: i + phraseTokens.length};
+    if (matched) return {start: words[i].start, startIndex: i, endIndex: i + phraseTokens.length};
   }
   return null;
 };
 
-// Scene 2's fact reveals (Liam 2026-09-13 07:13 EDT round 6: "not until the
-// T/F/TH sound is coming out of my mouth, measured on the waveform, not
-// whisper's word boundary"). Whisper's boundary is measurably off here —
-// e.g. the second "200" (of "200 suppliers") is stamped at 5.20s by
-// whisper; the real /t/ burst measured on the 8ms-window/2ms-hop RMS
-// envelope (12dB rise from the local silence minimum) is 5.416s, 216ms
-// later. These four values are that measurement, applied with NO lead/delay
-// (frame = round(seconds * fps), same as every other cue). Pinned to the
-// installed scene-02.wav's md5 so a re-narration doesn't silently ship a
-// stale onset — see cues.lock.json / check-cues.mjs. If the md5 no longer
-// matches, this override is skipped and 'hook-open'/'stat-suppliers'/
-// 'stat-factories'/'stat-countries' fall back to their normal phrase
-// resolution (word boundary, no worse than before this pass).
-const MANUAL_ONSET_OVERRIDES = {
-  2: {
-    wavMd5: '256ef116708471945739705b1b3ad733',
-    cues: {
-      'hook-open': 2.036, // /t/ of "two" in "two hundred billion"
-      'stat-suppliers': 5.416, // /t/ of "two" in "two hundred suppliers"
-      'stat-factories': 7.202, // /th/ of "thousands"
-      'stat-countries': 9.148, // /f/ of "fifty"
-    },
-  },
-};
+// W2 measurements carry provenance and separate main/tail WAV guards.
+const overridesPath = join(FILM_DIR, 'src/generated/onset-overrides.json');
+const MANUAL_ONSET_OVERRIDES = existsSync(overridesPath) ? JSON.parse(readFileSync(overridesPath, 'utf8')) : {};
 
 const result = {};
 const unresolved = [];
@@ -129,8 +109,9 @@ for (const [sceneNumStr, cues] of Object.entries(CUE_PHRASES)) {
       unresolved.push(`scene ${sceneNum} "${cue}" — phrase "${phrase}" not found in ${path}`);
       continue;
     }
-    sceneResult[cue] = Math.max(0, Number((match.start - REVEAL_LEAD_SECONDS).toFixed(3)));
-    cursor = match.endIndex;
+    sceneResult[cue] = Math.max(0, Number((match.start - (LOCKED_SCENES.has(sceneNum) ? 0.15 : 0)).toFixed(3)));
+    // W2 shared clauses (money / plus / time) need overlapping phrase matches.
+    cursor = LOCKED_SCENES.has(sceneNum) ? match.endIndex : match.startIndex;
   }
   if (Object.keys(sceneResult).length > 0) result[sceneNum] = sceneResult;
 }
@@ -142,12 +123,16 @@ if (phraseCount === 0) fail('zero cues resolved from words; refusing to replace 
 for (const [sceneNumStr, override] of Object.entries(MANUAL_ONSET_OVERRIDES)) {
   const sceneNum = Number(sceneNumStr);
   const actualMd5 = md5File(wavFileFor(sceneNum));
-  if (actualMd5 === override.wavMd5) {
-    result[sceneNum] = {...(result[sceneNum] ?? {}), ...override.cues};
+  const entry = narration.find((entry) => entry.scene === sceneNum);
+  const tailMatches = !override.tailMd5 || (entry?.tailFile && md5File(join(NARRATION_DIR, entry.tailFile)) === override.tailMd5);
+  if (actualMd5 === override.wavMd5 && tailMatches) {
+    if (result[sceneNum]) {
+      for (const [cue, onset] of Object.entries(override.cues)) {
+        if (result[sceneNum][cue] !== undefined) result[sceneNum][cue] = onset;
+      }
+    }
   } else {
-    console.log(
-      `cues-from-words: scene ${sceneNum} narration wav md5 changed (expected ${override.wavMd5}, got ${actualMd5}) — skipping manual onset override, using phrase resolution instead. Re-run onset measurement.`,
-    );
+    if (result[sceneNum]) fail(`scene ${sceneNum} measured-onset WAV guard changed (main expected ${override.wavMd5}, got ${actualMd5}; tail matches: ${tailMatches}); re-run onset measurement`);
   }
 }
 
@@ -159,6 +144,13 @@ for (const sceneNumStr of Object.keys(CUE_PHRASES)) {
   const sceneNum = Number(sceneNumStr);
   const md5 = md5File(wavFileFor(sceneNum));
   if (md5) lock[sceneNum] = md5;
+}
+// W2 tail words must be guarded by the actual tail audio as well as the main WAV.
+for (const entry of narration) {
+  if (entry.tailFile) {
+    const md5 = md5File(join(NARRATION_DIR, entry.tailFile));
+    if (md5) lock[entry.tailFile] = md5;
+  }
 }
 // W4 empty-lock incident: missing WAVs must not turn the render gate into a zero-scene pass.
 if (Object.keys(lock).length === 0) fail('empty narration lock; no narration WAVs found');

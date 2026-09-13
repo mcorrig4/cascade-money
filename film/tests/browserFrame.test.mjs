@@ -79,9 +79,15 @@ test('scene integration keeps capture/phone expressions and derives all named wi
     .replace('SCENE1_WINDOW_LEFT_MARGIN_FRAC + SCENE1_WINDOW_TARGET_SCALE','WINDOW_PRESETS.skewLeft.anchorLeftFrac + WINDOW_PRESETS.skewLeft.targetScale');
   assert.equal(phone(source),expectedPhone);
   assert.doesNotMatch(source,/const (SCENE1_WINDOW_|WINDOW_TARGET_SCALE|WINDOW_CENTER_ANCHOR)/);
-  const scene2=s=>s.slice(s.indexOf('<Series.Sequence name="Scene 2'),s.indexOf('<Series.Sequence name="Scene 3'));
-  assert.equal(scene2(source),scene2(original));
-  assert.match(source, /<WindowLayout preset="centerSmall">/);
+  // W2 Stage 2 changes scene 2's card ownership while retaining its preset.
+  const choreography=readFileSync(new URL('../src/compositions/windowChoreography.ts',import.meta.url),'utf8');
+  assert.match(choreography, /scene === 2\) return \{preset: 'centerSmall'\}/);
+  assert.match(source, /<ScenePresentation scene=\{scene\}/);
+  for (const file of ['Scene11Receipt.tsx', 'Scene12Close.tsx']) {
+    const path=`film/src/compositions/motion-graphics/${file}`;
+    assert.equal(readFileSync(new URL(`../src/compositions/motion-graphics/${file}`,import.meta.url),'utf8'),
+      execFileSync('git',['show',`${baselineRevision}:${path}`],{encoding:'utf8'}));
+  }
   assert.match(source, /from="fullscreen" to=\{swingGeometry\}/);
   assert.match(source, /easing=\{Easing.out\(Easing.cubic\)\} legacyFrameAppearance/);
 });

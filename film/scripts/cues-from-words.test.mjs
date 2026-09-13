@@ -60,12 +60,50 @@ test('cue CLI rejects broken environments, permits partial cues, and offsets gen
     assert.equal(run().status, 0);
     const cues = JSON.parse(readFileSync(join(out, 'cues.json')));
     assert.equal(cues['1']['phone-reveal-fallback'], 8);
-    assert.equal(cues['7']['final-card'], 28.59);
+    assert.equal(cues['7']['final-card'], 28.74);
     assert.equal(run([], {CASCADE_WORDS_DIR: join(root, 'absent')}).status, 1);
     assert.equal(run([words], {CASCADE_WORDS_DIR: join(root, 'absent')}).status, 0);
     assert.equal(run([], {}, 'check-cues.mjs').status, 0);
     json(join(out, 'cues.lock.json'), {});
     result = run([], {}, 'check-cues.mjs');
     assert.equal(result.status, 1); assert.match(result.stderr, /empty narration lock/);
+  } finally { rmSync(root, {recursive: true, force: true}); }
+});
+
+// W2: the approved ending and measured-onset evidence are contracts across regeneration.
+test('W2 evidence resolves with zero lead and locked scenes retain their approved times', () => {
+  const read = name => JSON.parse(readFileSync(fileURLToPath(new URL(name, import.meta.url)), 'utf8'));
+  const cues = read('../src/generated/cues.json');
+  const evidence = read('../analysis/W2-onset-evidence.json');
+  assert.deepEqual(cues['1'], {'phone-reveal': 5.53, 'phone-reveal-fallback': 6.09});
+  assert.deepEqual(cues['11'], {'chain-reveal': 2.79, promises: 3.77, 'cascade-would': 5.67});
+  assert.deepEqual(cues['12'], {wordmark: 1.67});
+  for (const row of evidence) {
+    assert.equal(cues[row.scene][row.cue], row.onset, `scene ${row.scene} ${row.cue}`);
+    assert.equal(Math.round(row.onset * 30), row.frame30);
+  }
+  assert.ok(cues['9']['push-in-scrubber'] < cues['9']['pan-to-ledger']);
+  assert.ok(cues['10']['money-plus-time'] < cues['10']['money-plus']);
+  assert.ok(cues['10']['money-plus'] < cues['10']['money-time']);
+  const lock = read('../src/generated/cues.lock.json');
+  assert.ok(lock['scene-07-kokoro-tail.wav']);
+});
+
+test('a changed measured-onset WAV fails without overwriting the cue outputs', () => {
+  const root = mkdtempSync(join(tmpdir(), 'cascade-onset-guard-'));
+  try {
+    for (const dir of ['scripts', 'src/generated', 'public/narration/words']) mkdirSync(join(root, dir), {recursive: true});
+    for (const [source, target] of [
+      ['cues-from-words.mjs', 'scripts/cues-from-words.mjs'],
+      ['../src/cues.ts', 'src/cues.ts'],
+      ['../src/generated/onset-overrides.json', 'src/generated/onset-overrides.json'],
+      ['../public/narration/words/scene-02.json', 'public/narration/words/scene-02.json'],
+    ]) copyFileSync(fileURLToPath(new URL(source, import.meta.url)), join(root, target));
+    writeFileSync(join(root, 'public/narration/scene-02.wav'), 'different audio');
+    for (const name of ['cues.json', 'cues.lock.json']) writeFileSync(join(root, 'src/generated', name), 'preserve');
+    const result = spawnSync(process.execPath, [join(root, 'scripts/cues-from-words.mjs'), join(root, 'public/narration/words')], {encoding: 'utf8'});
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /measured-onset WAV guard changed/);
+    for (const name of ['cues.json', 'cues.lock.json']) assert.equal(readFileSync(join(root, 'src/generated', name), 'utf8'), 'preserve');
   } finally { rmSync(root, {recursive: true, force: true}); }
 });

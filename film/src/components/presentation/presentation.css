@@ -1,0 +1,73 @@
+/* W2 Stage 2: only layout is film-owned; the scoped app sheets own typefaces,
+   sizes, weights and colours. Every override is confined to this surface. */
+.app.film-app-surface.film-presentation .overlay-card {
+  position: relative; width: 100%; max-width: 100%; min-height: 0;
+  margin: 0; box-sizing: border-box;
+}
+.app.film-app-surface.film-presentation .film-hook-band {
+  position: absolute; display: grid; align-items: center; text-align: center;
+}
+.app.film-app-surface.film-presentation .film-hook-band .overlay-card {padding: 0;}
+.app.film-app-surface.film-presentation .film-hook-band .cascade-stat {
+  display: flex; flex-direction: row; align-items: baseline; justify-content: center;
+  white-space: nowrap;
+}
+.app.film-app-surface.film-presentation .film-hook-facts {
+  display: grid; grid-template-columns: 452fr 970fr 370fr; gap: calc(32 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-hook-sources {
+  position: absolute; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(32 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-hook-sources > div {
+  display: grid; gap: calc(8 * var(--film-unit)); padding: calc(12 * var(--film-unit));
+  border-top: calc(1 * var(--film-unit)) solid #436658; font-size: calc(22 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-hook-sources span {color: #abc0bd;}
+.app.film-app-surface.film-presentation .film-hook-close {display: flex; align-items: baseline; justify-content: center; gap: calc(32 * var(--film-unit));}
+.app.film-app-surface.film-presentation .wordmark-icon {width: .7em; height: .7em; margin-right: .2em; color: #69e6c0;}
+.app.film-app-surface.film-presentation .film-totals {
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(3, calc(220 * var(--film-unit)));
+  gap: calc(24 * var(--film-unit)); padding: calc(20 * var(--film-unit)) calc(30 * var(--film-unit));
+  border-left: calc(2 * var(--film-unit)) solid #436658; background: rgba(7, 25, 29, .6);
+}
+.app.film-app-surface.film-presentation .film-totals .cascade-stat {align-content: center;}
+/* Cards at centerLarge are screen-resolution siblings, with a local scrim that
+   stops before the native ledger and above the app's full footer (Stage 2). */
+.app.film-app-surface.film-presentation .film-inset-card {
+  background: radial-gradient(ellipse at center, rgba(3, 13, 19, .8), rgba(3, 13, 19, .35));
+  border-radius: calc(18 * var(--film-unit)); text-align: left;
+}
+.app.film-app-surface.film-presentation .question-card.film-inset-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: calc(8 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .question-card.film-inset-card h2 {margin: 0;}
+.app.film-app-surface.film-presentation .question-card.film-inset-card p {margin: calc(8 * var(--film-unit)) 0 0;}
+.app.film-app-surface.film-presentation .film-coin {
+  padding: 0; height: calc(1016 * var(--film-unit)); display: block;
+}
+.app.film-app-surface.film-presentation .film-coin .coin-copy {
+  position: absolute; left: calc(30 * var(--film-unit)); right: calc(30 * var(--film-unit));
+  top: calc(48 * var(--film-unit)); height: calc(460 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-coin .coin-stage,
+.app.film-app-surface.film-presentation .film-coin .same-date-stage {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+}
+.app.film-app-surface.film-presentation .film-coin .swap-coin {
+  position: absolute; width: auto; height: auto; margin: 0;
+}
+.app.film-app-surface.film-presentation .film-coin .dated-dollar {display: block; max-width: none;}
+.app.film-app-surface.film-presentation .film-coin .date-interval {justify-content: space-between;}
+.app.film-app-surface.film-presentation .film-coin .extension-ticks {display: flex;}
+.app.film-app-surface.film-presentation .film-coin .extension-ticks i {flex: 1; min-width: 0;}
+.app.film-app-surface.film-presentation .film-backing .asset-composition {display: flex; flex-direction: column; align-items: flex-start;}
+.app.film-app-surface.film-presentation .film-composable .composable-items {grid-template-columns: minmax(0, 1fr);}
+.app.film-app-surface.film-presentation .film-composable .composable-items li::before {display: none;}
+/* The app's fungibility mode hides its whole viewport; Stage 2 explicitly keeps
+   copy and product in place, so this surface cannot inherit that cutaway rule. */
+.app.film-app-surface.film-presentation:has(.same-date-stage) > :not(.shot-overlay) {visibility: visible;}
+.app.film-app-surface.film-presentation .film-coin .same-date-stage {background: transparent;}
+.app.film-app-surface.film-presentation .film-coin .swap-coin .dated-dollar {width: auto; height: auto; max-width: none;}
+.app.film-app-surface.film-presentation .film-composable .composable-items li {grid-column: auto;}
+.app.film-app-surface.film-presentation .film-coin .coin-copy h2 {margin: 0 0 calc(12 * var(--film-unit));}

@@ -39,7 +39,7 @@ const missing = [];
 
 for (const [sceneNumStr, expectedMd5] of Object.entries(lock)) {
   const sceneNum = Number(sceneNumStr);
-  const wavPath = wavFileFor(sceneNum);
+  const wavPath = sceneNumStr.endsWith('.wav') ? join(NARRATION_DIR, sceneNumStr) : wavFileFor(sceneNum);
   const actualMd5 = md5File(wavPath);
   if (actualMd5 === null) {
     missing.push(`scene ${sceneNum}: ${wavPath} not found`);
