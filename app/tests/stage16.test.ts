@@ -59,7 +59,7 @@ test('explicit cues validate their name and record an elapsed offset',()=>{
 });
 test('company cues retain explicit legacy brand support and freeze at sampled time',()=>{
  const engine=new PlaybackEngine(index);playShot(engine,3);
- assert.deepEqual(new Set(companyCues(engine.state).map(c=>c.company)),new Set(['Apple','Samsung Display','Corning']));
+ assert.deepEqual(new Set(companyCues(engine.state).map(c=>c.company)),new Set(['Apple','Samsung Display','Corning','Sony']));
  engine.cue('company','TSMC',500);assert.ok(companyCues(engine.state).some(c=>c.company==='TSMC'));
  assert.equal(calloutMotion(499,500).visible,false);assert.equal(calloutMotion(1000,500).alpha,1);
  assert.deepEqual(calloutMotion(750,500),calloutMotion(750,500));assert.equal(calloutMotion(4050,500).visible,false);

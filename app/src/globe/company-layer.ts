@@ -8,6 +8,7 @@ import { brandFor, logoFor } from './brands.ts';
 export class CompanyLayer {
   private elements = new Map<string, HTMLElement>();
   private host: HTMLElement;
+  private logoReady: Promise<void>[] = [];
   private callouts = new Map<string,HTMLElement>();
   constructor(host: HTMLElement, firms: Firm[]) {
     this.host = host;
@@ -23,6 +24,7 @@ export class CompanyLayer {
         const base = window.__cascade?.frameDriven ? `${(window as typeof window & {remotion_staticBase?:string}).remotion_staticBase ?? ''}/` : '/';
         img.src = `${base}logos/${logo}.svg`; img.alt = '';
         img.width = 40; img.height = 40; img.className = 'company-logo';
+        this.logoReady.push(img.decode());
         disc.append(img);
       } else {
         const brand = brandFor(firm.name);
@@ -36,7 +38,10 @@ export class CompanyLayer {
       element.append(disc, label); host.append(element); this.elements.set(firm.id, element);
     }
   }
+  /** Decode every mark before the complete scene is revealed, including offscreen firms. */
+  ready() { return Promise.all(this.logoReady).then(() => {}); }
   update(globe: GlobeInstance, firms: Firm[], active: Set<string>, right: number, bottom: number, close: boolean, mobile: boolean, scale=1) {
+    for(const element of this.elements.values())element.hidden=true;
     const boxes: { x: number; y: number; w: number }[] = [];
     // Named companies are always eligible to show (subject only to on-screen bounds and
     // overlap with another visible label); the fixed count cap below applies solely to

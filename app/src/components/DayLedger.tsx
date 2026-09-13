@@ -1,6 +1,6 @@
 import { rewindLedgerRows } from '../globe/rewind-events.ts';
 import { useRef, useState, useEffect, useLayoutEffect } from 'react';
-import { dollars } from '../data/format.ts';
+import { dollars, invoiceDetail } from '../data/format.ts';
 import { displayDate } from '../data/types.ts';
 import type { Event, EventIndex } from '../data/types.ts';
 import { ledgerMode, ledgerRowHeight, inspectionSnapshot } from './ledger-mode.ts';
@@ -12,7 +12,7 @@ function LedgerRow({ event, index, compact, inspect, waiting, amount, date }: { 
   const invoice = index.invoices.get(event.invoiceId ?? String((event.data.invoice as { invoice_id?: string } | undefined)?.invoice_id ?? ''));
   const from = event.from ?? invoice?.debtor ?? event.accounts[0], to = event.to ?? invoice?.creditor ?? event.accounts[1];
   const name = (id?: string) => index.firms.get(id ?? '')?.name ?? id ?? 'Vault';
-  const detail = invoice?.annotation ?? [invoice?.quantity, invoice?.unit, invoice?.item, invoice?.deliverTo ? `→ ${invoice.deliverTo}` : undefined].filter(Boolean).join(' ');
+  const detail = invoiceDetail(invoice);
   const maturity=date??event.data.to_date ?? event.data.mint_date ?? event.data.accepted_maturity ?? event.dates?.at(-1);
   const unit=typeof maturity==='number'?displayDate(maturity,true):'—';
   return <article tabIndex={0} onClick={inspect} onFocus={inspect} className={`ledger-row ${event.type}`} data-seq={event.seq}>

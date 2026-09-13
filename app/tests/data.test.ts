@@ -71,3 +71,11 @@ test('v2 summaries reconcile, invoice detail and story markers survive', () => {
   appendEvent(bad, { ...records[0], type: 'day_summary', seq: 11, data: { new_invoice_cents: 1, settled_invoice_cents: 2 } });
   assert.throws(() => finishIndex(bad), /summary disagrees/);
 });
+
+test('ledger line items format quantities, avoid repeated units and name delivery sites', async () => {
+  const { invoiceDetail } = await import('../src/data/format.ts');
+  const invoice = {id:'sony',debtor:'Apple',creditor:'Sony',amount:5000000000n,quantity:'2000000',unit:'sensors',item:'camera sensors',deliverTo:'foxconn-zhengzhou'};
+  assert.equal(invoiceDetail(invoice),'2,000,000 camera sensors → Foxconn Zhengzhou');
+  assert.equal(invoiceDetail({...invoice,unit:'kg',item:'cover glass'}),'2,000,000 kg of cover glass → Foxconn Zhengzhou');
+  assert.equal(invoiceDetail({...invoice,annotation:'Authored caption'}),'Authored caption');
+});

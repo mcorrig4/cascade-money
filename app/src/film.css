@@ -94,6 +94,7 @@
   .app .coin-date {font-size:calc(42 * var(--film-unit))}
   .app .date-interval,.app .meter-label {font-size:calc(36 * var(--film-unit));gap:calc(20 * var(--film-unit))}
   .app .date-interval {margin-top:calc(28 * var(--film-unit))}
+  .app .extension-ticks {gap:calc(2 * var(--film-unit));height:calc(24 * var(--film-unit));margin:calc(18 * var(--film-unit)) 0}
   .app .yield-track {height:calc(6 * var(--film-unit));margin:calc(16 * var(--film-unit)) 0}
   .app .claim-rule {font-size:calc(42 * var(--film-unit));padding-top:calc(20 * var(--film-unit))}
   .app .fungible-equals {position:static;font-size:calc(42 * var(--film-unit))}
@@ -204,3 +205,12 @@
  .site-navigation{position:absolute;top:70px;left:12px;right:12px;justify-content:center;gap:6px}
  .site-navigation button{font-size:13px;padding:7px 8px;gap:5px}.site-navigation svg{width:18px;height:18px}
 }
+
+/* The hook's geographic Apple marker remains visible in both HUD modes. */
+.app.california-hook .company-layer{opacity:1}
+.app.california-hook .company-callout{display:none}
+.app.california-hook .company-label[data-firm="Apple"] .company-disc,
+.app.california-hook .company-label[data-firm="Apple"] .company-logo{width:72px;height:72px}
+
+/* The California subject caption must fit independently of its logo width. */
+.app.california-hook .company-label[data-firm="Apple"]>span{overflow:visible;text-overflow:clip;width:max-content;max-width:none;position:relative;left:50%;transform:translateX(-50%)}

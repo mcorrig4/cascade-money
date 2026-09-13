@@ -9,7 +9,7 @@ export function SceneLabels({ shot, elapsed, cues={}, orders=[], payments=[] }: 
   return <>
     {location && <section className="scene-location" aria-label="Scene location"><strong>{location.name}</strong><span>{location.place}</span></section>}
     {shot===3&&orders.length>0&&<section className="scene-orders" aria-label="Apple orders">
-      {orders.map(order=><div key={order.seq} data-invoice={order.invoiceId}><strong>Apple → {order.to}</strong><span>{dollars(order.amount,true)} · Due {proofMaturity(order)===null?'—':displayDate(proofMaturity(order)!)} (day {proofMaturity(order)})</span></div>)}
+      {orders.map(order=><div key={order.seq} data-invoice={order.invoiceId}><strong>{order.from} → {order.to}</strong><span>{dollars(order.amount,true)} · Due {proofMaturity(order)===null?'—':displayDate(proofMaturity(order)!)} (day {proofMaturity(order)})</span></div>)}
     </section>}
     {shot===4&&payments.length>0&&<section className="scene-cascade" aria-label="Revealed cascade payments">
       {payments.map(event=><div key={event.seq} data-invoice={event.invoiceId}><span>{event.from} → {event.to}</span><strong>{dollars(event.amount,true)}</strong></div>)}

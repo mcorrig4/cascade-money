@@ -1,3 +1,15 @@
+import type { PlaybackEngine, PlaybackState } from '../playback/engine.ts';
+
+/** Cover UI and external recording-mode entry without coupling capture bookkeeping
+ * to Three.js. The renderer consumes this revision before its next frame. */
+export function recordingOrientationPatch(state:PlaybackState,patch:Partial<PlaybackState>) {
+ return patch.recording===true&&!state.recording
+  ? {orientationRevision:state.orientationRevision+1}:{};
+}
+export function setRecordingMode(engine:PlaybackEngine,recording:boolean) {
+ engine.update({recording});
+}
+
 export function recordingVisibility(recording:boolean,hud=true) {
  return {hud:!recording||hud,director:!recording,story:!recording,network:!recording};
 }

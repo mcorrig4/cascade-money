@@ -4,11 +4,8 @@ import { cueMs } from './cues.ts';
 import { SHOTS } from './shots.ts';
 import type {PlaybackState} from '../playback/engine.ts';
 import {clamp} from '../camera/primitives.ts';
-import {narrationTime} from './shots.ts';
 /** Exposure and typography share the narration clock, including manual capture. */
 export function FilmEffects({state}:{state:PlaybackState}) {
- const t=narrationTime(state);
- const black=state.shot===1?1-clamp(t/.8):0;
  const scene=SHOTS.find(s=>s.id===state.shot);
  const closing=!!scene&&scene.id===12&&shotOverlayVisible(state,scene);
  const closeAt=scene?cueMs(state,'wordmark',2.5,scene.baseSeconds)/1000:2.5;
@@ -23,6 +20,5 @@ export function FilmEffects({state}:{state:PlaybackState}) {
   </section>}
   <div className="film-exposure" style={{opacity:state.exposure}} aria-hidden="true"/>
   {closing&&state.shotElapsed<closeAt&&<div className="ending-line" style={{opacity:lineOpacity}}><p>global supply chains.<br/>settled.</p></div>}
-  {black>0&&<div className="film-black" style={{opacity:black}} aria-hidden="true"/>}
  </>;
 }

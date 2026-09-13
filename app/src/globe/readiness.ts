@@ -38,3 +38,9 @@ export function compileSiteMaterials(renderer: WebGLRenderer, root: Object3D, ca
   try { finishFirstFrame(() => { renderer.compile(root, camera, scene); }, renderer.getContext()); }
   finally { renderer.debug.onShaderError = previous; }
 }
+
+/** Public readiness also waits for the single opening cover to finish its fade. */
+export function openingRevealed() {
+  if (document.documentElement.dataset.cascadeRevealed === 'true' || !document.querySelector('.opening-cover')) return Promise.resolve();
+  return new Promise<void>(resolve => document.addEventListener('cascade:revealed', () => resolve(), { once: true }));
+}

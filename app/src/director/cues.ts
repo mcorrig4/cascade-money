@@ -1,4 +1,5 @@
 export const CUE_NAMES = [
+  'Samsung','Corning','Sony',
   'date-card','stat-suppliers','stat-factories','stat-countries','stat-cost','system-recreated','payment-layer',
   'rows-in','dates-line','question-card','committed-counter','settled-counter','companies-counter','tagline',
   'coin','coin-date','coin-yield','swap','earlier-pays-later','extend','final-card',
