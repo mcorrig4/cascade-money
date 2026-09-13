@@ -28,14 +28,20 @@
 .app.film-app-surface.film-presentation .wordmark-icon {width: .7em; height: .7em; margin-right: .2em; color: #69e6c0;}
 .app.film-app-surface.film-presentation .film-cascade-spine {
   margin-left: calc(16 * var(--film-unit)); width: calc(560 * var(--film-unit));
-  flex-shrink: 0; text-align: left;
+  display: flex; flex-direction: column; flex-shrink: 0; text-align: left;
+}
+.app.film-app-surface.film-presentation .film-cascade-spine > .film-totals-eyebrow {
+  margin-bottom: calc(20 * var(--film-unit));
+}
+.app.film-app-surface.film-presentation .film-cascade-spine-row {
+  display: flex; align-items: baseline; gap: calc(24 * var(--film-unit));
 }
 .app.film-app-surface.film-presentation .film-cascade-spine-drawing {
-  display: block; overflow: hidden; font-family: inherit; fill: currentColor;
+  display: block; flex-shrink: 0; overflow: hidden; background: #071019;
 }
 .app.film-app-surface.film-presentation .film-cascade-source {fill: #8297a5;}
 .app.film-app-surface.film-presentation .film-cascade-hop {fill: var(--line);}
-.app.film-app-surface.film-presentation .film-cascade-hop-fill {fill: var(--money, #69e6c0);}
+.app.film-app-surface.film-presentation .film-cascade-hop-fill {fill: var(--money);}
 .app.film-app-surface.film-presentation .film-totals {
   /* The pane supplies 32 logical pixels; the remaining 16 match the app's 48px gutter. */
   margin-left: calc(16 * var(--film-unit)); width: calc(560 * var(--film-unit));

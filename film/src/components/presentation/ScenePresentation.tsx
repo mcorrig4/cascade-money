@@ -66,19 +66,21 @@ const CascadePresentation: React.FC<{at: (name: string) => number; geometry: Win
   const count = progress(settled, .2 * fps);
   return <section className="film-cascade-spine" aria-label="The same dollars: nine invoices settled" style={visibility(on(start))}>
     <div className="film-totals-eyebrow">THE SAME DOLLARS</div>
-    <svg className="film-cascade-spine-drawing" width={560 * unit} height={350 * unit}>
-      <rect className="film-cascade-source" width={28 * unit} height={26 * unit}/>
-      {Array.from({length: 8}, (_, i) => <g key={i}>
-        <rect className="film-cascade-hop" x={0} y={(30 + i * 38) * unit} width={28 * unit} height={34 * unit}/>
-        <rect className="film-cascade-hop-fill" x={0} y={(30 + i * 38) * unit} width={28 * unit}
-          height={34 * unit * progress(start + i * tickFrames, tickFrames)}/>
-      </g>)}
-      {/* SVG text puts both sizes on the last segment's exact baseline. */}
-      <g style={{...visibility(on(settled)), opacity: count, transform: `translateY(${12 * unit * (1 - count)}px)`}}>
-        <text className="film-totals-figure" x={64 * unit} y={330 * unit}>9</text>
-        <text className="film-totals-label" x={132 * unit} y={330 * unit}>invoices settled</text>
-      </g>
-    </svg>
+    <div className="film-cascade-spine-row">
+      <svg className="film-cascade-spine-drawing" width={56 * unit} height={450 * unit}>
+        <rect className="film-cascade-source" width={56 * unit} height={34 * unit}/>
+        {Array.from({length: 8}, (_, i) => <g key={i}>
+          <rect className="film-cascade-hop" x={0} y={(40 + i * 52) * unit} width={56 * unit} height={46 * unit}/>
+          <rect className="film-cascade-hop-fill" x={0} y={(40 + i * 52) * unit} width={56 * unit}
+            height={46 * unit * progress(start + i * tickFrames, tickFrames)}/>
+        </g>)}
+      </svg>
+      {/* The SVG's bottom edge supplies the last segment's baseline for the HTML heading. */}
+      <div className="film-totals-heading" style={{...visibility(on(settled)), opacity: count, transform: `translateY(${12 * unit * (1 - count)}px)`}}>
+        <strong className="film-totals-figure">9</strong>
+        <span className="film-totals-label">invoices settled</span>
+      </div>
+    </div>
   </section>;
 };
 
