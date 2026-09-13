@@ -97,20 +97,23 @@
   font-weight: 500; text-transform: uppercase; color: #8297a5;
 }
 .app.film-app-surface.film-presentation .film-coin-axis {
-  position: absolute; height: calc(1 * var(--film-unit));
+  position: absolute; height: 0;
 }
 .app.film-app-surface.film-presentation .film-coin-hairline,
 .app.film-app-surface.film-presentation .film-coin-elapsed {
-  position: absolute; inset: 0; background: var(--line); transform-origin: left center;
+  position: absolute; left: 0; right: 0; top: calc(-1 * var(--film-unit));
+  height: calc(2 * var(--film-unit)); background: rgba(170,199,204,.16); transform-origin: left center;
 }
-.app.film-app-surface.film-presentation .film-coin-elapsed {background: var(--money, #69e6c0);}
+.app.film-app-surface.film-presentation .film-coin-elapsed {
+  top: calc(-2 * var(--film-unit)); height: calc(4 * var(--film-unit)); background: var(--money, #69e6c0);
+}
 .app.film-app-surface.film-presentation .film-coin-extension {
-  position: absolute; top: calc(-2.5 * var(--film-unit)); height: calc(6 * var(--film-unit)); background: #e8b768;
+  position: absolute; top: calc(-3 * var(--film-unit)); height: calc(6 * var(--film-unit)); background: #e8b768;
 }
 .app.film-app-surface.film-presentation .film-coin-annotations {position: absolute; inset: 0;}
 .app.film-app-surface.film-presentation .film-coin-tick {position: absolute;}
 .app.film-app-surface.film-presentation .film-coin-tick i {
-  position: absolute; top: 0; width: calc(1 * var(--film-unit)); height: calc(8 * var(--film-unit)); background: var(--line);
+  position: absolute; top: 0; width: calc(1 * var(--film-unit)); height: calc(10 * var(--film-unit)); background: var(--line);
 }
 .app.film-app-surface.film-presentation .film-coin-day,
 .app.film-app-surface.film-presentation .film-coin-redeemable,
@@ -118,26 +121,29 @@
   position: absolute; transform: translateX(-50%); white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .app.film-app-surface.film-presentation .film-coin-day {
-  top: calc(28 * var(--film-unit)); font-size: calc(11 * var(--film-unit));
+  top: calc(28 * var(--film-unit)); font-size: calc(14 * var(--film-unit));
   letter-spacing: calc(1.8 * var(--film-unit)); color: #718692;
 }
 .app.film-app-surface.film-presentation .film-coin-redeemable {
-  top: calc(-98 * var(--film-unit)); font-size: calc(11 * var(--film-unit));
+  top: calc(-28 * var(--film-unit)); font-size: calc(12 * var(--film-unit));
   letter-spacing: calc(1.8 * var(--film-unit)); color: var(--money, #69e6c0);
 }
 .app.film-app-surface.film-presentation .film-coin-face {
   top: calc(52 * var(--film-unit)); font-size: calc(18 * var(--film-unit)); color: var(--money, #69e6c0);
 }
 .app.film-app-surface.film-presentation .film-coin-yield {
-  position: absolute; transform: translateX(-50%); white-space: nowrap;
-  font-size: calc(18 * var(--film-unit)); font-variant-numeric: tabular-nums; color: #e8b768;
+  position: absolute; transform: translate(-50%, -100%); white-space: nowrap;
+  font-size: calc(20 * var(--film-unit)); font-variant-numeric: tabular-nums; color: #e8b768;
+}
+.app.film-app-surface.film-presentation .film-coin-drop {
+  position: absolute; width: calc(1 * var(--film-unit)); background: rgba(170,199,204,.16);
 }
 .app.film-app-surface.film-presentation .film-coin-token {
-  position: absolute; transform: translate(-50%, -50%);
+  position: absolute;
 }
 .app.film-app-surface.film-presentation .film-coin-caption {
   position: absolute; inset: 0; overflow: visible;
-  font-family: inherit; font-size: calc(26 * var(--film-unit)); font-weight: 400; fill: #abc0bd;
+  font-family: inherit; font-size: calc(34 * var(--film-unit)); font-weight: 400; fill: #abc0bd;
 }
 .app.film-app-surface.film-presentation .film-coin-final {font-size: calc(45 * var(--film-unit));}
 .app.film-app-surface.film-presentation .film-backing .asset-composition {display: flex; flex-direction: column; align-items: flex-start;}
