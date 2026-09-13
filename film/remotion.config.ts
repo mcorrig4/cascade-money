@@ -34,7 +34,12 @@ Config.overrideWebpackConfig(current => ({
     // ones using the coin). film's own fonts avoid this by loading via
     // FontFace()/fetch(staticFile(...)) (see brand/fonts.ts) instead of a
     // CSS @font-face import.
-    modules: [...(current.resolve?.modules ?? []), resolve(filmDir, 'public'), resolve(filmDir, '../app/public')],
+    // 'node_modules' must stay first and explicit: webpack only supplies
+    // that default itself when `resolve.modules` is left UNSET entirely,
+    // so appending to `current.resolve?.modules` (empty/undefined here)
+    // would otherwise silently drop normal node_modules resolution for
+    // every bare import (verified: doing that broke 'globe.gl'/'three').
+    modules: [...(current.resolve?.modules ?? ['node_modules']), resolve(filmDir, 'public'), resolve(filmDir, '../app/public')],
   },
   plugins: [
     ...(current.plugins ?? []),
