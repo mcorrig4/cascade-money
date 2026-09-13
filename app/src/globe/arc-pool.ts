@@ -1,4 +1,4 @@
-import { arcLifecycle, GROUND_RADIUS_KM } from './animation.ts';
+import { arcLifecycle, arcPhaseKm, GROUND_RADIUS_KM } from './animation.ts';
 import { isPayment } from '../data/types.ts';
 import type { Event, EventIndex } from '../data/types.ts';
 export const ARC_CAP = 200;
@@ -58,7 +58,13 @@ export class ArcPool {
     this.arcs = this.arcs.filter(a => held || time - a.born < a.life);
     for (const a of this.arcs) {
       a.held=held;
-      Object.assign(a, arcLifecycle(held?Math.min(time-a.born,a.life*.5):time-a.born, a.life));
+      const age=time-a.born;
+      // A held arc draws itself from payer to payee exactly like any other, then
+      // stops at the midpoint of its lifecycle so it never retires — but its
+      // dash pattern keeps running off the REAL age, so the route stays alive
+      // instead of freezing into a static line.
+      Object.assign(a, arcLifecycle(held?Math.min(age,a.life*.5):age, a.life));
+      if(held)a.phaseKm=arcPhaseKm(age,a.life);
       if(a.reverse) { const start=a.clipStart; a.clipStart=1-a.clipEnd; a.clipEnd=1-start; a.phaseKm=-a.phaseKm; }
     }
   }
