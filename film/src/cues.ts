@@ -45,14 +45,12 @@ export interface CuePhrase {
 }
 
 export const CUE_PHRASES: Record<number, CuePhrase[]> = {
-  // Scene 2 — The hook (round 2, product owner's brief 2026-09-13 02:05 ET):
-  // scene 2's old "Tim Apple walks offstage" narration is cut; the new v9
-  // line is a cold-open hook recorded by Liam, not yet in hand — the v7
-  // placeholder audio plays here until then, so these phrases mostly WON'T
-  // resolve against it (v7 spoke different words entirely) and every beat
-  // below falls back to its even fixed-fraction slot (see Hook.tsx). Left
-  // in place so a real v9 VO pass picks the cues up automatically, same as
-  // scenes 8/14's documented never-spoken cues.
+  // Scene 2 — The hook (round 3, product owner's brief 2026-09-13, msg
+  // 21865): the v9 cold-open line is now Liam's real recorded take
+  // (film/public/narration/scene-02.wav, words at
+  // cascade-narration/words-merged/scene-02.json), so every phrase below
+  // resolves against real narration timestamps instead of falling back to
+  // the even fixed-fraction slots (see Hook.tsx).
   //   "You know what's crazy? Nearly two hundred billion dollars of product
   //   costs. Two hundred suppliers, thousands of factories, fifty
   //   countries. All of it running on payment terms and promises. Cascade
@@ -61,6 +59,14 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'hook-open', phrase: 'crazy'},
     {cue: 'stat-cost', phrase: 'billion'},
     {cue: 'stat-suppliers', phrase: 'suppliers'},
+    // Citation chip 3 (factories/countries report) keys off "countries" —
+    // added round 3 (Liam 2026-09-13, msg 21865: citations must appear just
+    // after their fact). Fallback phrase "factories" covers a re-narration
+    // that drops "countries" but keeps "factories" (findPhrase only advances
+    // the cursor on a match, so this fallback still searches from the same
+    // point 'stat-suppliers' left off).
+    {cue: 'stat-countries', phrase: 'countries'},
+    {cue: 'stat-countries-fallback', phrase: 'factories'},
     {cue: 'promises', phrase: 'promises'},
     {cue: 'wordmark', phrase: 'Cascade'},
     {cue: 'apple-cta', phrase: 'Apple'},

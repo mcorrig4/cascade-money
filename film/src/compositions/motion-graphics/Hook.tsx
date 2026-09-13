@@ -1,21 +1,20 @@
 /**
- * Scene 2 — The hook (product owner's brief 2026-09-13 02:05 ET, round 2).
+ * Scene 2 — The hook (product owner's brief 2026-09-13, round 3, msg 21865).
  * The old scene 2 ("Tim Apple walks offstage... teams building the next
  * one") is CUT. The capture (Apple Park orbit -> arch swoop -> pull-out to
  * Earth with the HUD) is KEPT — this component only adds the narration-beat
  * text and citation chips composited over it.
  *
- * New v9 line (Liam will record it; v7 placeholder plays until then):
+ * v9 line, now Liam's real recorded take (film/public/narration/scene-02.wav,
+ * words at cascade-narration/words-merged/scene-02.json):
  *   "You know what's crazy? Nearly two hundred billion dollars of product
  *   costs. Two hundred suppliers, thousands of factories, fifty countries.
  *   All of it running on payment terms and promises. Cascade Money settles
  *   those terms on Arc. Let me show you, with Apple."
  *
  * Five exclusive text beats (A-E), each keyed to a cues.ts phrase (see
- * cues.ts's scene-2 block) with an even fixed-fraction fallback for as long
- * as the v7 placeholder audio is still playing here (it speaks different
- * words entirely, so these mostly won't resolve — same documented case as
- * scenes 8/14's never-spoken cues):
+ * cues.ts's scene-2 block), with an even fixed-fraction fallback for the
+ * rare case a future re-narration drops one of these words entirely:
  *   A "$200B of product costs"                    <- 'hook-open' ("crazy")
  *   B "200 suppliers · thousands of factories ·
  *      50 countries"                               <- 'stat-suppliers'
@@ -32,6 +31,14 @@
  * scene rather than exiting with their beat (Liam: "appearing with their
  * figure and staying"). Wording is copied verbatim from
  * docs/cascade/hackathon/verified-figures-v6.md; nothing invented beyond it.
+ *
+ * Round 3 (Liam, msg 21865, verbatim: "the citation should be timed with
+ * each fact. It should appear just after the fact it is for."): each chip
+ * now fires CHIP_DELAY_SECONDS (350ms) after its own figure's cue instead of
+ * a shared beat-B fallback slot — chip 1 -> 'stat-cost' ("billion"), chip 2
+ * -> 'stat-suppliers' ("suppliers"), chip 3 -> the new 'stat-countries'
+ * cue ("countries", falling back to "factories"). A chip can only appear at
+ * or after its own figure's cue plus the delay — never earlier.
  *
  * Constraint (4): the wordmark beat (D) must never land before 10.5s of
  * FILM time (scene 2 starts ~9.3s in, right after scene 1) — `sceneStartFrame`
@@ -82,8 +89,11 @@ interface Citation {
 const CITATIONS: Citation[] = [
   {cue: 'stat-cost', source: 'Apple 10-K FY2025', fact: 'product cost of sales $194.1B'},
   {cue: 'stat-suppliers', source: 'Apple Supplier List 2025', fact: '~200 direct suppliers, 98% of spend'},
-  {cue: 'stat-suppliers', source: 'Apple Supply Chain 2025 Progress Report', fact: 'thousands of facilities, 50+ countries'},
+  {cue: 'stat-countries', source: 'Apple Supply Chain 2025 Progress Report', fact: 'thousands of facilities, 50+ countries'},
 ];
+
+/** Citation chips land 350ms after their own figure's cue, never before it (Liam round 3, msg 21865). */
+const CHIP_DELAY_SECONDS = 0.35;
 
 const CitationChip: React.FC<{citation: Citation; appearAt: number}> = ({citation, appearAt}) => {
   const frame = useCurrentFrame();
@@ -126,9 +136,8 @@ export const Hook: React.FC<{
   const {fps} = useVideoConfig();
   const exitDur = at30(EXIT_DUR_AT_30, fps);
 
-  // A/B/C/D/E fixed-fraction fallback slots — a sensible even spread across
-  // the scene for as long as the placeholder v7 audio leaves these cues
-  // unresolved (see file header).
+  // A/B/C/D/E fixed-fraction fallback slots — used only if a future
+  // re-narration drops one of these cue phrases entirely (see file header).
   const slot = dur / 5;
   const fallbackA = 0;
   const fallbackB = slot;
@@ -164,8 +173,25 @@ export const Hook: React.FC<{
   const showE = frame >= startE;
 
   // Citation chip appearance frames — figure-keyed, not beat-keyed, and each
-  // stays up once shown (no exit) for the rest of the scene.
-  const chipStarts = CITATIONS.map((c) => cueFrame(cues, c.cue, fps, c.cue === 'stat-cost' ? fallbackA + slot * 0.55 : fallbackB + slot * 0.4));
+  // stays up once shown (no exit) for the rest of the scene. Each chip fires
+  // 350ms AFTER its own figure's cue (never before it's spoken) — Liam
+  // round 3, msg 21865: "the citation should be timed with each fact ...
+  // appear just after the fact it is for". 'stat-countries' chains its own
+  // 'stat-countries-fallback' cue the same way CascadeFilm's scene 9 chains
+  // primary/fallback narration cues.
+  const chipDelayFrames = Math.round(CHIP_DELAY_SECONDS * fps);
+  const chipCueFrame = (cue: string, staticFallback: number): number =>
+    cue === 'stat-countries'
+      ? cueFrame(cues, 'stat-countries', fps, cueFrame(cues, 'stat-countries-fallback', fps, staticFallback))
+      : cueFrame(cues, cue, fps, staticFallback);
+  const chipStaticFallbacks: Record<string, number> = {
+    'stat-cost': fallbackA + slot * 0.55,
+    'stat-suppliers': fallbackB + slot * 0.4,
+    'stat-countries': fallbackB + slot * 0.7,
+  };
+  const chipStarts = CITATIONS.map(
+    (c) => chipCueFrame(c.cue, chipStaticFallbacks[c.cue] ?? fallbackB + slot * 0.4) + chipDelayFrames,
+  );
 
   return (
     <AbsoluteFill style={{fontFamily: font.family}}>
