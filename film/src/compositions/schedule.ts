@@ -68,8 +68,8 @@ export const SCENES: SceneDef[] = [
   // scene 10 (Zoom out) directly and continues the SAME descent capture
   // that scene 11 used to start (see the capture-continuation logic in
   // CascadeFilm.tsx, unchanged other than the renumbering).
-  {num: 11, id: 'scene11', title: 'Beneath it', estimateFrames: 267, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
-  {num: 12, id: 'scene12', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
+  {num: 11, id: 'scene11', title: 'New York', estimateFrames: 267, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
+  {num: 12, id: 'scene12', title: 'Beneath it', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
 ];
 
 /**

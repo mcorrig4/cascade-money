@@ -46,7 +46,8 @@ import cueTimesData from '../generated/cues.json';
 import {TheQuestion} from './motion-graphics/TheQuestion';
 import {Scene08Counters} from './motion-graphics/Scene08Counters';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
-import {Scene17Close} from './motion-graphics/Scene17Close';
+import {Scene11Receipt} from './motion-graphics/Scene11Receipt';
+import {Scene12SupplierChain} from './motion-graphics/Scene12SupplierChain';
 import {Hook} from './motion-graphics/Hook';
 import type {AppFrameProps} from '../live/AppFrame';
 
@@ -626,14 +627,17 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   if(sceneIndex===2) filmOverlay=<Hook durationInFrames={duration} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />;
   else if(sceneIndex===4) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[4]} />;
   else if(sceneIndex===9) filmOverlay=<StressResultFlash durationInFrames={duration} cues={CUE_TIMES[9]} />;
-  else if(sceneIndex===12) filmOverlay=<Scene17Close durationInFrames={duration} />;
   // Scene 3 (renumbered from old scene 4) has NO live-path film overlay:
   // Scene4DateCornerLabel/ExampleGlobeLabels are screen-space overlays that
   // collide with the live app's own top-left HUD text there (e2cb199) —
   // they render only on the captures path (see the Series.Sequence below).
 
   let visual: React.ReactNode;
-  if(source==='live'){
+  if(sceneIndex===11){
+    visual=<Scene11Receipt durationInFrames={duration} />;
+  }else if(sceneIndex===12){
+    visual=<Scene12SupplierChain durationInFrames={duration} previousSceneDurationInFrames={durationFor(durations,11)} />;
+  }else if(source==='live'){
     const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
     if(sceneIndex===1){
       visual=<Scene1Beat duration={duration} app={app} phoneEarliestFrame={loadingFrames} />;
@@ -677,13 +681,8 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
 
   if(source==='live')return <AbsoluteFill style={{background:color.bgOuter}}><Series>{SCENES.map((sc,index)=><Series.Sequence key={sc.id} name={`Scene ${sc.num} — ${sc.title}`} durationInFrames={durations[index]}><CascadeLiveScene sceneIndex={sc.num} source="live" narration={narration} captureOverrides={captureOverrides} narrationControls={narrationControls}/></Series.Sequence>)}</Series>{reviewLabels?<ReviewLabelOverlay durations={durations}/>:null}</AbsoluteFill>;
 
-  // Scene 11 ("New York" in the old 13-scene numbering) is CUT
-  // (scene-11-delete pass, Liam 04:15 EDT) — the store beat is dropped, so
-  // there is no more phone-photo-then-descent handoff into Beneath it: it
-  // now plays its own capture in full, like any other simple scene.
-  const sc11 = sceneByNum(11);
   const dur11 = durationFor(durations, 11);
-  const cap11 = captureFor(sc11, captureOverrides, dur11);
+  const dur12 = durationFor(durations, 12);
 
   return (
     <AbsoluteFill style={{background: color.bgOuter}}>
@@ -849,13 +848,13 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           <SceneVO num={10} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 11 — Beneath it" durationInFrames={dur11}>
-          <WindowedBeat cap={cap11} />
+        <Series.Sequence name="Scene 11 — New York" durationInFrames={dur11}>
+          <Scene11Receipt durationInFrames={dur11} />
           <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 12 — Close" durationInFrames={durationFor(durations, 12)}>
-          <Scene17Close durationInFrames={durationFor(durations, 12)} />
+        <Series.Sequence name="Scene 12 — Beneath it" durationInFrames={dur12}>
+          <Scene12SupplierChain durationInFrames={dur12} previousSceneDurationInFrames={dur11} />
           <SceneVO num={12} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
       </Series>
