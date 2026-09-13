@@ -37,8 +37,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
   useEffect(() => {
     if (!host.current || !siteHost.current || !siteAttribution.current || !amounts.current || !companies.current) return;
     const root = host.current;
+    const frameDriven = window.__cascade?.frameDriven === true;
     let globe: GlobeInstance;
-    try { globe = new Globe(root, { animateIn: false, rendererConfig: { antialias: true, alpha: true, logarithmicDepthBuffer: true } }); }
+    try { globe = new Globe(root, { animateIn: false, rendererConfig: { antialias: true, alpha: true, logarithmicDepthBuffer: true, preserveDrawingBuffer: frameDriven } }); }
     catch { const message='A WebGL-capable browser is needed to open the globe.'; engine.prepareScene().fail(new Error(message)); setError(message); return; }
     // Every named firm label reads "Name · City" consistently: the firm's own HQ/plant entry
     // gets its city suffixed exactly like the per-site entries below (previously only the extra
@@ -49,7 +50,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     const companyLayer = new CompanyLayer(companies.current, named);
     let localFocus:Vector3|undefined;
     let arcIds = '', cinematic=false, campusFraming=0;
-    let time = 250, last = performance.now(), lastColor = 0, raf = 0;
+    let time = 250, last = frameDriven ? 0 : performance.now(), lastColor = 0, raf = 0;
     let day = -1, cursor = 0, revision = -1, cameraId = -1, close = false, disposed = false, previousShot: number | null = null;
     let flight: { from: { lat: number; lng: number; altitude: number }; to: typeof engine.state.camera; elapsed: number; eye: Vector3; target: Vector3; up: Vector3; fromFov: number; targetFov: number; local: boolean } | undefined;
     let siteScene: SiteSceneController | undefined, siteScenePromise: Promise<void> | undefined, siteIdle = 0, globePaused = false;
@@ -153,9 +154,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       globe.globeOffset([root.clientWidth <= 600 ? 0 : root.clientWidth > 1100 ? -190 : -100, root.clientWidth <= 600 ? -95 : -40]);
     };
     const observer = new ResizeObserver(resize); observer.observe(root); resize();
-    const frame = (now: number) => {
-      const elapsed = now - last; last = now;
-      if (document.hidden) { raf = requestAnimationFrame(frame); return; }
+    const frame = (now: number, schedule = !frameDriven) => {
+      const elapsed = frameDriven ? 0 : now - last; last = now;
+      if (document.hidden && !frameDriven) { raf = requestAnimationFrame(frame); return; }
       const state = engine.state, moving = state.playing || state.shotRunning;
       if(state.shot!==previousShot){
         previousShot=state.shot;
@@ -355,13 +356,14 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       companyLayer.update(globe, named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
         root.clientHeight - 330*filmScale, close, !landscape,filmScale);
       companyLayer.updateCallouts(globe,named,companyCues(state),state.shot===null?state.tMs:state.shotElapsed*1000,landscape?filmScale:root.clientWidth/1920,root.clientHeight-330*filmScale);
-      raf = requestAnimationFrame(frame);
+      if (schedule) raf = requestAnimationFrame(frame);
     };
-    raf = requestAnimationFrame(frame);
+    if (!frameDriven) raf = requestAnimationFrame(frame);
     {
       const bookmarks=new CameraBookmarks();
-      window.__cascade = { ready:()=>engine.ready(),cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:effects.readiness,cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
-        playScene:(id)=>playShot(engine,id),playFilm:async()=>{await engine.ready();sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
+      window.__cascade = { frameDriven,ready:()=>engine.ready(),cue:(name,value,atMs)=>engine.cue(name,value,atMs),readiness:effects.readiness,cameraClearance:()=>({...clearance}), bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
+        playScene:(id)=>playShot(engine,id),playFilm:async()=>{await engine.ready();sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=frameDriven?0:performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
+        renderFrame:(tMs:number)=>{frame(tMs,false);camera.lookAt(controls.target);camera.updateMatrixWorld(true);globe.scene().updateMatrixWorld(true);globe.renderer().setRenderTarget(null);globe.renderer().render(globe.scene(),camera);},
         tiles: () => siteStatus,
         siteView: (site, orbit = 0) => {
           engine.stopShot(); flight = undefined;

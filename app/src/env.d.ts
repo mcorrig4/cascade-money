@@ -6,7 +6,9 @@ declare global {
   interface Window {
     Telegram?: { WebApp?: import('./platform/telegram.ts').TelegramApp };
     __cascade?: {
+      frameDriven?: boolean;
       ready:()=>Promise<void>;
+      renderFrame?: (tMs:number)=>unknown;
       cue:(name:import('./director/cues.ts').CueName,value?:string,atMs?:number)=>void;
       cameraClearance:()=>{actualMeters:number;minimumMeters:number;site:string|null;groundMeters:number};
       readiness:()=>{textures:{name:string;decoded:boolean;uploaded:boolean}[];fullFrame:boolean;background:string};
