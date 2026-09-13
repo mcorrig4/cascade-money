@@ -75,14 +75,15 @@ if [[ "$MODE" == "draft" ]]; then
   for num in "${SURVIVING_SCENES[@]}"; do
     part="$PARTS_DIR/scene-${num}.mp4"; INPUTS+=("-i" "$part")
     frames=$(ffprobe -v error -select_streams v:0 -show_entries stream=nb_frames -of default=nw=1:nk=1 "$part")
-    duration=$(perl -e 'printf "%.9f",$ARGV[0]/15' "$frames")
+    part_fps=$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of default=nw=1:nk=1 "$part")
+    duration=$(perl -e 'my ($n,$d)=split "/",$ARGV[1]; printf "%.9f",$ARGV[0]*($d||1)/$n' "$frames" "$part_fps")
     FILTER+="[$INDEX:v]setpts=PTS-STARTPTS[v$INDEX];[$INDEX:a]atrim=duration=$duration,asetpts=PTS-STARTPTS[a$INDEX];"
     INDEX=$((INDEX+1))
   done
   for index in $(seq 0 $((${#SURVIVING_SCENES[@]}-1))); do FILTER+="[v$index][a$index]"; done
   FILTER+="concat=n=${#SURVIVING_SCENES[@]}:v=1:a=1[v][a]"
   ffmpeg -hide_banner -loglevel error -y "${INPUTS[@]}" -filter_complex "$FILTER" -map '[v]' -map '[a]' \
-    -r 15 -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -movflags +faststart "$OUT_FILE"
+    -r "${SPLICE_FPS:-${part_fps%%/*}}" -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -movflags +faststart "$OUT_FILE"
   echo "-> $OUT_FILE (frame-exact filtered concat)" >&2
   exit 0
 fi

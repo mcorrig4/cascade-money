@@ -77,8 +77,10 @@ else
   SCALE_ARGS=(--scale="0.3333333333333333")
   # Draft profile: 360p AND 15fps (product owner decision 2026-09-11 22:59
   # ET) — half the frames to encode for the same wall-clock preview.
-  PROPS_ARGS=(--props="{\"reviewLabels\":true,\"fps\":15,\"source\":\"$SOURCE\"}")
-  RENDER_FPS=15
+  # 2026-09-13 05:53 ET product owner: drafts at 4fps to speed review renders
+  # (override with DRAFT_FPS=15 when motion needs checking).
+  RENDER_FPS="${DRAFT_FPS:-4}"
+  PROPS_ARGS=(--props="{\"reviewLabels\":true,\"fps\":${RENDER_FPS},\"source\":\"$SOURCE\"}")
 fi
 mkdir -p "$OUT_DIR"
 
@@ -142,7 +144,7 @@ render_scene() {
       "$final_out"
   else
     ffmpeg -y -i "$raw_out" \
-      -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r 15 \
+      -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r "$RENDER_FPS" \
       -c:a aac -b:a 128k \
       -movflags +faststart \
       "$final_out"

@@ -55,7 +55,7 @@ export const DEFAULT_NARRATION_CONTROLS: NarrationControls = Array.from({length:
  * its own frame constants through motion/timing.ts's `at30` against the
  * REAL fps (useVideoConfig().fps), never a literal 30.
  */
-export const fpsSchema = z.union([z.literal(15), z.literal(30)]);
+export const fpsSchema = z.union([z.literal(4), z.literal(15), z.literal(30)]);
 export const DEFAULT_FPS = 30 as const;
 
 /** CascadeFilm's Remotion Studio-editable input props (see Root.tsx's <Composition schema={cascadeFilmSchema} />). */
