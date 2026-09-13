@@ -88,7 +88,14 @@ export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFr
     }
   }, [absoluteTimeline, fps, frame, handle, isLoadingFrame, loadingFrames, ready, recordingHud, scene, timesMs]);
 
-  return <div className="cascade-live-frame" style={{position: 'absolute', inset: 0, width: 1920, height: 1080, overflow: 'hidden'}}>
+  // translateZ(0) is load-bearing, not a paint hint: the app's root is
+  // `position: fixed`, so its containing block is the nearest transformed
+  // ancestor. Without a transform here that ancestor is BrowserFrame's whole
+  // window (chrome included) and the app's topbar renders UNDER the chrome bar,
+  // 64px higher than the same app in a capture — which BrowserFrame insets
+  // below the chrome. With it, the live app occupies exactly the content box a
+  // capture video does, so a live scene and a captured one crop identically.
+  return <div className="cascade-live-frame" style={{position: 'absolute', inset: 0, width: 1920, height: 1080, overflow: 'hidden', transform: 'translateZ(0)'}}>
     <style>{`.cascade-live-frame *, .cascade-live-frame *::before, .cascade-live-frame *::after {animation: none !important; transition: none !important;}`}</style>
     <App />
     {isLoadingFrame ? (
