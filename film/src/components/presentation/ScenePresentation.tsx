@@ -43,12 +43,53 @@ const HookPresentation: React.FC<{shown: Beat; geometry: WindowGeometry}> = ({sh
   </>;
 };
 
-const QuestionPresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('question-card') ? null :
-  <section className="overlay-card question-card film-inset-card" aria-label="A future payment moves today">
-    <h2>{shown('dated-dollar') ? 'A dated dollar.' : <>What if that future payment<br/>could move today?</>}</h2>
-    {shown('dated-dollar') && <DatedDollar days={30} isoDate={illustrativeDate(30)} size={100}/>}
-    {shown('not-cash') && <p>Not as cash. As a dollar with a date.</p>}
-  </section>;
+const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const unit = geometry.width / 1920;
+  const question = at('question-card'), dollar = at('dated-dollar');
+  const cash = at('not-as-cash'), definition = at('as-dollar-with-date');
+  const progress = (start: number, duration: number) => interpolate(frame, [start, start + duration], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  const on = (start: number) => progress(start - 1, 1) === 1;
+  const rise = progress(question, 6 * fps / 30);
+  const dissolve = progress(dollar, .35 * fps);
+  const slide = progress(dollar, .5 * fps);
+  const converge = progress(dollar + .5 * fps, .45 * fps);
+  const size = 170 * unit, lockupWidth = size * 462 / 170;
+  // The disc, rather than the wide SVG lockup, anchors the transformation.
+  const discX = lockupWidth * .1775, discY = size * 82 / 170;
+  return <>
+    <div className="film-question-scrim" aria-hidden="true" style={{opacity: rise}}/>
+    <section className="film-question" aria-label="A future payment moves today">
+      <h2 className="film-question-heading" style={{
+        ...visibility(on(question) && dissolve < 1), opacity: rise * (1 - dissolve),
+        transform: `translateY(${12 * unit * (1 - rise)}px)`,
+      }}>What if that future payment<br/>could move today?</h2>
+      <div className="film-question-object">
+        <div className="film-question-row" style={{
+          ...visibility(on(dollar) && converge < 1), opacity: 1 - converge,
+          top: discY, transform: `translateX(${120 * unit * (1 - slide)}px)`,
+        }}>
+          <strong className="film-question-amount" style={{left: 56 * unit * (1 - converge)}}>$100M</strong>
+          <span className="film-question-date" style={{left: 240 * unit * (1 - converge)}}>DEC 8</span>
+        </div>
+        <div className="film-question-token" style={{
+          left: -discX, width: lockupWidth, height: size, opacity: converge,
+          transformOrigin: `${discX}px ${discY}px`, transform: `scale(${.8 + .2 * converge})`,
+          ...visibility(on(dollar + .5 * fps)),
+        }}>
+          <DatedDollar days={30} isoDate={illustrativeDate(30)} size={size}/>
+        </div>
+      </div>
+      <p className="film-question-definition">
+        <span style={visibility(on(cash))}>Not as cash.</span>{' '}
+        <span style={visibility(on(definition))}>As a dollar with a date.</span>
+      </p>
+    </section>
+  </>;
+};
 
 const ExamplePresentation: React.FC<{shown: Beat}> = ({shown}) => !shown('example-labels') ? null :
   <section className="overlay-card film-inset-card" aria-label="The supply chain's timing gap"><p>FROM APPLE · LATER</p><p>PAYMENT NEEDED · TODAY</p></section>;
@@ -345,12 +386,19 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
   const unit = geometry.width / 1920;
   if (![2, 3, 4, 5, 6, 7, 8, 9, 10].includes(scene)) return null;
   const inset = scene === 3 || scene === 4 || scene === 9;
-  const content = scene === 3 ? <ExamplePresentation shown={shown}/> : scene === 4 ? <QuestionPresentation shown={shown}/> : scene === 5 ? <CascadePresentation at={at} geometry={geometry}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
+  const content = scene === 3 ? <ExamplePresentation shown={shown}/> : scene === 4 ? <QuestionPresentation at={at} geometry={geometry}/> : scene === 5 ? <CascadePresentation at={at} geometry={geometry}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
     : scene === 7 ? <CoinPresentation at={at} geometry={geometry}/>
     : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation shown={shown}/> : <ComposablePresentation shown={shown}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
     {scene === 2 ? <HookPresentation shown={shown} geometry={geometry}/>
-      : inset ? <div className="film-presentation-inset" style={{position: 'absolute', left: geometry.rect.left + 84 * unit, top: geometry.rect.top + 403 * unit, width: 980 * unit, height: 380 * unit}}>{content}</div>
+      : inset ? scene === 4 ? <div className="film-presentation-inset" style={{
+        // MiddleFilm fits the 1080-high source below 65px of browser chrome.
+        // Clip the full-height scrim to the globe between the app's 90px topbar
+        // and 250px footer, leaving two film units clear of their border pixels.
+        position: 'absolute', left: 0, width: geometry.width,
+        top: geometry.rect.top + geometry.scale * (65 + 90 * (1080 - 65) / 1080) * unit + 2 * unit,
+        bottom: geometry.height - (geometry.rect.top + geometry.scale * (65 + 830 * (1080 - 65) / 1080) * unit) + 2 * unit,
+      }}>{content}</div> : <div className="film-presentation-inset" style={{position: 'absolute', left: geometry.rect.left + 84 * unit, top: geometry.rect.top + 403 * unit, width: 980 * unit, height: 380 * unit}}>{content}</div>
       : <PresentationPane side="left" geometry={geometry} verticalAlign={scene === 6 ? 'end' : 'center'}>{content}</PresentationPane>}
   </AppSurface>;
 };
