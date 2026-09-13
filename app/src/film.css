@@ -65,7 +65,7 @@
   .app.recording-hud .ledger-heading,.app.recording-hud .ledger-columns,.app.recording-hud .ledger-foot {display:none}
   .app.recording-hud .ledger-scroll {overflow:hidden}
   .app.recording-hud .ledger-log-line {font-size:calc(40 * var(--film-unit));grid-template-columns:calc(150 * var(--film-unit)) minmax(0,1fr) calc(220 * var(--film-unit)) calc(190 * var(--film-unit));gap:calc(20 * var(--film-unit))}
-  /* Scenes 3 and 5-10: the product's right-hand event ledger stays on screen during a
+  /* Scenes 3-10: the product's right-hand event ledger stays on screen during a
      recording instead of collapsing to the single-line bottom strip. Same geometry as the
      interactive film layout above, minus the column header and footer chrome. */
   .app.recording-hud.ledger-sidebar .ledger {top:calc(120 * var(--film-unit));bottom:calc(var(--film-bottom) + 20 * var(--film-unit));left:auto;right:calc(36 * var(--film-unit));width:calc(700 * var(--film-unit));height:auto;padding:0 calc(12 * var(--film-unit));z-index:28;overflow:hidden}
@@ -73,6 +73,11 @@
   .app.recording-hud.ledger-sidebar .ledger-columns,.app.recording-hud.ledger-sidebar .ledger-foot {display:none}
   .app.recording-hud.ledger-sidebar .ledger-scroll {overflow:hidden}
   .app.recording-hud.ledger-sidebar .ledger-log-line {font-size:calc(32 * var(--film-unit));grid-template-columns:calc(100 * var(--film-unit)) minmax(0,1fr) calc(130 * var(--film-unit)) calc(115 * var(--film-unit));gap:calc(10 * var(--film-unit))}
+  /* Overlay cards lay out in the space the sidebar leaves rather than running underneath it. */
+  .app.recording-hud.ledger-sidebar .shot-overlay,.app.recording-hud.ledger-sidebar .scene-narration,.app.recording-hud.ledger-sidebar .ending-line {
+    inset:var(--film-top) calc(748 * var(--film-unit)) calc(var(--film-bottom) + 24 * var(--film-unit)) 0;
+  }
+  .app.recording-hud.ledger-sidebar .overlay-card {width:calc(1160 * var(--film-unit));max-width:100%}
   .app .scene-heading {top:calc(150 * var(--film-unit));left:calc(48 * var(--film-unit))}
   .app .scene-heading h1 {font-size:calc(68 * var(--film-unit))}
   .app .scene-heading p {font-size:calc(34 * var(--film-unit))}
