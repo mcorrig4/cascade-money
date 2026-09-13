@@ -37,7 +37,11 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
     let globe: GlobeInstance;
     try { globe = new Globe(root, { animateIn: false, rendererConfig: { antialias: true, alpha: true, logarithmicDepthBuffer: true } }); }
     catch { setError('A WebGL-capable browser is needed to open the globe.'); return; }
-    const firms = [...engine.index.firms.values()].flatMap(f => [f, ...(f.named ? (f.sites ?? []).filter(site => site.lat !== f.lat || site.lng !== f.lng).map(site => ({ ...f, id: `${f.id}:${site.id}`, name: `${f.name} · ${site.city ?? site.id}`, lat: site.lat, lng: site.lng })) : [])]).filter(f => f.lat != null && f.lng != null);
+    // Every named firm label reads "Name · City" consistently: the firm's own HQ/plant entry
+    // gets its city suffixed exactly like the per-site entries below (previously only the extra
+    // site entries did, so single-site firms — Apple, Corning, Glencore's own HQ row — showed a
+    // bare name while multi-site firms showed the city only on their secondary markers).
+    const firms = [...engine.index.firms.values()].flatMap(f => [f.named && f.city ? { ...f, name: `${f.name} · ${f.city}` } : f, ...(f.named ? (f.sites ?? []).filter(site => site.lat !== f.lat || site.lng !== f.lng).map(site => ({ ...f, id: `${f.id}:${site.id}`, name: `${f.name} · ${site.city ?? site.id}`, lat: site.lat, lng: site.lng })) : [])]).filter(f => f.lat != null && f.lng != null);
     const named = firms.filter(f => f.named), pool = new ArcPool(), layer = new AmountLayer(amounts.current);
     const companyLayer = new CompanyLayer(companies.current, named);
     let arcIds = '', cinematic=false, campusFraming=0;

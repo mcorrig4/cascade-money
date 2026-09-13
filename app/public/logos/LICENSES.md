@@ -29,6 +29,21 @@ site) and not an endorsement.
 | murata.svg | Murata | https://commons.wikimedia.org/wiki/File:Murata_Manufacturing_logo.svg | Public domain (PD-textlogo, trademark still applies) |
 | pegatron.svg | Pegatron | https://commons.wikimedia.org/wiki/File:Pegatron_logo.svg | Public domain (PD-textlogo, trademark still applies) |
 | wacker.svg | Wacker | https://commons.wikimedia.org/wiki/File:Wacker_Chemie.svg | Public domain (PD-textlogo, trademark still applies) |
+| sumco.svg | Sumco | https://commons.wikimedia.org/wiki/File:Sumco_Logo.svg | Public domain (PD-textlogo, trademark still applies) |
+
+## 2026-09-13 fix: seven files had a broken viewBox (rendered blank or as a speck)
+
+`corning.svg`, `foxconn.svg`, `murata.svg`, `glencore.svg`, `panasonic.svg`, `samsung.svg` and
+`sk-hynix.svg` were re-derived from a source whose path data used a different internal coordinate
+space (e.g. Corning's paths sat around y≈680–725) than the `viewBox` shipped alongside them (e.g.
+`0 0 357.9 52.5`), so the visible glyph rendered as a few pixels in one corner or nothing at all —
+confirmed with `rsvg-convert` bounding-box checks and in the built app (near-zero-coverage / blank
+PNGs). Re-fetched the same Commons source listed above for each, stripped editor metadata the same
+way as the other files, and recolored to the existing brand accent color from `brands.ts` — this
+time keeping the source file's own `viewBox`, which is correctly aligned to its own path data, so
+every file now renders full-bleed (bounding-box coverage ≥0.95 of its own aspect box, verified with
+`rsvg-convert` + Pillow). Sumco's Commons file (previously rate-limited) fetched cleanly this time,
+so it moved off the monogram fallback onto its own `sumco.svg`.
 
 ## Kept on the monogram fallback (no logo file)
 
@@ -38,10 +53,6 @@ site) and not an endorsement.
   freely licensed file. No clean, freely-licensed SVG was available; keeps the `SH` monogram.
 - **Luxshare** — no vector (SVG) logo found on Wikimedia Commons at all, only a low-resolution
   raster (`File:Luxshare.png`), which the "no raster" rule excludes. Keeps the `LX` monogram.
-- **Sumco** — a clean SVG exists (`File:Sumco_Logo.svg`), but `upload.wikimedia.org` returned
-  HTTP 429 (rate limit) for that specific file on every fetch attempt during this change, so no
-  usable copy was obtained in time. Keeps the `SU` monogram for now; re-attempt the fetch and
-  add `sumco.svg` + a `LOGOS.Sumco` entry in `app/src/globe/brands.ts` in a follow-up.
 
 All other real-named companies in the baked world (Great Lakes Silica, Great Plains Rail, Duo
 Packaging, Duo Retail, Clearview Glass, Pacific Freight, Bécancour Silicon, Pohang Cathode,

@@ -34,11 +34,16 @@ export class CompanyLayer {
   }
   update(globe: GlobeInstance, firms: Firm[], active: Set<string>, right: number, bottom: number, close: boolean, mobile: boolean) {
     const boxes: { x: number; y: number; w: number }[] = [];
-    const ordered = [...firms].sort((a, b) => Number(active.has(b.id)) - Number(active.has(a.id)) || Number(b.role === 'anchor') - Number(a.role === 'anchor'));
+    // Named companies are always eligible to show (subject only to on-screen bounds and
+    // overlap with another visible label); the fixed count cap below applies solely to
+    // anonymous suppliers, so a real company never loses its logo just because more than
+    // 10/32 markers are in view. Sort named firms first so they claim overlap priority too.
+    const cap = mobile ? 10 : 32;
+    const ordered = [...firms].sort((a, b) => Number(active.has(b.id)) - Number(active.has(a.id)) || Number(b.named) - Number(a.named) || Number(b.role === 'anchor') - Number(a.role === 'anchor'));
     for (const firm of ordered) {
       const element = this.elements.get(firm.id)!;
       const p = globe.getScreenCoords(firm.lat!, firm.lng!, 0.009), w = Math.min(mobile ? 120 : 170, Math.max(65, firm.name.length * (mobile ? 6 : 7.5)));
-      element.hidden = close || boxes.length >= (mobile ? 10 : 32) || !visibleFromCamera(globe, firm.lat!, firm.lng!, 0.009)
+      element.hidden = close || (!firm.named && boxes.length >= cap) || !visibleFromCamera(globe, firm.lat!, firm.lng!, 0.009)
         || p.x < w / 2 + 12 || p.x + w / 2 > right || p.y < (mobile ? 155 : 150) || p.y > bottom
         || boxes.some(b => Math.abs(b.x - p.x) < (b.w + w) / 2 + 6 && Math.abs(b.y - p.y) < 65);
       if (!element.hidden) {

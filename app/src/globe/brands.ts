@@ -13,8 +13,12 @@ export const BRANDS: Record<string, { mark: string; color: string }> = {
   Pegatron: { mark: 'PG', color: '#ed6c00' }, Sumco: { mark: 'SU', color: '#0055a5' },
   Wacker: { mark: 'W', color: '#004a99' },
 };
+// Case/whitespace-insensitive: firm names arrive from sim-generated data, so tolerate stray
+// leading/trailing space or inconsistent casing rather than silently falling through to the
+// two-letter generated-initials monogram.
+const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ');
 export function brandFor(name: string) {
-  const key = Object.keys(BRANDS).find(key => name.toLowerCase().startsWith(key.toLowerCase()));
+  const key = Object.keys(BRANDS).find(key => normalize(name).startsWith(normalize(key)));
   return key ? BRANDS[key] : { mark: name.slice(0, 2).toUpperCase(), color: '#bcced0' };
 }
 
@@ -28,15 +32,15 @@ export const LOGOS: Record<string, string> = {
   Corning: 'corning', Sony: 'sony', LG: 'lg', Panasonic: 'panasonic', CATL: 'catl',
   Glencore: 'glencore', Exxon: 'exxon', Dow: 'dow', BASF: 'basf', Qualcomm: 'qualcomm',
   Broadcom: 'broadcom', 'SK Hynix': 'sk-hynix', Murata: 'murata', Pegatron: 'pegatron',
-  Wacker: 'wacker',
+  Wacker: 'wacker', Sumco: 'sumco',
 };
 // Real-named companies with no logo file: their official mark could not be sourced as a clean,
-// freely-licensed SVG (Shell's pecten and Luxshare's mark are not available under a free license
-// on Wikimedia Commons; Sumco's Commons file was unreachable — rate-limited — at the time this
-// shipped), so they keep the monogram fallback deliberately.
-export const MONOGRAM_ONLY = ['Shell', 'Luxshare', 'Sumco'];
+// freely-licensed SVG. Shell's pecten emblem and Luxshare's mark are not available under a free
+// license on Wikimedia Commons (checked again when this shipped), so they keep the monogram
+// fallback deliberately.
+export const MONOGRAM_ONLY = ['Shell', 'Luxshare'];
 
 export function logoFor(name: string): string | undefined {
-  const key = Object.keys(LOGOS).find(key => name.toLowerCase().startsWith(key.toLowerCase()));
+  const key = Object.keys(LOGOS).find(key => normalize(name).startsWith(normalize(key)));
   return key ? LOGOS[key] : undefined;
 }
