@@ -1,26 +1,31 @@
 /**
  * CascadeFilm schedule — one entry per surviving scene of
- * docs/script-v6-liam.md, in order. This is the "product owner's final
- * narration" cut (Stage 12): every scene id/title below is copied verbatim
- * from that script's own "Scene N — Title" headers. 16 scenes remain — scene
- * 3 (Rewind) was CUT (product owner decision 2026-09-13 02:13 ET, reply
- * 21837); its num/id/title stay retired below rather than being reused or
- * renumbered, so this array is NOT a contiguous 1..17 run — every consumer
- * looks scenes up by `num` (Record keys, `.find`), never by raw array index.
+ * docs/script-v6-liam.md, REORDERED to the final 13-scene play order
+ * (reorder-to-13 pass, 2026-09-13, product owner + Director/wingman 03:33
+ * ET — supersedes the earlier 15-scene renumber so we never renumber
+ * twice). Old scenes 3 (Rewind), 5 (The contradiction), 12 (Stress test)
+ * and 13 (The rules survive) are CUT entirely. Every entry's `num`/`id`
+ * below is the NEW (1-13) numbering; array ORDER is also the new play
+ * order, which is NOT the old script order — old scene 9 ("Run the year")
+ * now plays after old 10/11 ("A dollar with a date" / "Underneath it"),
+ * not before. Every consumer looks scenes up by `num` (Record keys,
+ * `.find`) or by array position for adjacency (framingRamp), never by
+ * `num - 1` as an index.
+ *
+ * Old -> new mapping applied here: 1->1, 2->2, 4->3, 6->4, 7->5, 8->6,
+ * 10->7, 11->8, 9->9 (+ closing beat, see SCENE9_CLOSE_FLASH_SECONDS),
+ * 14->10, 15->11, 16->12, 17->13. (3, 5, 12, 13 removed.)
  *
  * `estimateFrames` is a FALLBACK duration, used only when
  * public/narration/narration.json has no entry for that scene yet (see
  * narration.ts). It is derived from the scene's own spoken word count at
  * 155 words/minute, i.e. `words/155*60` seconds, rounded to the frame at
- * 30fps. One extra second (30 frames) is added once, to scene 17 (Close),
- * because it is a held outro card whose visual beats (white card -> wordmark
- * -> tag) need a floor of hold time independent of how few words it speaks
- * — not because every scene gets +1s (17 scenes x 1s would blow the 4:00
- * upload ceiling on 603 words: 4:10 vs the 3:54 target). Word counts:
- * verified-figures-v6.md ("v6 spoken words: 603").
- *
- *   totalWords/155*60 + 1s(close pad) = 233.43s + 1s = 234.43s = 3:54,
- *   5.6s under the 4:00 hard cap that rejects uploads.
+ * 30fps. One extra second (30 frames) is added once, to scene 13 (Close,
+ * old 17), because it is a held outro card whose visual beats (white card
+ * -> wordmark -> tag) need a floor of hold time independent of how few
+ * words it speaks — not because every scene gets +1s. Word counts:
+ * verified-figures-v6.md ("v6 spoken words: 603") minus the four cut
+ * scenes' words.
  *
  * These numbers are a PRE-NARRATION placeholder. Once real VO lands in
  * public/narration/narration.json, each scene's actual Sequence duration
@@ -37,9 +42,9 @@
 export type SceneFrameMode = 'tilt' | 'bleed' | 'framed';
 
 export interface SceneDef {
-  num: number; // 1-17, matches the script's own scene numbers
-  id: string; // 'scene01'..'scene17'
-  title: string; // verbatim from script-v6-liam.md's "Scene N — Title"
+  num: number; // 1-13 (new numbering, reorder-to-13 pass 2026-09-13)
+  id: string; // 'scene01'..'scene13'
+  title: string; // verbatim from script-v6-liam.md's "Scene N — Title" (old numbering)
   estimateFrames: number;
   fallbackCapture: string | null;
   fallbackCaptureDurationInFrames?: number; // real ffprobe'd length of the fallback file
@@ -48,33 +53,22 @@ export interface SceneDef {
   motionGraphic: boolean;
 }
 
-/**
- * Scene 3 (Rewind — date card + supply-chain stat lines) is CUT (product
- * owner decision 2026-09-13 02:13 ET, reply 21837): the film goes straight
- * from scene 2 into scene 4, whose VO/scene 2's own VO now carries the
- * figures. Its `num`/id/title are RETIRED, not reused or renumbered — every
- * downstream consumer (narration.ts, cues.ts, this array's own
- * resolveSceneDurations, the render/splice scripts) is keyed by scene NUM
- * (a Record or a .find), so a gap here is a normal, supported shape, not a
- * special case any of them need to branch on.
- */
 export const SCENES: SceneDef[] = [
   {num: 1, id: 'scene01', title: 'The object of desire', estimateFrames: 163, fallbackCapture: null, frame: 'tilt', motionGraphic: true},
   {num: 2, id: 'scene02', title: 'Apple Park', estimateFrames: 441, fallbackCapture: 'shot-01-apple-park.mp4', fallbackCaptureDurationInFrames: 89, frame: 'bleed', motionGraphic: false},
-  {num: 4, id: 'scene04', title: 'The hidden supply chain', estimateFrames: 557, fallbackCapture: 'shot-02-network.mp4', fallbackCaptureDurationInFrames: 239, frame: 'bleed', motionGraphic: false},
-  {num: 5, id: 'scene05', title: 'The contradiction', estimateFrames: 453, fallbackCapture: 'shot-02-network.mp4', fallbackCaptureDurationInFrames: 239, frame: 'bleed', motionGraphic: false},
-  {num: 6, id: 'scene06', title: 'The question', estimateFrames: 209, fallbackCapture: null, frame: 'framed', motionGraphic: true},
-  {num: 7, id: 'scene07', title: 'The cascade', estimateFrames: 639, fallbackCapture: 'shot-04-the-cascade.mp4', fallbackCaptureDurationInFrames: 359, frame: 'bleed', motionGraphic: false},
-  {num: 8, id: 'scene08', title: 'Let it land', estimateFrames: 348, fallbackCapture: 'shot-04-the-cascade.mp4', fallbackCaptureDurationInFrames: 359, frame: 'bleed', motionGraphic: false},
-  {num: 9, id: 'scene09', title: 'Run the year', estimateFrames: 499, fallbackCapture: 'shot-05-one-year.mp4', fallbackCaptureDurationInFrames: 450, frame: 'bleed', motionGraphic: false},
-  {num: 10, id: 'scene10', title: 'A dollar with a date', estimateFrames: 778, fallbackCapture: 'shot-06-dollar-with-a-date.mp4', fallbackCaptureDurationInFrames: 1590, frame: 'bleed', motionGraphic: false},
-  {num: 11, id: 'scene11', title: 'Underneath it', estimateFrames: 569, fallbackCapture: 'shot-09-the-vault.mp4', fallbackCaptureDurationInFrames: 449, frame: 'bleed', motionGraphic: false},
-  {num: 12, id: 'scene12', title: 'Stress test', estimateFrames: 314, fallbackCapture: 'shot-09-the-vault.mp4', fallbackCaptureDurationInFrames: 449, frame: 'bleed', motionGraphic: false},
-  {num: 13, id: 'scene13', title: 'The rules survive', estimateFrames: 325, fallbackCapture: 'shot-08-conservation-laws.mp4', fallbackCaptureDurationInFrames: 600, frame: 'framed', motionGraphic: true},
-  {num: 14, id: 'scene14', title: 'Zoom out', estimateFrames: 488, fallbackCapture: 'shot-11-architecture.mp4', fallbackCaptureDurationInFrames: 150, frame: 'framed', motionGraphic: true},
-  {num: 15, id: 'scene15', title: 'New York', estimateFrames: 302, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
-  {num: 16, id: 'scene16', title: 'Beneath it', estimateFrames: 267, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
-  {num: 17, id: 'scene17', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
+  {num: 3, id: 'scene03', title: 'The hidden supply chain', estimateFrames: 557, fallbackCapture: 'shot-02-network.mp4', fallbackCaptureDurationInFrames: 239, frame: 'bleed', motionGraphic: false},
+  {num: 4, id: 'scene04', title: 'The question', estimateFrames: 209, fallbackCapture: null, frame: 'framed', motionGraphic: true},
+  {num: 5, id: 'scene05', title: 'The cascade', estimateFrames: 639, fallbackCapture: 'shot-04-the-cascade.mp4', fallbackCaptureDurationInFrames: 359, frame: 'bleed', motionGraphic: false},
+  {num: 6, id: 'scene06', title: 'Let it land', estimateFrames: 348, fallbackCapture: 'shot-04-the-cascade.mp4', fallbackCaptureDurationInFrames: 359, frame: 'bleed', motionGraphic: false},
+  {num: 7, id: 'scene07', title: 'A dollar with a date', estimateFrames: 778, fallbackCapture: 'shot-06-dollar-with-a-date.mp4', fallbackCaptureDurationInFrames: 1590, frame: 'bleed', motionGraphic: false},
+  {num: 8, id: 'scene08', title: 'Underneath it', estimateFrames: 569, fallbackCapture: 'shot-09-the-vault.mp4', fallbackCaptureDurationInFrames: 449, frame: 'bleed', motionGraphic: false},
+  // +75 frames @30fps (SCENE9_CLOSE_FLASH_SECONDS below) for the closing
+  // stress-test-result beat folded in from the cut scenes 12/13.
+  {num: 9, id: 'scene09', title: 'Run the year', estimateFrames: 574, fallbackCapture: 'shot-05-one-year.mp4', fallbackCaptureDurationInFrames: 450, frame: 'bleed', motionGraphic: false},
+  {num: 10, id: 'scene10', title: 'Zoom out', estimateFrames: 488, fallbackCapture: 'shot-11-architecture.mp4', fallbackCaptureDurationInFrames: 150, frame: 'framed', motionGraphic: true},
+  {num: 11, id: 'scene11', title: 'New York', estimateFrames: 302, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
+  {num: 12, id: 'scene12', title: 'Beneath it', estimateFrames: 267, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
+  {num: 13, id: 'scene13', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
 ];
 
 /**
@@ -94,9 +88,9 @@ export const scaleFrames = (framesAtBase: number, fps: number): number =>
   Math.round((framesAtBase * fps) / FPS_BASE);
 
 /**
- * Scene 17 (Close) is a held outro card: white -> tag -> wordmark beats need
- * a floor of screen time independent of how few words the VO speaks for it.
- * Applied everywhere a scene's resolved duration is computed
+ * Scene 13 (Close, old 17) is a held outro card: white -> tag -> wordmark
+ * beats need a floor of screen time independent of how few words the VO
+ * speaks for it. Applied everywhere a scene's resolved duration is computed
  * (resolveSceneDurations below, used by both Root.tsx's calculateMetadata
  * and CascadeFilm.tsx) so the sizing and rendering numbers never drift
  * apart. Narration shorter than the floor just ends early and the card
@@ -109,7 +103,19 @@ export const scaleFrames = (framesAtBase: number, fps: number): number =>
  * the largest floor that still lands the total at 3:54 (234.93s, verified
  * via `npx remotion compositions`).
  */
-export const SCENE17_CLOSE_FLOOR_FRAMES = 150; // 5s @ FPS_BASE (30fps)
+export const SCENE13_CLOSE_FLOOR_FRAMES = 150; // 5s @ FPS_BASE (30fps)
+
+/**
+ * Scene 9 (Run the year)'s closing beat (reorder-to-13 pass, 2026-09-13,
+ * product owner + Director/wingman 03:33 ET): old scenes 12 (Stress test)
+ * and 13 (The rules survive) are CUT as standalone scenes, but their
+ * verified headline figure survives as a ~2.5s flash card at the tail of
+ * this scene, as the year view recedes — see StressResultFlash in
+ * CascadeFilm.tsx. Added on top of whichever duration otherwise resolves
+ * (real narration or the word-count estimate) so it never eats into the
+ * narrated portion of the scene.
+ */
+export const SCENE9_CLOSE_FLASH_SECONDS = 2.5;
 
 /**
  * Scene 1's Kokoro take (round 3, audio agent 2026-09-13) needs more room
@@ -133,15 +139,15 @@ const rawDurationForScene = (sc: SceneDef, narration: NarrationDurations, fps: n
     return Math.min(withTail, SCENE1_CAPTURE_DURATION_SECONDS * fps);
   }
   const raw = narration[sc.num]?.durationInFrames ?? (sc.estimateFrames * fps) / FPS_BASE;
-  return sc.num === 17 ? Math.max(raw, (SCENE17_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE) : raw;
+  if (sc.num === 9) return raw + (SCENE9_CLOSE_FLASH_SECONDS * fps);
+  return sc.num === 13 ? Math.max(raw, (SCENE13_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE) : raw;
 };
 
 /**
- * The 17 scenes' resolved Sequence durations (integer frames) at `fps`.
+ * The 13 scenes' resolved Sequence durations (integer frames) at `fps`.
  * Rounding each scene independently (e.g. `Math.round(rawDurationForScene(...))`)
- * would let up to 17 individual +/-0.5 frame roundings accumulate into a
- * multi-frame drift on the film's total — at fps=15 that showed up as 3529
- * frames instead of the exact half of 7048 (3524). Cumulative rounding
+ * would let up to 13 individual +/-0.5 frame roundings accumulate into a
+ * multi-frame drift on the film's total. Cumulative rounding
  * (round the RUNNING TOTAL, take each scene's frames as the delta from the
  * previous running total) guarantees the sum of these always equals
  * `filmDurationAtFps`'s own rounding of the true total, at any fps.

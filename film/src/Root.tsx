@@ -25,7 +25,7 @@ const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async ({p
 };
 
 const calculateSceneMetadata: CalculateMetadataFunction<CascadeLiveSceneProps> = async ({props}) => {
-  const fps=props.fps??DEFAULT_FPS,sceneIndex=Math.max(1,Math.min(17,Math.round(props.sceneIndex??1)));
+  const fps=props.fps??DEFAULT_FPS,sceneIndex=Math.max(1,Math.min(13,Math.round(props.sceneIndex??1)));
   const [narration,captureOverrides]=await Promise.all([loadNarration(fps),loadCaptureOverrides([sceneIndex])]);
   return {fps,durationInFrames:resolveSceneDurations(narration,fps)[sceneIndex-1],props:{...props,sceneIndex,fps,narration,captureOverrides}};
 };

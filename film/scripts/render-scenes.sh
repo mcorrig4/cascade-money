@@ -5,8 +5,8 @@
 # — never on the do-box, which does not render video.
 #
 # Usage:
-#   film/scripts/render-scenes.sh 3 7 12        # render scenes 3, 7, and 12 (draft)
-#   film/scripts/render-scenes.sh --full         # render all 16 surviving scenes (draft; scene 3 was cut)
+#   film/scripts/render-scenes.sh 3 7 9          # render scenes 3, 7, and 9 (draft)
+#   film/scripts/render-scenes.sh --full         # render all 13 surviving scenes (draft; old 3/5/12/13 cut)
 #   film/scripts/render-scenes.sh --final 3 7    # render scenes 3, 7 at final quality
 #   film/scripts/render-scenes.sh --profile final --full   # final quality, all scenes
 #
@@ -83,10 +83,10 @@ fi
 mkdir -p "$OUT_DIR"
 
 if [[ "${1:-}" == "--full" ]]; then
-  # Scene 3 was cut (product owner decision 2026-09-13 02:13 ET, reply
-  # 21837) — the surviving scene numbers are exactly SCENES[].num in
-  # schedule.ts, so --full renders that list, not a contiguous 1..17 range.
-  SCENE_NUMS=(1 2 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
+  # The film is 13 scenes (reorder-to-13 pass, 2026-09-13; old 3/5/12/13
+  # cut) — the surviving scene numbers are exactly SCENES[].num in
+  # schedule.ts, a contiguous 1..13 run post-reorder.
+  SCENE_NUMS=(1 2 3 4 5 6 7 8 9 10 11 12 13)
 elif [[ $# -eq 0 ]]; then
   echo "usage: $0 [--final|--profile final] <scene-num> [scene-num...] | --full" >&2
   exit 1

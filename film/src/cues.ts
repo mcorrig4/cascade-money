@@ -15,27 +15,29 @@
  *
  * Matching is ORDER-SENSITIVE per scene: the resolver walks each scene's
  * cue list top-to-bottom, searching forward from the end of the previous
- * cue's match, so a repeated word (e.g. scene 14 says "money" once at 7.72s
+ * cue's match, so a repeated word (e.g. scene 10 says "money" once at 7.72s
  * that ISN'T the "money plus time" beat, then again at 12.40s as part of
  * it) resolves to the right occurrence rather than the first.
  *
- * Two scenes were deliberately left with fewer cues than they have visual
- * beats — not an oversight:
- *   - Scene 8's "four companies" counter and scene 14's closing "a second
+ * Numbers throughout this file are the NEW (post reorder-to-13,
+ * 2026-09-13) numbering. Two scenes were deliberately left with fewer cues
+ * than they have visual beats — not an oversight:
+ *   - Scene 6's "four companies" counter and scene 10's closing "a second
  *     dimension to money" card are not spoken at all in this narration cut
  *     (docs/cascade/hackathon vs. the recorded v7 VO diverged) — their
  *     phrases are listed so a future re-narration picks them up
  *     automatically, but today they always fall back.
- *   - Scene 13's persistent "10,000 operations · 0 violations" footer and
- *     all of scene 17's close card are excluded entirely (no cue defined).
- *     Scene 13's footer is a documented fix (verified issue #1): it is
- *     PINNED to the bottom for the whole scene by design, not a beat that
- *     should wait for its own number to be spoken. Scene 17's three beats
- *     (tagline -> wordmark -> "Dated dollars on Arc.") are a deliberate
- *     held dramatic sequence timed off the scene's own duration; the
- *     actual VO is now four words ("This is Cascade Money.") spoken almost
- *     entirely in the first two seconds, so anchoring the wordmark to the
- *     word "Cascade" would collapse the sequence instead of pacing it.
+ *   - Scene 9's closing StressResultFlash and all of scene 13's close card
+ *     are excluded entirely (no cue defined). The old scene 13 (The rules
+ *     survive) footer this note used to describe is cut as a standalone
+ *     scene (reorder-to-13 pass) — its headline figure now lives in scene
+ *     9's StressResultFlash, not narration-keyed. Scene 13's (Close, old
+ *     17) three beats (tagline -> wordmark -> "Dated dollars on Arc.") are
+ *     a deliberate held dramatic sequence timed off the scene's own
+ *     duration; the actual VO is now four words ("This is Cascade
+ *     Money.") spoken almost entirely in the first two seconds, so
+ *     anchoring the wordmark to the word "Cascade" would collapse the
+ *     sequence instead of pacing it.
  */
 export interface CuePhrase {
   /** Stable name for this reveal — referenced from the motion-graphics component via cueFrame(). */
@@ -81,29 +83,44 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'phone-reveal', phrase: 'foldable'},
     {cue: 'phone-reveal-fallback', phrase: 'iPhone'},
   ],
-  // Scene 3 (Rewind — date card + stat lines) is CUT (product owner
-  // decision 2026-09-13 02:13 ET, reply 21837); its cues are retired with
-  // it rather than left dangling for a scene number that no longer renders.
-  // Scene 5 — The contradiction: the two receivable/payable rows, then the punchline.
-  5: [
-    {cue: 'rows-in', phrase: 'Samsung can have'},
-    {cue: 'dates-line', phrase: "the dates just don't line up"},
+  // Old scenes 3 (Rewind) and 5 (The contradiction) are both CUT — Rewind
+  // per product owner decision 2026-09-13 02:13 ET (reply 21837), the
+  // contradiction per the reorder-to-13 pass (2026-09-13, Director
+  // authorization). Old scenes 12 (Stress test) and 13 (The rules survive)
+  // are ALSO cut as standalone scenes in that same pass (their headline
+  // figure survives as a closing beat folded into scene 9 — see
+  // StressResultFlash in CascadeFilm.tsx). All four scenes' cues are
+  // retired with them rather than left dangling under numbers the new
+  // 13-scene numbering reassigns to different scenes. Scene numbers below
+  // are the NEW (post-reorder) numbering throughout this file.
+  //
+  // Scene 3 — The hidden supply chain (the example, renumbered from old
+  // scene 4): "FROM APPLE · LATER" (at Samsung) / "PAYMENT NEEDED · TODAY"
+  // (at Corning) globe labels land on the scene's last line — cue phrase
+  // "obligation", falling back to "waits" for a re-narration that drops it
+  // (see ExampleGlobeLabels in CascadeFilm.tsx).
+  3: [
+    {cue: 'example-labels', phrase: 'obligation'},
+    {cue: 'example-labels-fallback', phrase: 'waits'},
   ],
-  // Scene 6 — The question: one card, reveals on the opening line.
-  6: [{cue: 'question-card', phrase: 'So what if that future payment could move today'}],
-  // Scene 8 — Let it land: the two dollar counters, the company counter (not
+  // Scene 4 — The question (renumbered from old scene 6): one card, reveals on the opening line.
+  4: [{cue: 'question-card', phrase: 'So what if that future payment could move today'}],
+  // Scene 6 — Let it land (renumbered from old scene 8): the two dollar counters, the company counter (not
   // spoken — see file header), then the tagline.
-  8: [
+  6: [
     {cue: 'committed-counter', phrase: '$100 million committed'},
     {cue: 'settled-counter', phrase: '$400 million'},
     {cue: 'companies-counter', phrase: 'four companies'},
     {cue: 'tagline', phrase: 'that is the cascade'},
   ],
-  // Scene 9 — Run the year: three rostrum-camera moves on the capture layer
-  // (Liam round 2, msg 21778). Each primary phrase is followed immediately
-  // by its fallback phrase so a future re-narration that drops the primary
-  // word still resolves (cursor only advances on a successful match, so the
-  // fallback search starts from the same point the primary's would have).
+  // Scene 9 — Run the year (renumbered from old scene 9 — unchanged number,
+  // but now plays AFTER scenes 7/8 instead of before): three rostrum-camera
+  // moves on the capture layer (Liam round 2, msg 21778). Each primary
+  // phrase is followed immediately by its fallback phrase so a future
+  // re-narration that drops the primary word still resolves (cursor only
+  // advances on a successful match, so the fallback search starts from the
+  // same point the primary's would have). The scene's closing beat
+  // (StressResultFlash) is not narration-keyed — see its own comment.
   9: [
     {cue: 'push-in-scrubber', phrase: 'simulation'},
     {cue: 'pan-to-ledger', phrase: 'invoices'},
@@ -111,22 +128,9 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'pull-back-full', phrase: 'countries'},
     {cue: 'pull-back-full-fallback', phrase: 'across'},
   ],
-  // Scene 12 — Stress test: the kicker, then each competing operation as it's named.
-  12: [
-    {cue: 'kicker', phrase: 'maturity day'},
-    {cue: 'op-extensions', phrase: 'thousands of extensions'},
-    {cue: 'op-transfers', phrase: 'transfers'},
-    {cue: 'op-redemptions', phrase: 'redemptions'},
-    {cue: 'op-sales', phrase: 'sales'},
-  ],
-  // Scene 13 — The rules survive: the two laws (the persistent ops/violations footer is excluded — see file header).
-  13: [
-    {cue: 'law-ownership', phrase: 'every dollar of income has exactly one owner'},
-    {cue: 'law-yield', phrase: 'no two yield claims overlap'},
-  ],
-  // Scene 14 — Zoom out: the four word-chips, then "money plus time" (the
+  // Scene 10 — Zoom out (renumbered from old scene 14): the four word-chips, then "money plus time" (the
   // closing "a second dimension to money" card is not spoken — see file header).
-  14: [
+  10: [
     {cue: 'word-loans', phrase: 'Loans'},
     {cue: 'word-forwards', phrase: 'forwards'},
     {cue: 'word-bonds', phrase: 'bonds'},

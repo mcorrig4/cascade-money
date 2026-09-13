@@ -1,6 +1,7 @@
 /**
  * CascadeFilm — the root composition, rebuilt for the product owner's final
- * v6 narration (docs/script-v6-liam.md, Stage 12 remap). 17 scenes via
+ * v6 narration (docs/script-v6-liam.md, Stage 12 remap; reordered/renumbered
+ * to 13 scenes 2026-09-13). 13 scenes via
  * <Series> (hard cuts — each capture is already one continuous take; see
  * schedule.ts for the per-scene duration/capture doctrine).
  *
@@ -42,14 +43,10 @@ import {cueFrame} from '../cues';
 import cueTimesData from '../generated/cues.json';
 
 import {TheQuestion} from './motion-graphics/TheQuestion';
-import {ContradictionOverlay} from './motion-graphics/ContradictionOverlay';
 import {Scene08Counters} from './motion-graphics/Scene08Counters';
-import {Scene12Stress} from './motion-graphics/Scene12Stress';
-import {ConservationLaws} from './motion-graphics/ConservationLaws';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
 import {Scene17Close} from './motion-graphics/Scene17Close';
 import {Hook} from './motion-graphics/Hook';
-import {RewindSequence} from './motion-graphics/RewindSequence';
 import {AppFrame} from '../live/AppFrame';
 
 ensureFontsLoaded();
@@ -90,10 +87,12 @@ const CUE_TIMES = cueTimesData as Record<number, Record<string, number>>;
 
 /**
  * A scene's resolved Sequence duration, looked up by scene NUM rather than
- * array position. SCENES can have gaps now (scene 3 was cut — product
- * owner decision 2026-09-13, msg 21837 — so SCENES.length is 16, not 17,
- * and every scene after the cut sits one position earlier than its own
- * num-1 would suggest). `resolveSceneDurations` returns an array parallel
+ * array position. SCENES is both non-contiguous in num (old scenes 3, 5, 12,
+ * 13 are cut entirely — see schedule.ts) AND reordered from the original
+ * v6 script order (old scene 9 "Run the year" now plays after old 10/11,
+ * not before — reorder-to-13 pass, 2026-09-13), so neither `sceneIndex-1`
+ * nor the scene's own historical position is a valid array index.
+ * `resolveSceneDurations` returns an array parallel
  * to SCENES itself (same order, same length), so this always resolves the
  * right entry regardless of which scenes exist.
  */
@@ -131,8 +130,8 @@ const isFramedAtIndex = (idx: number): boolean =>
  * Local-frame progress (0=bleed/tilt-out, 1=framed) for a scene's own
  * BrowserFrame. Enter/exit ramps to whatever scene is actually ADJACENT in
  * SCENES[] (previous/next array position) — not sc.num-1/sc.num+1, which
- * would misfire the moment a scene number is missing (scene 3 was cut;
- * scene 2's real neighbor is now scene 4).
+ * would misfire the moment SCENES is reordered or has a gap (scene 2's real
+ * neighbor is now scene 3, not scene 4).
  */
 const framingRamp = (sc: SceneDef, localFrame: number, durationInFrames: number, fps: number): number => {
   const ramp = at30(RAMP_AT_30, fps);
@@ -420,6 +419,88 @@ const Scene4DateCornerLabel: React.FC = () => {
   );
 };
 
+/**
+ * The example's two globe labels (reorder-to-13 pass, 2026-09-13): "The
+ * hidden supply chain" scene names Apple's payment terms with Samsung and
+ * Samsung's own payment terms with Corning; these two chips make the
+ * mismatch legible on the globe itself, at the scene's own last line (cue
+ * phrase "obligation", falling back to "waits" if a re-narration drops that
+ * word — see cues.ts). A FILM overlay, not an app-drawn one: neither the
+ * live globe nor the capture already burns these in, so this always
+ * renders regardless of which visual layer is under it. Fixed screen
+ * position (not projected onto the 3D marker) matching Scene4DateCornerLabel's
+ * own convention for this scene.
+ */
+const EXAMPLE_LABEL_FADE_MS = 400;
+
+const ExampleGlobeLabels: React.FC<{durationInFrames: number; cues?: Record<string, number>}> = ({cues}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const revealFrame = cueFrame(cues, 'example-labels', fps, cueFrame(cues, 'example-labels-fallback', fps, 0));
+  const fadeFrames = Math.round((EXAMPLE_LABEL_FADE_MS / 1000) * fps);
+  const opacity = interpolate(frame, [revealFrame, revealFrame + fadeFrames], [0, 1], CLAMP);
+  if (opacity <= 0) return null;
+  const chip = (): React.CSSProperties => ({
+    position: 'absolute',
+    opacity,
+    padding: '8px 16px',
+    borderRadius: 999,
+    background: 'rgba(0,0,0,0.75)',
+    color: color.white,
+    fontFamily: font.family,
+    fontSize: 18,
+    fontWeight: 600,
+    letterSpacing: 0.6,
+    whiteSpace: 'nowrap',
+  });
+  return (
+    <AbsoluteFill style={{pointerEvents: 'none'}}>
+      <div style={{...chip(), top: '38%', left: '58%'}}>FROM APPLE · LATER</div>
+      <div style={{...chip(), top: '58%', left: '68%'}}>PAYMENT NEEDED · TODAY</div>
+    </AbsoluteFill>
+  );
+};
+
+/**
+ * Scene 9's closing beat (reorder-to-13 pass, 2026-09-13, product owner +
+ * Director/wingman 03:33 ET): old scenes 12 (Stress test) and 13 (The rules
+ * survive) are CUT as standalone scenes, but their verified headline figure
+ * ("10,000 operations, 0 hard-invariant violations" — docs/verified-figures-v6.md)
+ * survives as a ~2.5s flash card at the tail of scene 9 (Run the year), as
+ * the year view recedes. Not narration-keyed (no VO recorded for this line
+ * yet): it simply fills schedule.ts's SCENE9_CLOSE_FLASH_SECONDS window at
+ * the end of the scene's own resolved duration.
+ */
+const STRESS_FLASH_SECONDS = 2.5;
+const STRESS_FLASH_FADE_MS = 350;
+
+const StressResultFlash: React.FC<{durationInFrames: number}> = ({durationInFrames}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const flashFrames = Math.round(STRESS_FLASH_SECONDS * fps);
+  const fadeFrames = Math.round((STRESS_FLASH_FADE_MS / 1000) * fps);
+  const flashStart = durationInFrames - flashFrames;
+  const opacity = interpolate(
+    frame,
+    [flashStart, flashStart + fadeFrames, durationInFrames - fadeFrames, durationInFrames],
+    [0, 1, 1, 0],
+    CLAMP,
+  );
+  if (opacity <= 0) return null;
+  return (
+    <AbsoluteFill style={{display: 'grid', placeItems: 'center', background: 'rgba(6,17,27,0.55)', opacity}}>
+      <div style={{textAlign: 'center', maxWidth: 900, padding: '0 40px'}}>
+        <p style={{fontFamily: font.family, fontSize: 30, fontWeight: 500, color: color.fg, lineHeight: 1.35, margin: 0}}>
+          Separately, we tested ten thousand operations with zero accounting invariant violations.
+        </p>
+        <div style={{marginTop: 18, fontFamily: font.family, fontSize: 16, letterSpacing: 2, fontWeight: 600, color: color.money}}>
+          10,000 OPERATIONS · 0 VIOLATIONS
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
 export interface CascadeLiveSceneProps extends Record<string, unknown> {
   sceneIndex: number;
   fps?: 15 | 30;
@@ -452,9 +533,13 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   const loadingFrames = sceneIndex === 1 ? fps : 0;
   let filmOverlay: React.ReactNode = null;
   if(sceneIndex===2) filmOverlay=<Hook durationInFrames={duration} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />;
-  else if(sceneIndex===3) filmOverlay=<RewindSequence durationInFrames={duration} cues={CUE_TIMES[3]} />;
-  else if(sceneIndex===6) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[6]} />;
-  else if(sceneIndex===17) filmOverlay=<Scene17Close durationInFrames={duration} />;
+  else if(sceneIndex===4) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[4]} />;
+  else if(sceneIndex===9) filmOverlay=<StressResultFlash durationInFrames={duration} />;
+  else if(sceneIndex===13) filmOverlay=<Scene17Close durationInFrames={duration} />;
+  // Scene 3 (renumbered from old scene 4) has NO live-path film overlay:
+  // Scene4DateCornerLabel/ExampleGlobeLabels are screen-space overlays that
+  // collide with the live app's own top-left HUD text there (e2cb199) —
+  // they render only on the captures path (see the Series.Sequence below).
 
   let visual: React.ReactNode;
   if(source==='live'){
@@ -470,12 +555,16 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
     const cap=captureFor(sc,captureOverrides,duration);
     visual=cap?<CaptureBeat sc={sc} duration={duration} cap={cap}>{filmOverlay}</CaptureBeat>:<GraphicBeat sc={sc} duration={duration}>{filmOverlay??<AbsoluteFill />}</GraphicBeat>;
   }
-  // NOTE: the captures path draws Scene4DateCornerLabel as a sibling of the
-  // capture (see below); the live path deliberately does NOT — the live
-  // app's own top-left HUD text (site legend / network labels) occupies the
-  // same screen-space corner at this point in scene 4 and visually collides
-  // with the label into an illegible overlap. Not chased further here;
-  // production stays on the captures path for scene 4's date label.
+  // NOTE: the captures path draws Scene4DateCornerLabel and ExampleGlobeLabels
+  // as siblings of the capture (see below); the live path deliberately does
+  // NOT — the live app's own top-left HUD text (site legend / network
+  // labels) occupies the same screen-space corner at this point in scene 3
+  // (renumbered from old scene 4) and visually collides with
+  // Scene4DateCornerLabel into an illegible overlap (e2cb199). Kept both
+  // overlays together here rather than re-splitting them, since
+  // ExampleGlobeLabels' own on-globe markers (Samsung/Corning) also sit in
+  // the live HUD's working area — production stays on the captures path
+  // for scene 3's screen-space labels until that's chased further.
   return <AbsoluteFill style={{background:color.bgOuter}}>{visual}{includeAudio?<SceneVO num={sceneIndex} narration={narration} narrationControls={narrationControls}/>:null}</AbsoluteFill>;
 };
 
@@ -491,21 +580,21 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
 
   if(source==='live')return <AbsoluteFill style={{background:color.bgOuter}}><Series>{SCENES.map((sc,index)=><Series.Sequence key={sc.id} name={`Scene ${sc.num} — ${sc.title}`} durationInFrames={durations[index]}><CascadeLiveScene sceneIndex={sc.num} source="live" narration={narration} captureOverrides={captureOverrides} narrationControls={narrationControls}/></Series.Sequence>)}</Series>{reviewLabels?<ReviewLabelOverlay durations={durations}/>:null}</AbsoluteFill>;
 
-  const sc15 = sceneByNum(15);
-  const sc16 = sceneByNum(16);
-  const dur15 = durationFor(durations, 15);
-  const dur16 = durationFor(durations, 16);
-  const cap15 = captureFor(sc15, captureOverrides, dur15);
-  const cap16 = captureFor(sc16, captureOverrides, dur16);
-  // Scene 15 opens on the finished-phone photo, then cuts to the descent
-  // capture; scene 16 continues that SAME capture from where 15 left off
-  // (one continuous take across the two scenes, per the shooting doctrine)
-  // — unless a scene-15/16.mp4 recapture exists, in which case each plays
-  // its own file in full.
-  const photoFrames15 = captureOverrides[15] ? 0 : Math.min(100, Math.round(dur15 * 0.33));
-  const descentStart15 = cap15?.startFrom ?? 0;
-  const descentFrames15 = dur15 - photoFrames15;
-  const descentStart16 = captureOverrides[16] ? cap16?.startFrom ?? 0 : descentStart15 + descentFrames15;
+  const sc11 = sceneByNum(11);
+  const sc12 = sceneByNum(12);
+  const dur11 = durationFor(durations, 11);
+  const dur12 = durationFor(durations, 12);
+  const cap11 = captureFor(sc11, captureOverrides, dur11);
+  const cap12 = captureFor(sc12, captureOverrides, dur12);
+  // Scene 11 (New York) opens on the finished-phone photo, then cuts to the
+  // descent capture; scene 12 (Beneath it) continues that SAME capture from
+  // where 11 left off (one continuous take across the two scenes, per the
+  // shooting doctrine) — unless a scene-11/12.mp4 recapture exists, in
+  // which case each plays its own file in full.
+  const photoFrames11 = captureOverrides[11] ? 0 : Math.min(100, Math.round(dur11 * 0.33));
+  const descentStart11 = cap11?.startFrom ?? 0;
+  const descentFrames11 = dur11 - photoFrames11;
+  const descentStart12 = captureOverrides[12] ? cap12?.startFrom ?? 0 : descentStart11 + descentFrames11;
 
   return (
     <AbsoluteFill style={{background: color.bgOuter}}>
@@ -566,58 +655,66 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
         </Series.Sequence>
 
         {/*
-         * Scene 3 (Rewind — date card + supply-chain stat lines) is CUT
-         * (product owner decision 2026-09-13 02:13 ET, reply 21837): the
-         * film goes straight from scene 2 into scene 4, scene 2's own VO
-         * now carries the figures. Scene 3's id/title stay retired in
-         * schedule.ts (never renumbered) rather than reused.
+         * Old scenes 3 (Rewind) and 5 (The contradiction) are both CUT —
+         * Rewind per product owner decision 2026-09-13 02:13 ET (reply
+         * 21837), the contradiction per the reorder-to-13 pass (2026-09-13,
+         * Director authorization). The film goes straight from scene 2 into
+         * scene 3 below (renumbered from old scene 4); scene 2's own VO
+         * carries the figures Rewind used to.
          */}
 
-        <Series.Sequence name="Scene 4 — The hidden supply chain" durationInFrames={durationFor(durations, 4)}>
+        <Series.Sequence name="Scene 3 — The hidden supply chain" durationInFrames={durationFor(durations, 3)}>
           {(() => {
-            const sc = sceneByNum(4);
-            const dur = durationFor(durations, 4);
+            const sc = sceneByNum(3);
+            const dur = durationFor(durations, 3);
             const cap = captureFor(sc, captureOverrides, dur);
             return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
           })()}
           <Scene4DateCornerLabel />
+          <ExampleGlobeLabels durationInFrames={durationFor(durations, 3)} cues={CUE_TIMES[3]} />
+          <SceneVO num={3} narration={narration} narrationControls={narrationControls} />
+        </Series.Sequence>
+
+        <Series.Sequence name="Scene 4 — The question" durationInFrames={durationFor(durations, 4)}>
+          <GraphicBeat sc={sceneByNum(4)} duration={durationFor(durations, 4)}>
+            <TheQuestion durationInFrames={durationFor(durations, 4)} cues={CUE_TIMES[4]} />
+          </GraphicBeat>
           <SceneVO num={4} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 5 — The contradiction" durationInFrames={durationFor(durations, 5)}>
+        <Series.Sequence name="Scene 5 — The cascade" durationInFrames={durationFor(durations, 5)}>
           {(() => {
             const sc = sceneByNum(5);
             const dur = durationFor(durations, 5);
             const cap = captureFor(sc, captureOverrides, dur);
-            // The scene-05 recapture is the app's own recording, which
-            // already burns in the "dates don't line up" contradiction
-            // card (app/src/director/ShotOverlays.tsx, overlay 'contradiction').
-            // Drawing ContradictionOverlay on top of it doubles that card —
-            // one owner per element, capture wins (ac02b78). Only the
-            // fallback (pre-overlay) shot-02-network capture needs this
-            // component to draw the card itself.
-            const overlay = captureOverrides[5] ? null : <ContradictionOverlay durationInFrames={dur} cues={CUE_TIMES[5]} />;
-            return cap ? (
-              <CaptureBeat sc={sc} duration={dur} cap={cap}>
-                {overlay}
-              </CaptureBeat>
-            ) : (
-              <GraphicBeat sc={sc} duration={dur}>
-                {overlay}
-              </GraphicBeat>
-            );
+            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
           })()}
           <SceneVO num={5} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 6 — The question" durationInFrames={durationFor(durations, 6)}>
-          <GraphicBeat sc={sceneByNum(6)} duration={durationFor(durations, 6)}>
-            <TheQuestion durationInFrames={durationFor(durations, 6)} cues={CUE_TIMES[6]} />
-          </GraphicBeat>
+        <Series.Sequence name="Scene 6 — Let it land" durationInFrames={durationFor(durations, 6)}>
+          {(() => {
+            const sc = sceneByNum(6);
+            const dur = durationFor(durations, 6);
+            const cap = captureFor(sc, captureOverrides, dur);
+            // The scene-06 recapture is the app's own recording, which
+            // already burns in the $100M/$400M/4-companies counters
+            // (app/src/director/ShotOverlays.tsx, overlay 'totals', stage
+            // 12 "Let it land"). Rendering Scene08Counters on top of it
+            // doubled the counters (ghosted duplicate behind the sharp
+            // numerals, draft v5 ~t=128s). One owner per element, capture
+            // wins (ac02b78) — only render the Remotion counters in the
+            // fallback path, when no scene-06 capture exists yet.
+            return cap ? (
+              <CaptureBeat sc={sc} duration={dur} cap={cap}>
+                {!captureOverrides[6] && <Scene08Counters durationInFrames={dur} cues={CUE_TIMES[6]} />}
+              </CaptureBeat>
+            ) : null;
+          })()}
           <SceneVO num={6} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 7 — The cascade" durationInFrames={durationFor(durations, 7)}>
+        <Series.Sequence name="Scene 7 — A dollar with a date" durationInFrames={durationFor(durations, 7)}>
           {(() => {
             const sc = sceneByNum(7);
             const dur = durationFor(durations, 7);
@@ -627,24 +724,12 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           <SceneVO num={7} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 8 — Let it land" durationInFrames={durationFor(durations, 8)}>
+        <Series.Sequence name="Scene 8 — Underneath it" durationInFrames={durationFor(durations, 8)}>
           {(() => {
             const sc = sceneByNum(8);
             const dur = durationFor(durations, 8);
             const cap = captureFor(sc, captureOverrides, dur);
-            // The scene-08 recapture is the app's own recording, which
-            // already burns in the $100M/$400M/4-companies counters
-            // (app/src/director/ShotOverlays.tsx, overlay 'totals', stage
-            // 12 "Let it land"). Rendering Scene08Counters on top of it
-            // doubled the counters (ghosted duplicate behind the sharp
-            // numerals, draft v5 ~t=128s). One owner per element, capture
-            // wins (ac02b78) — only render the Remotion counters in the
-            // fallback path, when no scene-08 capture exists yet.
-            return cap ? (
-              <CaptureBeat sc={sc} duration={dur} cap={cap}>
-                {!captureOverrides[8] && <Scene08Counters durationInFrames={dur} cues={CUE_TIMES[8]} />}
-              </CaptureBeat>
-            ) : null;
+            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
           })()}
           <SceneVO num={8} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
@@ -656,137 +741,89 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             const cap = captureFor(sc, captureOverrides, dur);
             return cap ? <Scene9Capture sc={sc} duration={dur} cap={cap} /> : null;
           })()}
+          {/*
+           * Closing beat (reorder-to-13 pass, 2026-09-13, product owner +
+           * Director/wingman 03:33 ET): "Separately, we tested ten thousand
+           * operations with zero accounting invariant violations." flashes
+           * over the reused stress-test/conservation-laws result card for
+           * ~2.5s as the year view recedes — old scenes 12 (Stress test)
+           * and 13 (The rules survive) are CUT as standalone scenes, but
+           * their verified headline figure survives here. The scene's own
+           * duration is extended by exactly this flash's length in
+           * schedule.ts (SCENE9_CLOSE_FLASH_SECONDS), so this never eats
+           * into the narrated portion above.
+           */}
+          <StressResultFlash durationInFrames={durationFor(durations, 9)} />
           <SceneVO num={9} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 10 — A dollar with a date" durationInFrames={durationFor(durations, 10)}>
+        <Series.Sequence name="Scene 10 — Zoom out" durationInFrames={durationFor(durations, 10)}>
           {(() => {
             const sc = sceneByNum(10);
             const dur = durationFor(durations, 10);
             const cap = captureFor(sc, captureOverrides, dur);
-            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
+            // scene-10 recapture already burns in "Composable." plus the
+            // Loans/Forwards/Bonds/Derivatives + "Money plus time" beats
+            // (app's 'composable' overlay). Scene14ZoomOut duplicates that;
+            // render it only in the fallback path.
+            const overlay10 = captureOverrides[10] ? null : <Scene14ZoomOut durationInFrames={dur} cues={CUE_TIMES[10]} />;
+            return cap ? (
+              <CaptureBeat sc={sc} duration={dur} cap={cap}>
+                {overlay10}
+              </CaptureBeat>
+            ) : (
+              <GraphicBeat sc={sc} duration={dur}>
+                {overlay10}
+              </GraphicBeat>
+            );
           })()}
           <SceneVO num={10} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 11 — Underneath it" durationInFrames={durationFor(durations, 11)}>
-          {(() => {
-            const sc = sceneByNum(11);
-            const dur = durationFor(durations, 11);
-            const cap = captureFor(sc, captureOverrides, dur);
-            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
-          })()}
-          <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
-        </Series.Sequence>
-
-        <Series.Sequence name="Scene 12 — Stress test" durationInFrames={durationFor(durations, 12)}>
-          {(() => {
-            const sc = sceneByNum(12);
-            const dur = durationFor(durations, 12);
-            const cap = captureFor(sc, captureOverrides, dur);
-            // scene-12 recapture already burns in the vault balance sheet
-            // ("Extensions. Transfers. Redemptions. Sales." + invariants —
-            // app's 'vault' overlay). Scene12Stress duplicates that
-            // headline; render it only in the fallback path.
-            return cap ? (
-              <CaptureBeat sc={sc} duration={dur} cap={cap}>
-                {!captureOverrides[12] && <Scene12Stress durationInFrames={dur} cues={CUE_TIMES[12]} />}
-              </CaptureBeat>
-            ) : null;
-          })()}
-          <SceneVO num={12} narration={narration} narrationControls={narrationControls} />
-        </Series.Sequence>
-
-        <Series.Sequence name="Scene 13 — The rules survive" durationInFrames={durationFor(durations, 13)}>
-          {(() => {
-            const sc = sceneByNum(13);
-            const dur = durationFor(durations, 13);
-            const cap = captureFor(sc, captureOverrides, dur);
-            // scene-13 recapture already burns in "Nothing counted twice."
-            // plus the ownership/yield/operations laws (app's 'laws'
-            // overlay). ConservationLaws duplicates that; render it only
-            // in the fallback path.
-            const overlay = captureOverrides[13] ? null : <ConservationLaws durationInFrames={dur} cues={CUE_TIMES[13]} />;
-            return cap ? (
-              <CaptureBeat sc={sc} duration={dur} cap={cap}>
-                {overlay}
-              </CaptureBeat>
-            ) : (
-              <GraphicBeat sc={sc} duration={dur}>
-                {overlay}
-              </GraphicBeat>
-            );
-          })()}
-          <SceneVO num={13} narration={narration} narrationControls={narrationControls} />
-        </Series.Sequence>
-
-        <Series.Sequence name="Scene 14 — Zoom out" durationInFrames={durationFor(durations, 14)}>
-          {(() => {
-            const sc = sceneByNum(14);
-            const dur = durationFor(durations, 14);
-            const cap = captureFor(sc, captureOverrides, dur);
-            // scene-14 recapture already burns in "Composable." plus the
-            // Loans/Forwards/Bonds/Derivatives + "Money plus time" beats
-            // (app's 'composable' overlay). Scene14ZoomOut duplicates that;
-            // render it only in the fallback path.
-            const overlay14 = captureOverrides[14] ? null : <Scene14ZoomOut durationInFrames={dur} cues={CUE_TIMES[14]} />;
-            return cap ? (
-              <CaptureBeat sc={sc} duration={dur} cap={cap}>
-                {overlay14}
-              </CaptureBeat>
-            ) : (
-              <GraphicBeat sc={sc} duration={dur}>
-                {overlay14}
-              </GraphicBeat>
-            );
-          })()}
-          <SceneVO num={14} narration={narration} narrationControls={narrationControls} />
-        </Series.Sequence>
-
-        <Series.Sequence name="Scene 15 — New York" durationInFrames={dur15}>
-          {captureOverrides[15] && cap15 ? (
-            <CaptureBeat sc={sc15} duration={dur15} cap={cap15} />
+        <Series.Sequence name="Scene 11 — New York" durationInFrames={dur11}>
+          {captureOverrides[11] && cap11 ? (
+            <CaptureBeat sc={sc11} duration={dur11} cap={cap11} />
           ) : (
             <>
-              <Sequence from={0} durationInFrames={photoFrames15} layout="none">
-                <PhoneHeroScene durationInFrames={photoFrames15} finished />
+              <Sequence from={0} durationInFrames={photoFrames11} layout="none">
+                <PhoneHeroScene durationInFrames={photoFrames11} finished />
               </Sequence>
-              <Sequence from={photoFrames15} durationInFrames={descentFrames15} layout="none">
+              <Sequence from={photoFrames11} durationInFrames={descentFrames11} layout="none">
                 <CaptureBeat
-                  sc={sc15}
-                  duration={descentFrames15}
+                  sc={sc11}
+                  duration={descentFrames11}
                   cap={{
-                    src: sc15.fallbackCapture!,
-                    captureDurationInFrames: sc15.fallbackCaptureDurationInFrames!,
-                    startFrom: descentStart15,
+                    src: sc11.fallbackCapture!,
+                    captureDurationInFrames: sc11.fallbackCaptureDurationInFrames!,
+                    startFrom: descentStart11,
                   }}
                 />
               </Sequence>
             </>
           )}
-          <SceneVO num={15} narration={narration} narrationControls={narrationControls} />
+          <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 16 — Beneath it" durationInFrames={dur16}>
+        <Series.Sequence name="Scene 12 — Beneath it" durationInFrames={dur12}>
           <CaptureBeat
-            sc={sc16}
-            duration={dur16}
+            sc={sc12}
+            duration={dur12}
             cap={
-              captureOverrides[16] && cap16
-                ? cap16
+              captureOverrides[12] && cap12
+                ? cap12
                 : {
-                    src: sc16.fallbackCapture!,
-                    captureDurationInFrames: sc16.fallbackCaptureDurationInFrames!,
-                    startFrom: descentStart16,
+                    src: sc12.fallbackCapture!,
+                    captureDurationInFrames: sc12.fallbackCaptureDurationInFrames!,
+                    startFrom: descentStart12,
                   }
             }
           />
-          <SceneVO num={16} narration={narration} narrationControls={narrationControls} />
+          <SceneVO num={12} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 17 — Close" durationInFrames={durationFor(durations, 17)}>
-          <Scene17Close durationInFrames={durationFor(durations, 17)} />
-          <SceneVO num={17} narration={narration} narrationControls={narrationControls} />
+        <Series.Sequence name="Scene 13 — Close" durationInFrames={durationFor(durations, 13)}>
+          <Scene17Close durationInFrames={durationFor(durations, 13)} />
+          <SceneVO num={13} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
       </Series>
       {reviewLabels ? <ReviewLabelOverlay durations={durations} /> : null}

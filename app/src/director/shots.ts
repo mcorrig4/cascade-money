@@ -34,17 +34,22 @@ const table:ShotDefinition[]=[
    {lat:APPLE.lat,lng:APPLE.lng,altitude:.0003,sceneId:1,time:0,holdMs:2500,travelMs:3200},
   ]},
  {id:2,title:"Apple Park",words:38,orbitUntil:10,pullOutAt:13.6,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
- {id:13,title:"Rewind",words:47,end:p(37.3349,-122.009,.35),motion:'reverse time-lapse + flash + push',overlay:'title'},
+ // Reorder-to-13 pass (2026-09-13, product owner + Director/wingman 03:33
+ // ET): old shots 13 (Rewind) and 15 (The contradiction) are CUT, and old
+ // shots 9 (Stress test) and 8 (The rules survive) are CUT as standalone
+ // scenes too (their headline figure folds into a closing beat on shot 5's
+ // scene — see StressResultFlash in film/src/compositions/CascadeFilm.tsx).
+ // The remaining shots below are reordered to the new play order: `scene`
+ // (buildShots' `i+1` below) now runs 1..13 in THIS array order, which is
+ // no longer the shots' own `id` order — ids are stable camera/API
+ // contracts (unchanged), only the sequence changes.
  {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'westward payment sweep',overlay:'none'},
- {id:15,title:"The contradiction",words:39,end:p(35,-80,1.7),motion:'idle drift',overlay:'contradiction'},
  {id:16,title:"The question",words:18,end:p(34,-76,1.8),motion:'idle drift',overlay:'question'},
  {id:4,title:"The cascade",words:55,end:p(33.77,-118.2,1.9),motion:'westward chain sweep',overlay:'none'},
  {id:17,title:"Let it land",words:30,end:p(34,-112,2),motion:'idle drift',overlay:'totals'},
- {id:5,title:"Run the year",words:43,end:p(34,-118,2.35),motion:'global sweep',overlay:'none'},
  {id:6,title:"A dollar with a date",words:67,end:p(34.6,135.5,1.6),motion:'Pacific drift',overlay:'coin'},
  {id:18,title:"Underneath it",words:49,end:p(30,145,2),motion:'east drift',overlay:'backing'},
- {id:9,title:"Stress test",words:27,end:p(25,160,2.3),motion:'maturity drift',overlay:'vault'},
- {id:8,title:"The rules survive",words:28,end:p(30,170,2.3),motion:'east drift',overlay:'laws'},
+ {id:5,title:"Run the year",words:43,end:p(34,-118,2.35),motion:'global sweep',overlay:'none'},
  {id:11,title:"Zoom out",words:42,end:p(37.3349,-122.009,2.6),motion:'pull-out + east sweep',overlay:'composable'},
  {id:10,title:"New York",words:26,end:{...STORE,altitude:8/EARTH_METERS},motion:'store flight + stair descent',overlay:'none',site:'fifth-avenue' as const},
  {id:19,title:"Beneath it",words:23,end:{...STORE,altitude:8/EARTH_METERS},motion:'hall drift',overlay:'none',site:'fifth-avenue' as const},
@@ -58,8 +63,8 @@ export function parseNarrationDurations(value:unknown):NarrationDurations {
  if(!source||typeof source!=='object'||Array.isArray(source))throw new Error('Expected durations keyed by scene');
  const result:NarrationDurations={};
  for(const [key,seconds] of Object.entries(source)){
-  if(!/^(?:[1-9]|1[0-7])$/.test(key)||typeof seconds!=='number'||!Number.isFinite(seconds)||seconds<=0)
-   throw new Error('Narration durations require scenes 1–17 and positive seconds');
+  if(!/^(?:[1-9]|1[0-3])$/.test(key)||typeof seconds!=='number'||!Number.isFinite(seconds)||seconds<=0)
+   throw new Error('Narration durations require scenes 1–13 and positive seconds');
   result[key]=seconds;
  }
  return result;
@@ -127,17 +132,12 @@ export const beatIndex=(times:readonly {at:number}[],elapsed:number)=>Math.max(0
 export const SCENE_LOCATIONS=[
  {shot:1,name:'Apple Park',place:'Cupertino, California'},
  {shot:2,name:'Apple Park',place:'Cupertino, California'},
- {shot:13,name:'Apple Park',place:'Cupertino, California'},
  {shot:10,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
 ];
+// Shot 13 (Rewind)'s date-card/stat-line beats were already dead (Rewind
+// was cut before this pass); removed here rather than left pointing at a
+// shot id that no longer exists in `table` (reorder-to-13 pass, 2026-09-13).
 export const SCENE_TEXT_BEATS=[
- {shot:13,id:'date-card',at:2.25,until:3.4,text:'September 9, 2025'},
- {shot:13,id:'stat-suppliers',at:3.6,until:5.3,text:'nearly 200 suppliers'},
- {shot:13,id:'stat-factories',at:5.5,until:7.2,text:'thousands of factories'},
- {shot:13,id:'stat-countries',at:7.4,until:9.1,text:'50+ countries'},
- {shot:13,id:'stat-cost',at:9.3,until:12.2,text:'~$200B'},
- {shot:13,id:'system-recreated',at:12.5,until:15.4,text:'We recreated that system.'},
- {shot:13,id:'payment-layer',at:15.7,until:19.6,text:'What if its payment layer ran onchain?'},
  {shot:11,id:'money-plus-time',at:12.4,until:15,text:'Money plus time'},
  {shot:11,id:'final-line',at:15.2,until:17.7,text:'a second dimension to money'},
 ];

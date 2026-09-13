@@ -4,14 +4,14 @@
 #
 # Draft mode (default):
 #   film/scripts/splice-draft.sh <tag>          # e.g. "r7"
-# Concats out/parts/scene-01.mp4 .. scene-17.mp4 into
-# out/cascade-draft-360p-<tag>.mp4. Requires all 16 surviving out/parts/scene-NN.mp4 (scene 3 is cut) to
-# exist (run render-scenes.sh --full first, or render the missing ones
-# individually).
+# Concats out/parts/scene-01.mp4 .. scene-13.mp4 into
+# out/cascade-draft-360p-<tag>.mp4. Requires all 13 out/parts/scene-NN.mp4
+# (reorder-to-13 pass, 2026-09-13; old 3/5/12/13 cut) to exist (run
+# render-scenes.sh --full first, or render the missing ones individually).
 #
 # Final mode:
 #   film/scripts/splice-draft.sh --final
-# Concats out/parts-final/scene-01.mp4 .. scene-17.mp4 (render with
+# Concats out/parts-final/scene-01.mp4 .. scene-13.mp4 (render with
 # `render-scenes.sh --final --full` first) into out/cascade-final-1080p.mp4,
 # then derives a 720p copy (video re-encoded to 1280x720 crf 22, audio
 # stream-copied) as out/cascade-final-720p.mp4. Prints an ffprobe summary
@@ -53,10 +53,9 @@ fi
 CONCAT_LIST="$(mktemp)"
 trap 'rm -f "$CONCAT_LIST"' EXIT
 
-# Scene 3 was cut (product owner decision 2026-09-13 02:13 ET, reply
-# 21837) — no scene-03.mp4 part exists or is expected; concat the surviving
-# scene numbers only.
-for num in 01 02 04 05 06 07 08 09 10 11 12 13 14 15 16 17; do
+# The film is 13 scenes (reorder-to-13 pass, 2026-09-13) — concat the
+# contiguous surviving scene numbers.
+for num in 01 02 03 04 05 06 07 08 09 10 11 12 13; do
   part="$PARTS_DIR/scene-${num}.mp4"
   if [[ ! -f "$part" ]]; then
     echo "missing $part — render it first ($RENDER_HINT)" >&2
@@ -69,9 +68,9 @@ done
 # every scene boundary. For the draft, trim each audio stream to its exact
 # video-frame duration and concatenate both streams on a clean 15fps timeline.
 if [[ "$MODE" == "draft" ]]; then
-  # Scene 3 was cut — iterate the same 16 surviving scene numbers as the
-  # CONCAT_LIST loop above, not a contiguous 1..17 range.
-  SURVIVING_SCENES=(01 02 04 05 06 07 08 09 10 11 12 13 14 15 16 17)
+  # The film is 13 scenes (reorder-to-13 pass, 2026-09-13) — iterate the
+  # same contiguous scene numbers as the CONCAT_LIST loop above.
+  SURVIVING_SCENES=(01 02 03 04 05 06 07 08 09 10 11 12 13)
   INPUTS=(); FILTER=""; INDEX=0
   for num in "${SURVIVING_SCENES[@]}"; do
     part="$PARTS_DIR/scene-${num}.mp4"; INPUTS+=("-i" "$part")
