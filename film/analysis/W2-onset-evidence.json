@@ -79,6 +79,44 @@
   },
   {
     "scene": 2,
+    "cue": "payment-terms",
+    "phrase": "payment terms",
+    "wordAnchor": 11.76,
+    "onset": 11.748,
+    "frame30": 352,
+    "method": "RMS rise; W6 remeasurement",
+    "reviewWindow": [
+      11.64,
+      11.98
+    ],
+    "wav": "scene-02.wav",
+    "localFloorRms": 0.0074509,
+    "localPeakRms": 0.115509,
+    "w6": {
+      "beforeOnset": 11.748,
+      "deltaSeconds": 0.0,
+      "status": "measured",
+      "reason": null,
+      "inspectedWindow": [
+        11.64,
+        11.98
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.0296627,
+      "candidateSeconds": [
+        11.748,
+        11.866,
+        11.884,
+        11.898,
+        11.918,
+        11.934
+      ],
+      "passesRiseCriterion": true,
+      "wavMd5": "256ef116708471945739705b1b3ad733"
+    }
+  },
+  {
+    "scene": 2,
     "cue": "promises-fallback",
     "phrase": "promises",
     "wordAnchor": 12.78,
@@ -89,6 +127,40 @@
     "wav": "scene-02.wav",
     "localFloorRms": 0.0073782,
     "localPeakRms": 0.133729
+  },
+  {
+    "scene": 2,
+    "cue": "promises-word",
+    "phrase": "promises",
+    "wordAnchor": 12.78,
+    "onset": 12.672,
+    "frame30": 380,
+    "method": "RMS rise; W6 remeasurement",
+    "reviewWindow": [
+      12.66,
+      13.0
+    ],
+    "wav": "scene-02.wav",
+    "localFloorRms": 0.0073782,
+    "localPeakRms": 0.133729,
+    "w6": {
+      "beforeOnset": 12.672,
+      "deltaSeconds": 0.0,
+      "status": "measured",
+      "reason": null,
+      "inspectedWindow": [
+        12.66,
+        13.0
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.0293731,
+      "candidateSeconds": [
+        12.672,
+        12.906
+      ],
+      "passesRiseCriterion": true,
+      "wavMd5": "256ef116708471945739705b1b3ad733"
+    }
   },
   {
     "scene": 2,
@@ -183,6 +255,39 @@
   },
   {
     "scene": 4,
+    "cue": "not-as-cash",
+    "phrase": "not as cash",
+    "wordAnchor": 4.04,
+    "onset": 5.224,
+    "frame30": 157,
+    "method": "RMS rise in W6 reviewed search window",
+    "reviewWindow": [
+      5.05,
+      5.42
+    ],
+    "wav": "scene-04.wav",
+    "localFloorRms": 0.0,
+    "localPeakRms": 0.1811482,
+    "w6": {
+      "beforeOnset": null,
+      "deltaSeconds": null,
+      "status": "measured",
+      "reason": null,
+      "inspectedWindow": [
+        5.05,
+        5.42
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.0063402,
+      "candidateSeconds": [
+        5.224
+      ],
+      "passesRiseCriterion": true,
+      "wavMd5": "0f9c7a05f99cdd26ff4bc439a5757961"
+    }
+  },
+  {
+    "scene": 4,
     "cue": "not-cash",
     "phrase": "cash",
     "wordAnchor": 5.6,
@@ -193,6 +298,39 @@
     "wav": "scene-04.wav",
     "localFloorRms": 0.0053204,
     "localPeakRms": 0.1233916
+  },
+  {
+    "scene": 4,
+    "cue": "as-dollar-with-date",
+    "phrase": "as a dollar with a date",
+    "wordAnchor": 6.04,
+    "onset": 6.332,
+    "frame30": 190,
+    "method": "RMS rise in W6 reviewed search window",
+    "reviewWindow": [
+      6.15,
+      6.48
+    ],
+    "wav": "scene-04.wav",
+    "localFloorRms": 0.0002129,
+    "localPeakRms": 0.2063235,
+    "w6": {
+      "beforeOnset": null,
+      "deltaSeconds": null,
+      "status": "measured",
+      "reason": null,
+      "inspectedWindow": [
+        6.15,
+        6.48
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.0072213,
+      "candidateSeconds": [
+        6.332
+      ],
+      "passesRiseCriterion": true,
+      "wavMd5": "0f9c7a05f99cdd26ff4bc439a5757961"
+    }
   },
   {
     "scene": 5,
@@ -212,13 +350,33 @@
     "cue": "window-mirror",
     "phrase": "$450 million",
     "wordAnchor": 16.1,
-    "onset": 16.134,
-    "frame30": 484,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "onset": 15.9,
+    "frame30": 477,
+    "method": "RMS rise in W6 reviewed search window",
+    "reviewWindow": [
+      15.8,
+      16.1
+    ],
     "wav": "scene-05.wav",
-    "localFloorRms": 0.0983317,
-    "localPeakRms": 0.2575888
+    "localFloorRms": 0.0010375,
+    "localPeakRms": 0.2575888,
+    "w6": {
+      "beforeOnset": 16.134,
+      "deltaSeconds": -0.234,
+      "status": "measured",
+      "reason": null,
+      "inspectedWindow": [
+        15.8,
+        16.1
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.0090156,
+      "candidateSeconds": [
+        15.9
+      ],
+      "passesRiseCriterion": true,
+      "wavMd5": "2e44edc46a5c3cf3c044ec85b4ab51c5"
+    }
   },
   {
     "scene": 6,
@@ -240,11 +398,29 @@
     "wordAnchor": 1.12,
     "onset": 1.116,
     "frame30": 33,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      1.0,
+      1.34
+    ],
     "wav": "scene-06.wav",
     "localFloorRms": 0.0967365,
-    "localPeakRms": 0.1647016
+    "localPeakRms": 0.1647016,
+    "w6": {
+      "beforeOnset": 1.116,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "Connected million/deposited boundary has no isolated 12 dB rise; retain the slope estimate.",
+      "inspectedWindow": [
+        0.8,
+        1.5
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.3851149,
+      "candidateSeconds": [],
+      "passesRiseCriterion": false,
+      "wavMd5": "9959c2587f96a2b2dc14676778d77656"
+    }
   },
   {
     "scene": 6,
@@ -266,11 +442,29 @@
     "wordAnchor": 4.44,
     "onset": 4.5,
     "frame30": 135,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      4.32,
+      4.66
+    ],
     "wav": "scene-06.wav",
     "localFloorRms": 0.041525,
-    "localPeakRms": 0.0938766
+    "localPeakRms": 0.0938766,
+    "w6": {
+      "beforeOnset": 4.5,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "Connected million/transacted boundary does not meet the floor/peak and sustained-rise criterion; retain the slope estimate.",
+      "inspectedWindow": [
+        4.1,
+        4.9
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.1653139,
+      "candidateSeconds": [],
+      "passesRiseCriterion": false,
+      "wavMd5": "9959c2587f96a2b2dc14676778d77656"
+    }
   },
   {
     "scene": 6,
@@ -292,11 +486,34 @@
     "wordAnchor": 6.66,
     "onset": 6.712,
     "frame30": 201,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      6.54,
+      6.88
+    ],
     "wav": "scene-06.wav",
     "localFloorRms": 0.0310605,
-    "localPeakRms": 0.1482287
+    "localPeakRms": 0.1482287,
+    "w6": {
+      "beforeOnset": 6.712,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "Nine/invoices is continuously voiced; a later trough does not establish the initial vowel boundary.",
+      "inspectedWindow": [
+        6.4,
+        7.0
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.1236541,
+      "candidateSeconds": [
+        6.542,
+        6.554,
+        6.564,
+        6.576
+      ],
+      "passesRiseCriterion": false,
+      "wavMd5": "9959c2587f96a2b2dc14676778d77656"
+    }
   },
   {
     "scene": 6,
@@ -331,11 +548,32 @@
     "wordAnchor": 2.22,
     "onset": 2.2,
     "frame30": 66,
-    "method": "fricative-band estimate (>3kHz energy majority, 3 hops); phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      2.1,
+      2.4400000000000004
+    ],
     "wav": "scene-07.wav",
     "localFloorRms": 0.009326,
-    "localPeakRms": 0.1085262
+    "localPeakRms": 0.1085262,
+    "w6": {
+      "beforeOnset": 2.2,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "The 2.140 s RMS rise belongs to the preceding word and the later rise to the vowel; /s/ requires phonetic review of the fricative band. Retain the existing fricative-band estimate.",
+      "inspectedWindow": [
+        2.05,
+        2.45
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.0371273,
+      "candidateSeconds": [
+        2.14,
+        2.312
+      ],
+      "passesRiseCriterion": true,
+      "wavMd5": "f1820098c3bbabfd25dc7737de3de35b"
+    }
   },
   {
     "scene": 7,
@@ -383,11 +621,29 @@
     "wordAnchor": 19.16,
     "onset": 19.138,
     "frame30": 574,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      19.04,
+      19.38
+    ],
     "wav": "scene-07.wav",
     "localFloorRms": 0.0446817,
-    "localPeakRms": 0.1767416
+    "localPeakRms": 0.1767416,
+    "w6": {
+      "beforeOnset": 19.138,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "Due/earlier is connected speech with multiple nearby rises; RMS does not identify the initial vowel of earlier.",
+      "inspectedWindow": [
+        18.8,
+        19.55
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.1778811,
+      "candidateSeconds": [],
+      "passesRiseCriterion": false,
+      "wavMd5": "f1820098c3bbabfd25dc7737de3de35b"
+    }
   },
   {
     "scene": 7,
@@ -422,11 +678,29 @@
     "wordAnchor": 26.16,
     "onset": 26.192,
     "frame30": 786,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      26.04,
+      26.38
+    ],
     "wav": "scene-07.wav",
     "localFloorRms": 0.0596742,
-    "localPeakRms": 0.1320191
+    "localPeakRms": 0.1320191,
+    "w6": {
+      "beforeOnset": 26.192,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "The/yield has a continuous voiced glide without an isolated 12 dB onset rise.",
+      "inspectedWindow": [
+        25.9,
+        26.5
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.2375674,
+      "candidateSeconds": [],
+      "passesRiseCriterion": false,
+      "wavMd5": "f1820098c3bbabfd25dc7737de3de35b"
+    }
   },
   {
     "scene": 7,
@@ -435,11 +709,29 @@
     "wordAnchor": 28.740000000000002,
     "onset": 28.798,
     "frame30": 864,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      0,
+      0.22
+    ],
     "wav": "scene-07-kokoro-tail.wav",
     "localFloorRms": 0.0614433,
-    "localPeakRms": 0.1453038
+    "localPeakRms": 0.1453038,
+    "w6": {
+      "beforeOnset": 28.798,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "Tail PCM begins with nonzero energy and a gradual glide; there is no preceding floor or distinct onset crossing. Retain the estimate and the 28.740 s tail placement.",
+      "inspectedWindow": [
+        0,
+        0.3
+      ],
+      "sourceOffsetSeconds": 28.74,
+      "thresholdRms": 0.2446102,
+      "candidateSeconds": [],
+      "passesRiseCriterion": false,
+      "wavMd5": "21f20e6e78009de1f6b206ec6d2eeef9"
+    }
   },
   {
     "scene": 7,
@@ -487,11 +779,29 @@
     "wordAnchor": 1.96,
     "onset": 1.97,
     "frame30": 59,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      1.8399999999999999,
+      2.18
+    ],
     "wav": "scene-08.wav",
     "localFloorRms": 0.0452316,
-    "localPeakRms": 0.1054804
+    "localPeakRms": 0.1054804,
+    "w6": {
+      "beforeOnset": 1.97,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "The connected spoken digits have several syllabic rises; the transcript anchor does not establish the start of 1155.",
+      "inspectedWindow": [
+        1.65,
+        2.25
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.1800702,
+      "candidateSeconds": [],
+      "passesRiseCriterion": false,
+      "wavMd5": "bd7226b03c6bb35da3d3e23d3e6cfd5a"
+    }
   },
   {
     "scene": 8,
@@ -539,11 +849,29 @@
     "wordAnchor": 10.82,
     "onset": 10.79,
     "frame30": 324,
-    "method": "connected-speech estimate; phonetic review needed",
-    "reviewWindow": null,
+    "method": "unresolved; existing estimate retained",
+    "reviewWindow": [
+      10.700000000000001,
+      11.040000000000001
+    ],
     "wav": "scene-08.wav",
     "localFloorRms": 0.0708258,
-    "localPeakRms": 0.1437796
+    "localPeakRms": 0.1437796,
+    "w6": {
+      "beforeOnset": 10.79,
+      "deltaSeconds": 0.0,
+      "status": "unresolved",
+      "reason": "Bearing/reserve is continuously voiced; the nearby rise cannot be assigned to reserve from RMS alone.",
+      "inspectedWindow": [
+        10.45,
+        11.15
+      ],
+      "sourceOffsetSeconds": 0,
+      "thresholdRms": 0.2819628,
+      "candidateSeconds": [],
+      "passesRiseCriterion": false,
+      "wavMd5": "bd7226b03c6bb35da3d3e23d3e6cfd5a"
+    }
   },
   {
     "scene": 9,

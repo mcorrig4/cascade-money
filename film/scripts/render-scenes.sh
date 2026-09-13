@@ -10,6 +10,9 @@
 #   film/scripts/render-scenes.sh --final 3 7    # render scenes 3, 7 at final quality
 #   film/scripts/render-scenes.sh --profile final --full   # final quality, all scenes
 #
+# W6 chimera incident: successful parts also publish scene-NN.provenance.json
+# with pre-render commit/cue hashes and settings, plus the encoded MP4's MD5.
+#
 # Each scene's frame range comes from `node scripts/scene-frames.mjs <fps>`,
 # which reuses the composition's own duration logic (schedule.ts /
 # narration.ts) — so the ranges rendered here can never drift from what a
@@ -131,12 +134,18 @@ START_ALL=$(perl -MTime::HiRes=time -e 'print time')
 
 render_scene() {
   local num="$1"
-  local started ended padded range raw_out final_out
+  local started ended padded range raw_out final_out encoded_out sidecar snapshot_file work_dir
   started=$(perl -MTime::HiRes=time -e 'print time')
   padded=$(printf "%02d" "$num")
   range="$(frame_range_for "$num")"
-  raw_out="$OUT_DIR/scene-${padded}.raw.mp4"
+  work_dir="$(mktemp -d "$OUT_DIR/.scene-${padded}.XXXXXX")"
+  raw_out="$work_dir/raw.mp4"
   final_out="$OUT_DIR/scene-${padded}.mp4"
+  encoded_out="$work_dir/encoded.mp4"
+  sidecar="$OUT_DIR/scene-${padded}.provenance.json"
+  snapshot_file="$work_dir/snapshot.json"
+  trap 'rm -rf "$work_dir"' EXIT
+  node "$FILM_DIR/scripts/render-provenance.mjs" snapshot "$FILM_DIR" "$num" "$MODE" "$RENDER_FPS" "$SOURCE" "$snapshot_file"
 
   echo "== Scene $padded ($MODE): frames $range ==" >&2
   npx remotion render CascadeFilm "$raw_out" \
@@ -150,15 +159,21 @@ render_scene() {
       -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -color_range tv -r 30 \
       -c:a aac -b:a 192k \
       -movflags +faststart \
-      "$final_out"
+      "$encoded_out"
   else
     ffmpeg -y -i "$raw_out" \
       -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -r "$RENDER_FPS" \
       -c:a aac -b:a 128k \
       -movflags +faststart \
-      "$final_out"
+      "$encoded_out"
   fi
-  rm -f "$raw_out"
+  node "$FILM_DIR/scripts/render-provenance.mjs" finish "$FILM_DIR" "$snapshot_file" "$encoded_out" "${encoded_out}.provenance.json"
+  # W6 chimera incident: a crash between publishing media and metadata must leave a missing stamp, never an old valid one.
+  rm -f "$sidecar"
+  mv "$encoded_out" "$final_out"
+  mv "${encoded_out}.provenance.json" "$sidecar"
+  rm -rf "$work_dir"
+  trap - EXIT
 
   echo "-> $final_out" >&2
   ended=$(perl -MTime::HiRes=time -e 'print time')

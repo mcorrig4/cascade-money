@@ -10,7 +10,9 @@
       "promises": 11.748,
       "promises-fallback": 12.672,
       "wordmark": 14.16,
-      "hook-arc": 16.17
+      "hook-arc": 16.17,
+      "payment-terms": 11.748,
+      "promises-word": 12.672
     }
   },
   "3": {
@@ -26,14 +28,16 @@
       "question-card-fallback": 2.342,
       "dated-dollar": 3.396,
       "dated-dollar-fallback": 3.58,
-      "not-cash": 5.642
+      "not-cash": 5.642,
+      "not-as-cash": 5.224,
+      "as-dollar-with-date": 6.332
     }
   },
   "5": {
     "wavMd5": "2e44edc46a5c3cf3c044ec85b4ab51c5",
     "cues": {
       "cascade-open": 0.14,
-      "window-mirror": 16.134
+      "window-mirror": 15.9
     }
   },
   "6": {

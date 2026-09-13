@@ -10,9 +10,9 @@
     "stat-factories": 7.202,
     "stat-countries": 9.148,
     "promises": 11.748,
-    "payment-terms": 11.76,
+    "payment-terms": 11.748,
     "promises-fallback": 12.672,
-    "promises-word": 12.78,
+    "promises-word": 12.672,
     "wordmark": 14.16,
     "hook-arc": 16.17
   },
@@ -26,15 +26,15 @@
     "question-card-fallback": 2.342,
     "dated-dollar": 3.396,
     "dated-dollar-fallback": 3.58,
-    "not-as-cash": 4.04,
+    "not-as-cash": 5.224,
     "not-cash": 5.642,
-    "as-dollar-with-date": 6.04
+    "as-dollar-with-date": 6.332
   },
   "5": {
     "cascade-open": 0.14,
     "same-dollars": 12.1,
     "nine-invoices": 13.5,
-    "window-mirror": 16.134
+    "window-mirror": 15.9
   },
   "6": {
     "deposited-value": 0.126,

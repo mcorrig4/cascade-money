@@ -9,6 +9,11 @@
 # (scene-11-delete pass, 2026-09-13; scene 11/New York cut) to exist (run
 # render-scenes.sh --full first, or render the missing ones individually).
 #
+# W6 chimera incident: every part requires a matching .provenance.json sidecar.
+# --allow-mixed explicitly overrides provenance refusals, adds -MIXED to output
+# names, and retains all differences/unknown stamps in adjacent manifests.
+# Dirty renders warn; matching stamps cannot distinguish different dirty states.
+#
 # Final mode:
 #   film/scripts/splice-draft.sh --final
 # Concats out/parts-final/scene-01.mp4 .. scene-12.mp4 (render with
@@ -31,12 +36,20 @@ node "$FILM_DIR/scripts/check-cues.mjs" >&2
 
 MODE="draft"
 TAG=""
-if [[ "${1:-}" == "--final" ]]; then
-  MODE="final"
-elif [[ $# -ge 1 ]]; then
-  TAG="$1"
-else
-  echo "usage: $0 <tag> | --final" >&2
+ALLOW_MIXED=false
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --final) MODE="final" ;;
+    --allow-mixed) ALLOW_MIXED=true ;;
+    --*) echo "unknown option: $1" >&2; exit 1 ;;
+    *)
+      if [[ -n "$TAG" || ! "$1" =~ ^[A-Za-z0-9._-]+$ ]]; then echo "invalid or duplicate draft tag: $1" >&2; exit 1; fi
+      TAG="$1" ;;
+  esac
+  shift
+done
+if [[ "$MODE" == "draft" && -z "$TAG" ]] || [[ "$MODE" == "final" && -n "$TAG" ]]; then
+  echo "usage: $0 [--allow-mixed] <tag> | --final [--allow-mixed]" >&2
   exit 1
 fi
 
@@ -54,6 +67,23 @@ fi
 TEMP_DIR="$(mktemp -d)"
 CONCAT_LIST="$TEMP_DIR/concat.txt"
 trap 'rm -rf "$TEMP_DIR"' EXIT
+
+# W6 chimera incident: inspect every original part before even normalizing audio.
+PROVENANCE_REPORT="$TEMP_DIR/provenance.json"
+PROVENANCE_STATE="$(node "$FILM_DIR/scripts/render-provenance.mjs" check "$PARTS_DIR" "$MODE" "$ALLOW_MIXED" "$PROVENANCE_REPORT")"
+if [[ "$PROVENANCE_STATE" == "mixed" ]]; then
+  OUT_FILE="${OUT_FILE%.mp4}-MIXED.mp4"
+  if [[ "$MODE" == "final" ]]; then OUT_720P="${OUT_720P%.mp4}-MIXED.mp4"; fi
+fi
+publish_manifest() {
+  if ! node "$FILM_DIR/scripts/render-provenance.mjs" manifest "$PROVENANCE_REPORT" "$1"; then
+    # W6: an output whose inputs changed mid-splice must not survive under a consistent-looking name.
+    rm -f "$1" "${1%.mp4}.provenance.json"
+    return 1
+  fi
+}
+# W6: failed replacement must not inherit a previous output's manifest.
+rm -f "${OUT_FILE%.mp4}.provenance.json"
 
 # The film is 12 scenes (scene-11-delete pass, 2026-09-13) — concat the
 # contiguous surviving scene numbers.
@@ -99,6 +129,7 @@ if [[ "$MODE" == "draft" ]]; then
   FILTER+="concat=n=${#SURVIVING_SCENES[@]}:v=1:a=1[v][a]"
   ffmpeg -hide_banner -loglevel error -y "${INPUTS[@]}" -filter_complex "$FILTER" -map '[v]' -map '[a]' \
     -r "${SPLICE_FPS:-${part_fps%%/*}}" -c:v libx264 -crf 26 -pix_fmt yuv420p -color_range tv -c:a aac -b:a 128k -ar 48000 -ac 2 -movflags +faststart "$OUT_FILE"
+  publish_manifest "$OUT_FILE"
   echo "-> $OUT_FILE (frame-exact filtered concat)" >&2
   exit 0
 fi
@@ -106,6 +137,7 @@ fi
 echo "Attempting stream-copy concat..." >&2
 # W4 final-padding incident: preserve the negative AAC priming timestamp instead of shifting picture and audio by one packet.
 if ffmpeg -y -copyts -f concat -safe 0 -i "$CONCAT_LIST" -c copy -movflags +faststart "$OUT_FILE" 2>"$TEMP_DIR/copy.log"; then
+  publish_manifest "$OUT_FILE"
   echo "-> $OUT_FILE (stream copy, no re-encode)" >&2
 else
   echo "Stream copy failed — refusing to re-encode final master video:" >&2
@@ -114,11 +146,13 @@ else
 fi
 
 echo "Deriving 720p copy..." >&2
+rm -f "${OUT_720P%.mp4}.provenance.json"
 ffmpeg -y -i "$OUT_FILE" \
   -vf scale=1280:720 -crf 22 -pix_fmt yuv420p -color_range tv \
   -c:a copy \
   -movflags +faststart \
   "$OUT_720P"
+publish_manifest "$OUT_720P"
 echo "-> $OUT_720P (720p derivative)" >&2
 
 MAX_DURATION="240.0"

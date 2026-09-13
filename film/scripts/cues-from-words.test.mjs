@@ -107,3 +107,24 @@ test('a changed measured-onset WAV fails without overwriting the cue outputs', (
     for (const name of ['cues.json', 'cues.lock.json']) assert.equal(readFileSync(join(root, 'src/generated', name), 'utf8'), 'preserve');
   } finally { rmSync(root, {recursive: true, force: true}); }
 });
+
+// W6 honesty decision: unresolved connected speech keeps its prior estimate and WAV provenance.
+test('W6 evidence distinguishes measurements from retained unresolved estimates', () => {
+  const rows = JSON.parse(readFileSync(new URL('../analysis/W2-onset-evidence.json', import.meta.url)));
+  const overrides = JSON.parse(readFileSync(new URL('../src/generated/onset-overrides.json', import.meta.url)));
+  const audited = rows.filter(row => row.w6);
+  assert.equal(audited.length, 14);
+  for (const row of audited) {
+    const audit = row.w6;
+    assert.equal(row.onset, overrides[row.scene].cues[row.cue]);
+    assert.equal(audit.wavMd5, row.wav.includes('tail') ? overrides[row.scene].tailMd5 : overrides[row.scene].wavMd5);
+    if (audit.status === 'unresolved') {
+      assert.equal(row.onset, audit.beforeOnset); assert.equal(audit.deltaSeconds, 0);
+      assert.ok(audit.reason); assert.match(row.method, /unresolved/);
+    } else {
+      assert.equal(audit.passesRiseCriterion, true);
+      assert.ok(audit.candidateSeconds.includes(row.onset));
+    }
+  }
+  assert.equal(audited.filter(row => row.w6.status === 'unresolved').length, 9);
+});
