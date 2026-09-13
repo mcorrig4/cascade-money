@@ -19,7 +19,7 @@
  * that ISN'T the "money plus time" beat, then again at 12.40s as part of
  * it) resolves to the right occurrence rather than the first.
  *
- * Numbers throughout this file are the NEW (post reorder-to-13,
+ * Numbers throughout this file are the NEW (post tail cut,
  * 2026-09-13) numbering. Two scenes were deliberately left with fewer cues
  * than they have visual beats — not an oversight:
  *   - Scene 6's "four companies" counter and scene 10's closing "a second
@@ -27,11 +27,11 @@
  *     (docs/cascade/hackathon vs. the recorded v7 VO diverged) — their
  *     phrases are listed so a future re-narration picks them up
  *     automatically, but today they always fall back.
- *   - Scene 9's closing StressResultFlash and all of scene 13's close card
+ *   - Scene 9's closing StressResultFlash and all of scene 12's close card
  *     are excluded entirely (no cue defined). The old scene 13 (The rules
  *     survive) footer this note used to describe is cut as a standalone
  *     scene (reorder-to-13 pass) — its headline figure now lives in scene
- *     9's StressResultFlash, not narration-keyed. Scene 13's (Close, old
+ *     9's StressResultFlash, not narration-keyed. Scene 12's (Close, old
  *     17) three beats (tagline -> wordmark -> "Dated dollars on Arc.") are
  *     a deliberate held dramatic sequence timed off the scene's own
  *     duration; the actual VO is now four words ("This is Cascade
@@ -91,7 +91,7 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
   // figure survives as a closing beat folded into scene 9 — see
   // StressResultFlash in CascadeFilm.tsx). All four scenes' cues are
   // retired with them rather than left dangling under numbers the new
-  // 13-scene numbering reassigns to different scenes. Scene numbers below
+  // 12-scene numbering reassigns to different scenes. Scene numbers below
   // are the NEW (post-reorder) numbering throughout this file.
   //
   // Scene 3 — The hidden supply chain (the example, renumbered from old
@@ -138,6 +138,8 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'money-plus-time', phrase: 'money plus time'},
     {cue: 'final-line', phrase: 'a second dimension to money'},
   ],
+  // Scene 11 — Beneath it: match the FIRST "promises" in the merged VO.
+  11: [{cue: 'promises', phrase: 'promises'}],
 };
 
 /** scene number -> cue name -> resolved seconds-from-scene-start (word start minus 150ms), written by cues-from-words.mjs. */

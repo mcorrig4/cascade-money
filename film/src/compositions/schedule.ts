@@ -1,26 +1,19 @@
 /**
  * CascadeFilm schedule — one entry per surviving scene of
- * docs/script-v6-liam.md, REORDERED to the final 13-scene play order
- * (reorder-to-13 pass, 2026-09-13, product owner + Director/wingman 03:33
- * ET — supersedes the earlier 15-scene renumber so we never renumber
- * twice). Old scenes 3 (Rewind), 5 (The contradiction), 12 (Stress test)
- * and 13 (The rules survive) are CUT entirely. Every entry's `num`/`id`
- * below is the NEW (1-13) numbering; array ORDER is also the new play
- * order, which is NOT the old script order — old scene 9 ("Run the year")
- * now plays after old 10/11 ("A dollar with a date" / "Underneath it"),
- * not before. Every consumer looks scenes up by `num` (Record keys,
- * `.find`) or by array position for adjacency (framingRamp), never by
- * `num - 1` as an index.
+ * docs/script-v6-liam.md, in the current 12-scene play order.
+ * The 2026-09-13 04:15 EDT tail cut removes "New York" (scene 11 in the
+ * preceding 13-scene cut). Scenes 1-10 are unchanged; "Beneath it" moves
+ * 12->11 and "Close" moves 13->12.
  *
- * Old -> new mapping applied here: 1->1, 2->2, 4->3, 6->4, 7->5, 8->6,
+ * Original v6 -> current mapping: 1->1, 2->2, 4->3, 6->4, 7->5, 8->6,
  * 10->7, 11->8, 9->9 (+ closing beat, see SCENE9_CLOSE_FLASH_SECONDS),
- * 14->10, 15->11, 16->12, 17->13. (3, 5, 12, 13 removed.)
+ * 14->10, 16->11, 17->12. Original scenes 3, 5, 12, 13, 15 are removed.
  *
  * `estimateFrames` is a FALLBACK duration, used only when
  * public/narration/narration.json has no entry for that scene yet (see
  * narration.ts). It is derived from the scene's own spoken word count at
  * 155 words/minute, i.e. `words/155*60` seconds, rounded to the frame at
- * 30fps. One extra second (30 frames) is added once, to scene 13 (Close,
+ * 30fps. One extra second (30 frames) is added once, to scene 12 (Close,
  * old 17), because it is a held outro card whose visual beats (white card
  * -> wordmark -> tag) need a floor of hold time independent of how few
  * words it speaks — not because every scene gets +1s. Word counts:
@@ -42,8 +35,8 @@
 export type SceneFrameMode = 'tilt' | 'bleed' | 'framed';
 
 export interface SceneDef {
-  num: number; // 1-13 (new numbering, reorder-to-13 pass 2026-09-13)
-  id: string; // 'scene01'..'scene13'
+  num: number; // 1-12 (current numbering, tail cut 2026-09-13)
+  id: string; // 'scene01'..'scene12'
   title: string; // verbatim from script-v6-liam.md's "Scene N — Title" (old numbering)
   estimateFrames: number;
   fallbackCapture: string | null;
@@ -66,14 +59,15 @@ export const SCENES: SceneDef[] = [
   // stress-test-result beat folded in from the cut scenes 12/13.
   {num: 9, id: 'scene09', title: 'Run the year', estimateFrames: 574, fallbackCapture: 'shot-05-one-year.mp4', fallbackCaptureDurationInFrames: 450, frame: 'bleed', motionGraphic: false},
   {num: 10, id: 'scene10', title: 'Zoom out', estimateFrames: 488, fallbackCapture: 'shot-11-architecture.mp4', fallbackCaptureDurationInFrames: 150, frame: 'framed', motionGraphic: true},
-  {num: 11, id: 'scene11', title: 'New York', estimateFrames: 302, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
-  {num: 12, id: 'scene12', title: 'Beneath it', estimateFrames: 267, fallbackCapture: 'shot-12-cascade.mp4', fallbackCaptureDurationInFrames: 420, fallbackCaptureStartFrom: 180, frame: 'bleed', motionGraphic: true},
-  {num: 13, id: 'scene13', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
+  // Keep the adjacency mode so scene 10's exit stays unchanged; the merged
+  // visual explicitly holds mode="framed" progress={1} in both render paths.
+  {num: 11, id: 'scene11', title: 'Beneath it', estimateFrames: 267, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
+  {num: 12, id: 'scene12', title: 'Close', estimateFrames: 135, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
 ];
 
 /**
  * All the numbers on SCENES[] above (estimateFrames) and the floor just
- * below (SCENE17_CLOSE_FLOOR_FRAMES) were authored assuming 30fps — that is
+ * below (SCENE12_CLOSE_FLOOR_FRAMES) were authored assuming 30fps — that is
  * this file's `FPS_BASE`. The composition itself can run at a different fps
  * (the draft profile renders at 15fps — see CascadeFilmProps.fps in
  * narrationControlsSchema.ts), so every consumer of these numbers goes
@@ -88,7 +82,7 @@ export const scaleFrames = (framesAtBase: number, fps: number): number =>
   Math.round((framesAtBase * fps) / FPS_BASE);
 
 /**
- * Scene 13 (Close, old 17) is a held outro card: white -> tag -> wordmark
+ * Scene 12 (Close, old 17) is a held outro card: white -> tag -> wordmark
  * beats need a floor of screen time independent of how few words the VO
  * speaks for it. Applied everywhere a scene's resolved duration is computed
  * (resolveSceneDurations below, used by both Root.tsx's calculateMetadata
@@ -103,7 +97,7 @@ export const scaleFrames = (framesAtBase: number, fps: number): number =>
  * the largest floor that still lands the total at 3:54 (234.93s, verified
  * via `npx remotion compositions`).
  */
-export const SCENE13_CLOSE_FLOOR_FRAMES = 150; // 5s @ FPS_BASE (30fps)
+export const SCENE12_CLOSE_FLOOR_FRAMES = 150; // 5s @ FPS_BASE (30fps)
 
 /**
  * Scene 9 (Run the year)'s closing beat (reorder-to-13 pass, 2026-09-13,
@@ -132,7 +126,7 @@ const SCENE1_CAPTURE_DURATION_SECONDS = 26.53;
 
 type NarrationDurations = Record<number, {durationInFrames: number; rawDurationInFrames?: number}>;
 
-/** A scene's UNROUNDED duration in frames at `fps` — real VO length (already fps-native, integer), else the word-count estimate scaled from FPS_BASE (fractional), with scene 1's tail and scene 17's floor applied to whichever one it is. */
+/** A scene's UNROUNDED duration in frames at `fps` — real VO length (already fps-native, integer), else the word-count estimate scaled from FPS_BASE (fractional), with scene 1's tail and scene 12's floor applied to whichever one it is. */
 const rawDurationForScene = (sc: SceneDef, narration: NarrationDurations, fps: number): number => {
   if (sc.num === 1 && narration[1]?.rawDurationInFrames !== undefined) {
     const withTail = narration[1].rawDurationInFrames! + SCENE1_TAIL_SECONDS * fps;
@@ -140,13 +134,13 @@ const rawDurationForScene = (sc: SceneDef, narration: NarrationDurations, fps: n
   }
   const raw = narration[sc.num]?.durationInFrames ?? (sc.estimateFrames * fps) / FPS_BASE;
   if (sc.num === 9) return raw + (SCENE9_CLOSE_FLASH_SECONDS * fps);
-  return sc.num === 13 ? Math.max(raw, (SCENE13_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE) : raw;
+  return sc.num === 12 ? Math.max(raw, (SCENE12_CLOSE_FLOOR_FRAMES * fps) / FPS_BASE) : raw;
 };
 
 /**
- * The 13 scenes' resolved Sequence durations (integer frames) at `fps`.
+ * The 12 scenes' resolved Sequence durations (integer frames) at `fps`.
  * Rounding each scene independently (e.g. `Math.round(rawDurationForScene(...))`)
- * would let up to 13 individual +/-0.5 frame roundings accumulate into a
+ * would let up to 12 individual +/-0.5 frame roundings accumulate into a
  * multi-frame drift on the film's total. Cumulative rounding
  * (round the RUNNING TOTAL, take each scene's frames as the delta from the
  * previous running total) guarantees the sum of these always equals

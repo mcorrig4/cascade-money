@@ -2,7 +2,7 @@
  * narration.ts — optional real-narration overlay for the v6 schedule.
  *
  * When film/public/narration/narration.json exists, it is a JSON array of
- * {scene, file, duration} objects (scene = 1..13 matching SCENES[].num,
+ * {scene, file, duration} objects (scene = 1..12 matching SCENES[].num,
  * file = filename inside public/narration/, duration = seconds of the
  * rendered VO clip). Each such scene's Sequence duration becomes
  * `duration + 0.4s` (a small settle pad after the line finishes) instead of
@@ -59,6 +59,12 @@ export const loadNarration = async (fps: number): Promise<NarrationMap> => {
   try {
     const res = await fetch(staticFile('narration/narration.json'));
     if (!res.ok) return {};
+    // PLACEHOLDER: reusing old scene-12 narration audio/duration until the new merged "Beneath it" VO line is recorded and staged — the visual timing (esp. the 'promises' cue fallback) is provisional until then.
+    // narration.json re-keys old 12->11 and 13->12, with files renamed to
+    // scene-11/12 respectively (the same asset-renaming pattern as c125144).
+    // The intended scene-11 VO is: "Behind this new folding iPhone was an
+    // invisible chain of promises. Cascade would have let those promises
+    // move before the cash does."
     const data: NarrationEntry[] = await res.json();
     const map: NarrationMap = {};
     for (const e of data) {

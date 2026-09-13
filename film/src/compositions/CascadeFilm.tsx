@@ -1,7 +1,7 @@
 /**
  * CascadeFilm — the root composition, rebuilt for the product owner's final
  * v6 narration (docs/script-v6-liam.md, Stage 12 remap; reordered/renumbered
- * to 13 scenes 2026-09-13). 13 scenes via
+ * to 12 scenes 2026-09-13, after cutting "New York"). 12 scenes via
  * <Series> (hard cuts — each capture is already one continuous take; see
  * schedule.ts for the per-scene duration/capture doctrine).
  *
@@ -33,7 +33,6 @@ import {ensureFontsLoaded} from '../brand/fonts';
 import {color, font} from '../brand/tokens';
 import {CaptureScene} from '../components/CaptureScene';
 import {BrowserFrame, FrameMode} from '../components/BrowserFrame';
-import {PhoneHero} from '../components/PhoneHero';
 import {resolveSceneDurations, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
@@ -46,6 +45,7 @@ import {TheQuestion} from './motion-graphics/TheQuestion';
 import {Scene08Counters} from './motion-graphics/Scene08Counters';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
 import {Scene17Close} from './motion-graphics/Scene17Close';
+import {PaymentNetworkClose} from './motion-graphics/PaymentNetworkClose';
 import {Hook} from './motion-graphics/Hook';
 import {AppFrame} from '../live/AppFrame';
 
@@ -87,14 +87,9 @@ const CUE_TIMES = cueTimesData as Record<number, Record<string, number>>;
 
 /**
  * A scene's resolved Sequence duration, looked up by scene NUM rather than
- * array position. SCENES is both non-contiguous in num (old scenes 3, 5, 12,
- * 13 are cut entirely — see schedule.ts) AND reordered from the original
- * v6 script order (old scene 9 "Run the year" now plays after old 10/11,
- * not before — reorder-to-13 pass, 2026-09-13), so neither `sceneIndex-1`
- * nor the scene's own historical position is a valid array index.
- * `resolveSceneDurations` returns an array parallel
- * to SCENES itself (same order, same length), so this always resolves the
- * right entry regardless of which scenes exist.
+ * array position. SCENES uses the contiguous 1..12 numbering after the
+ * tail cut. resolveSceneDurations returns an array parallel to SCENES;
+ * this lookup also stays correct if a later cut leaves gaps or reorders it.
  */
 const durationFor = (durations: number[], num: number): number => {
   const idx = SCENES.findIndex((s) => s.num === num);
@@ -253,17 +248,19 @@ const Scene9Capture: React.FC<{
   );
 };
 
-/** A pure motion-graphic scene, framed per framingRamp (no capture underneath). */
-const GraphicBeat: React.FC<{sc: SceneDef; duration: number; children: React.ReactNode}> = ({
+/** A pure motion-graphic scene; explicit mode/progress can hold the HUD framing. */
+const GraphicBeat: React.FC<{sc: SceneDef; duration: number; mode?: FrameMode; progress?: number; children: React.ReactNode}> = ({
   sc,
   duration,
+  mode,
+  progress: fixedProgress,
   children,
 }) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const progress = framingRamp(sc, frame, duration, fps);
+  const progress = fixedProgress ?? framingRamp(sc, frame, duration, fps);
   return (
-    <BrowserFrame mode={sc.frame as FrameMode} progress={progress}>
+    <BrowserFrame mode={mode ?? sc.frame as FrameMode} progress={progress}>
       {children}
     </BrowserFrame>
   );
@@ -523,10 +520,7 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const durations = resolveSceneDurations(narration, fps);
-  // Look up by scene NUM, not array position — scene 3 is cut, so SCENES
-  // (and the `durations` array parallel to it) has a gap and `sceneIndex-1`
-  // would silently read the wrong neighbor's duration for every scene from
-  // 4 onward (crashing outright once sceneIndex runs off the end, at 17).
+  // Resolve by the current scene number in SCENES.
   const duration = durationFor(durations, sceneIndex);
   const sc = sceneByNum(sceneIndex);
   const progress = framingRamp(sc, frame, duration, fps);
@@ -535,14 +529,19 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   if(sceneIndex===2) filmOverlay=<Hook durationInFrames={duration} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />;
   else if(sceneIndex===4) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[4]} />;
   else if(sceneIndex===9) filmOverlay=<StressResultFlash durationInFrames={duration} />;
-  else if(sceneIndex===13) filmOverlay=<Scene17Close durationInFrames={duration} />;
   // Scene 3 (renumbered from old scene 4) has NO live-path film overlay:
   // Scene4DateCornerLabel/ExampleGlobeLabels are screen-space overlays that
   // collide with the live app's own top-left HUD text there (e2cb199) —
   // they render only on the captures path (see the Series.Sequence below).
 
   let visual: React.ReactNode;
-  if(source==='live'){
+  if (sceneIndex === 11) {
+    visual = <GraphicBeat sc={sc} duration={duration} mode="framed" progress={1}>
+      <PaymentNetworkClose durationInFrames={duration} cues={CUE_TIMES[11]} />
+    </GraphicBeat>;
+  } else if (sceneIndex === 12) {
+    visual = <Scene17Close durationInFrames={duration} />;
+  } else if(source==='live'){
     const app=<AppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
     if(sceneIndex===1){
       const pullbackFrames=at30(SCENE1_PULLBACK_FRAMES_AT_30,fps);
@@ -579,22 +578,6 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
   const durations = resolveSceneDurations(narration, fps);
 
   if(source==='live')return <AbsoluteFill style={{background:color.bgOuter}}><Series>{SCENES.map((sc,index)=><Series.Sequence key={sc.id} name={`Scene ${sc.num} — ${sc.title}`} durationInFrames={durations[index]}><CascadeLiveScene sceneIndex={sc.num} source="live" narration={narration} captureOverrides={captureOverrides} narrationControls={narrationControls}/></Series.Sequence>)}</Series>{reviewLabels?<ReviewLabelOverlay durations={durations}/>:null}</AbsoluteFill>;
-
-  const sc11 = sceneByNum(11);
-  const sc12 = sceneByNum(12);
-  const dur11 = durationFor(durations, 11);
-  const dur12 = durationFor(durations, 12);
-  const cap11 = captureFor(sc11, captureOverrides, dur11);
-  const cap12 = captureFor(sc12, captureOverrides, dur12);
-  // Scene 11 (New York) opens on the finished-phone photo, then cuts to the
-  // descent capture; scene 12 (Beneath it) continues that SAME capture from
-  // where 11 left off (one continuous take across the two scenes, per the
-  // shooting doctrine) — unless a scene-11/12.mp4 recapture exists, in
-  // which case each plays its own file in full.
-  const photoFrames11 = captureOverrides[11] ? 0 : Math.min(100, Math.round(dur11 * 0.33));
-  const descentStart11 = cap11?.startFrom ?? 0;
-  const descentFrames11 = dur11 - photoFrames11;
-  const descentStart12 = captureOverrides[12] ? cap12?.startFrom ?? 0 : descentStart11 + descentFrames11;
 
   return (
     <AbsoluteFill style={{background: color.bgOuter}}>
@@ -780,50 +763,16 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           <SceneVO num={10} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 11 — New York" durationInFrames={dur11}>
-          {captureOverrides[11] && cap11 ? (
-            <CaptureBeat sc={sc11} duration={dur11} cap={cap11} />
-          ) : (
-            <>
-              <Sequence from={0} durationInFrames={photoFrames11} layout="none">
-                <PhoneHeroScene durationInFrames={photoFrames11} finished />
-              </Sequence>
-              <Sequence from={photoFrames11} durationInFrames={descentFrames11} layout="none">
-                <CaptureBeat
-                  sc={sc11}
-                  duration={descentFrames11}
-                  cap={{
-                    src: sc11.fallbackCapture!,
-                    captureDurationInFrames: sc11.fallbackCaptureDurationInFrames!,
-                    startFrom: descentStart11,
-                  }}
-                />
-              </Sequence>
-            </>
-          )}
+        <Series.Sequence name="Scene 11 — Beneath it" durationInFrames={durationFor(durations, 11)}>
+          <GraphicBeat sc={sceneByNum(11)} duration={durationFor(durations, 11)} mode="framed" progress={1}>
+            <PaymentNetworkClose durationInFrames={durationFor(durations, 11)} cues={CUE_TIMES[11]} />
+          </GraphicBeat>
           <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
-        <Series.Sequence name="Scene 12 — Beneath it" durationInFrames={dur12}>
-          <CaptureBeat
-            sc={sc12}
-            duration={dur12}
-            cap={
-              captureOverrides[12] && cap12
-                ? cap12
-                : {
-                    src: sc12.fallbackCapture!,
-                    captureDurationInFrames: sc12.fallbackCaptureDurationInFrames!,
-                    startFrom: descentStart12,
-                  }
-            }
-          />
+        <Series.Sequence name="Scene 12 — Close" durationInFrames={durationFor(durations, 12)}>
+          <Scene17Close durationInFrames={durationFor(durations, 12)} />
           <SceneVO num={12} narration={narration} narrationControls={narrationControls} />
-        </Series.Sequence>
-
-        <Series.Sequence name="Scene 13 — Close" durationInFrames={durationFor(durations, 13)}>
-          <Scene17Close durationInFrames={durationFor(durations, 13)} />
-          <SceneVO num={13} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
       </Series>
       {reviewLabels ? <ReviewLabelOverlay durations={durations} /> : null}
@@ -851,12 +800,6 @@ const scene1PhoneRevealFrame = (scene1DurationInFrames: number): number =>
     (scene1DurationInFrames * SCENE1_PRE_MENTION_WORDS) /
       (SCENE1_PRE_MENTION_WORDS + SCENE1_MENTION_WORDS),
   );
-
-/** Scene 15's held-photo beat — settled, no tilt gesture (scene 1 no longer uses PhoneHero; see PhoneRevealOverlay below). */
-const PhoneHeroScene: React.FC<{durationInFrames: number; finished?: boolean}> = ({durationInFrames}) => {
-  const frame = useCurrentFrame();
-  return <PhoneHero frame={frame} durationInFrames={durationInFrames} tilt={1} />;
-};
 
 /**
  * Scene 1's opening beat — full-bleed app capture (which itself now opens on
