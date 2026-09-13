@@ -94,7 +94,10 @@ const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: Wi
             Each term's own half-width closes into that same anchor. */}
         <div className="film-question-ledger" style={{
           left: discX, top: discY, opacity: slide * (1 - converge),
-          transform: `translate(${120 * unit * (1 - slide)}px, -50%)`,
+          // At rest the row is offset right so the amount's left edge lands on the
+          // same 48-unit gutter the coin and every other scene use; the offset
+          // unwinds into the same convergence, so it stays one motion.
+          transform: `translate(${120 * unit * (1 - slide) + 56 * unit * (1 - converge)}px, -50%)`,
           ...visibility(on(dollar) && converge < 1),
         }}>
           <strong className="film-question-amount" style={{
