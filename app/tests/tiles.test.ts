@@ -19,10 +19,12 @@ test('shot crossfades prefetch before display and hold the requested sites', () 
   assert.deepEqual(tilePlan({shot:1,shotElapsed:0},0,0,2),{site:'apple-park',prefetch:true,blend:1});
   assert.deepEqual(tilePlan({shot:2,shotElapsed:0},0,0,2),{site:'apple-park',prefetch:true,blend:1});
   assert.ok(tilePlan({shot:1,shotElapsed:14.35},0,0,2).blend > 0 && tilePlan({shot:1,shotElapsed:14.35},0,0,2).blend < 1);
-  assert.deepEqual(tilePlan({shot:10,shotElapsed:0},0,0,2),{site:'fifth-avenue',prefetch:true,blend:0});
-  assert.equal(tilePlan({shot:10,shotElapsed:1.6},0,0,2).blend,1);
-  assert.equal(tilePlan({shot:10,shotElapsed:8.3},0,0,2).blend,1);
-  assert.equal(tilePlan({shot:10,shotElapsed:9},0,0,2).blend,0);
+  // Shot 10 ("New York", the store flight + stair descent) is cut
+  // (scene-11-delete pass, 2026-09-13) — it no longer exists as an
+  // authored shot, so its enter/leave fade special-case is retired with
+  // it. Shot 19 (Beneath it) now opens the fifth-avenue site itself and
+  // gets full blend immediately, same as any other authored-site shot.
+  assert.deepEqual(tilePlan({shot:10,shotElapsed:0},0,0,2),{site:null,prefetch:false,blend:0});
   assert.deepEqual(tilePlan({shot:19,shotElapsed:0},0,0,2),{site:'fifth-avenue',prefetch:true,blend:1});
 });
 
