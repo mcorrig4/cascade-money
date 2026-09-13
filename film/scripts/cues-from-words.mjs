@@ -3,15 +3,14 @@
 // per-scene whisper word-timestamp JSON, writing src/generated/cues.json as
 // `{[scene]: {[cue]: seconds}}` for CascadeFilm's motion-graphics components
 // to read via cueFrame() (src/cues.ts). Run this BEFORE every render (wired
-// into render-scenes.sh / splice-draft.sh, guarded by check-cues.mjs) so a
+// into render-scenes.sh, guarded at render/splice by check-cues.mjs) so a
 // re-narration's new word timings flow through without any code change.
 //
 // Usage:
 //   node scripts/cues-from-words.mjs [wordsDir]
-// wordsDir defaults to $CASCADE_WORDS_DIR, else the current whisper output
-// location. A scene missing its words-NN.json (not transcribed yet, or the
-// dir moved) just leaves that scene's cues unresolved — every consumer
-// falls back to its historical fixed offset, so this never breaks a build.
+// wordsDir defaults to $CASCADE_WORDS_DIR, else public/narration/words in
+// this film checkout. Missing scene/tail transcripts warn and allow partial
+// cues; a missing directory, zero phrase matches, or empty WAV lock fails.
 //
 // Word JSON shape (one file per scene): {scene, words: [{word, start, end}]}
 // — start/end in seconds from the scene's own clip start (matches how
@@ -24,22 +23,28 @@
 // recomputes those md5s at render time and fails the render if any scene's
 // installed wav no longer matches what generated the cues it's about to
 // burn in.
-import {readFileSync, writeFileSync, existsSync, mkdirSync} from 'node:fs';
+import {readFileSync, writeFileSync, existsSync, mkdirSync, statSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {CUE_PHRASES} from '../src/cues.ts';
 
 const FILM_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DEFAULT_WORDS_DIR = join(
-  process.env.HOME ?? '',
-  'claudes-world/tmp/cascade-film/narration/out-v7/words',
-);
+// W4 broken-cut incident: host-local transcripts silently disabled narration reveals.
+const DEFAULT_WORDS_DIR = join(FILM_DIR, 'public/narration/words');
 const wordsDir = process.argv[2] ?? process.env.CASCADE_WORDS_DIR ?? DEFAULT_WORDS_DIR;
 const NARRATION_DIR = join(FILM_DIR, 'public/narration');
 const OUT_PATH = join(FILM_DIR, 'src/generated/cues.json');
 const LOCK_PATH = join(FILM_DIR, 'src/generated/cues.lock.json');
 const REVEAL_LEAD_SECONDS = 0.15; // reveals fire 150ms before the word starts
+
+const fail = (message) => {
+  console.error(`cues-from-words: ${message} (words directory: ${wordsDir})`);
+  process.exit(1);
+};
+if (!existsSync(wordsDir) || !statSync(wordsDir).isDirectory()) fail('words directory does not exist or is not a directory');
+const narrationPath = join(NARRATION_DIR, 'narration.json');
+const narration = existsSync(narrationPath) ? JSON.parse(readFileSync(narrationPath, 'utf8')) : [];
 
 // Strip everything but letters/digits/$ so "million." / "$100" / "10,000"
 // tokens compare cleanly against a hand-typed phrase.
@@ -92,6 +97,7 @@ const MANUAL_ONSET_OVERRIDES = {
 
 const result = {};
 const unresolved = [];
+const transcriptWarnings = [];
 
 for (const [sceneNumStr, cues] of Object.entries(CUE_PHRASES)) {
   const sceneNum = Number(sceneNumStr);
@@ -100,7 +106,20 @@ for (const [sceneNumStr, cues] of Object.entries(CUE_PHRASES)) {
     for (const {cue} of cues) unresolved.push(`scene ${sceneNum} "${cue}" — no words file at ${path}`);
     continue;
   }
-  const {words} = JSON.parse(readFileSync(path, 'utf8'));
+  let {words} = JSON.parse(readFileSync(path, 'utf8'));
+  const entry = narration.find((entry) => entry.scene === sceneNum);
+  if (entry?.tailFile) {
+    const tailPath = join(wordsDir, entry.tailFile.replace(/\.[^.]+$/, '.json'));
+    if (existsSync(tailPath)) {
+      // W4 missing-tail incident: narration.ts places tails at raw duration + tailGapSec (default 0.25), before any settle pad.
+      const offset = entry.duration + (entry.tailGapSec ?? 0.25);
+      if (!Number.isFinite(offset) || offset < 0) fail(`invalid tail offset for scene ${sceneNum}`);
+      const tail = JSON.parse(readFileSync(tailPath, 'utf8')).words;
+      words = [...words, ...tail.map((word) => ({...word, start: word.start + offset, end: word.end + offset}))];
+    } else {
+      transcriptWarnings.push(`scene ${sceneNum} — no tail words file at ${tailPath}`);
+    }
+  }
   let cursor = 0;
   const sceneResult = {};
   for (const {cue, phrase} of cues) {
@@ -116,6 +135,9 @@ for (const [sceneNumStr, cues] of Object.entries(CUE_PHRASES)) {
   if (Object.keys(sceneResult).length > 0) result[sceneNum] = sceneResult;
 }
 
+const phraseCount = Object.values(result).reduce((count, cues) => count + Object.keys(cues).length, 0);
+if (phraseCount === 0) fail('zero cues resolved from words; refusing to replace generated cues');
+
 // Apply the measured-onset overrides, guarded by the installed wav's md5.
 for (const [sceneNumStr, override] of Object.entries(MANUAL_ONSET_OVERRIDES)) {
   const sceneNum = Number(sceneNumStr);
@@ -129,9 +151,6 @@ for (const [sceneNumStr, override] of Object.entries(MANUAL_ONSET_OVERRIDES)) {
   }
 }
 
-mkdirSync(dirname(OUT_PATH), {recursive: true});
-writeFileSync(OUT_PATH, JSON.stringify(result, null, 2) + '\n');
-
 // Lock file: md5 of every narration wav these cues were built from, so
 // check-cues.mjs can catch a stale render (installed wav changed, cues
 // weren't regenerated).
@@ -141,6 +160,10 @@ for (const sceneNumStr of Object.keys(CUE_PHRASES)) {
   const md5 = md5File(wavFileFor(sceneNum));
   if (md5) lock[sceneNum] = md5;
 }
+// W4 empty-lock incident: missing WAVs must not turn the render gate into a zero-scene pass.
+if (Object.keys(lock).length === 0) fail('empty narration lock; no narration WAVs found');
+mkdirSync(dirname(OUT_PATH), {recursive: true});
+writeFileSync(OUT_PATH, JSON.stringify(result, null, 2) + '\n');
 writeFileSync(LOCK_PATH, JSON.stringify(lock, null, 2) + '\n');
 
 const resolvedCount = Object.values(result).reduce((a, s) => a + Object.keys(s).length, 0);
@@ -149,4 +172,9 @@ console.log(`cues-from-words: wrote ${Object.keys(lock).length} narration md5(s)
 if (unresolved.length > 0) {
   console.log(`cues-from-words: ${unresolved.length} cue(s) left to fall back:`);
   for (const line of unresolved) console.log(`  - ${line}`);
+}
+
+if (transcriptWarnings.length > 0) {
+  console.warn(`cues-from-words: ${transcriptWarnings.length} transcript warning(s):`);
+  for (const line of transcriptWarnings) console.warn(`  - ${line}`);
 }

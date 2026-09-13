@@ -1,0 +1,375 @@
+{
+  "scene": 7,
+  "words": [
+    {
+      "word": "The",
+      "start": 0.0,
+      "end": 0.22
+    },
+    {
+      "word": "primitive",
+      "start": 0.22,
+      "end": 0.52
+    },
+    {
+      "word": "is",
+      "start": 0.52,
+      "end": 0.74
+    },
+    {
+      "word": "simple.",
+      "start": 0.74,
+      "end": 1.08
+    },
+    {
+      "word": "Dollars",
+      "start": 1.42,
+      "end": 1.96
+    },
+    {
+      "word": "with",
+      "start": 1.96,
+      "end": 2.1
+    },
+    {
+      "word": "the",
+      "start": 2.1,
+      "end": 2.22
+    },
+    {
+      "word": "same",
+      "start": 2.22,
+      "end": 2.44
+    },
+    {
+      "word": "date",
+      "start": 2.44,
+      "end": 2.68
+    },
+    {
+      "word": "are",
+      "start": 2.68,
+      "end": 2.94
+    },
+    {
+      "word": "interchangeable.",
+      "start": 2.94,
+      "end": 3.7
+    },
+    {
+      "word": "Each",
+      "start": 3.92,
+      "end": 4.46
+    },
+    {
+      "word": "unit",
+      "start": 4.46,
+      "end": 4.74
+    },
+    {
+      "word": "is",
+      "start": 4.74,
+      "end": 4.94
+    },
+    {
+      "word": "one",
+      "start": 4.94,
+      "end": 5.16
+    },
+    {
+      "word": "USDC",
+      "start": 5.16,
+      "end": 5.78
+    },
+    {
+      "word": "of",
+      "start": 5.78,
+      "end": 5.92
+    },
+    {
+      "word": "principle",
+      "start": 5.92,
+      "end": 6.3
+    },
+    {
+      "word": "backed",
+      "start": 6.3,
+      "end": 6.92
+    },
+    {
+      "word": "by",
+      "start": 6.92,
+      "end": 7.16
+    },
+    {
+      "word": "a",
+      "start": 7.16,
+      "end": 7.26
+    },
+    {
+      "word": "vault",
+      "start": 7.26,
+      "end": 7.46
+    },
+    {
+      "word": "on",
+      "start": 7.46,
+      "end": 7.66
+    },
+    {
+      "word": "ARC,",
+      "start": 7.66,
+      "end": 8.04
+    },
+    {
+      "word": "redeemable",
+      "start": 8.16,
+      "end": 8.9
+    },
+    {
+      "word": "on",
+      "start": 8.9,
+      "end": 9.2
+    },
+    {
+      "word": "its",
+      "start": 9.2,
+      "end": 9.34
+    },
+    {
+      "word": "calendar",
+      "start": 9.34,
+      "end": 9.68
+    },
+    {
+      "word": "date.",
+      "start": 9.68,
+      "end": 10.02
+    },
+    {
+      "word": "A",
+      "start": 10.88,
+      "end": 11.42
+    },
+    {
+      "word": "supplier",
+      "start": 11.42,
+      "end": 11.82
+    },
+    {
+      "word": "does",
+      "start": 11.82,
+      "end": 12.06
+    },
+    {
+      "word": "not",
+      "start": 12.06,
+      "end": 12.34
+    },
+    {
+      "word": "need",
+      "start": 12.34,
+      "end": 12.56
+    },
+    {
+      "word": "to",
+      "start": 12.56,
+      "end": 12.74
+    },
+    {
+      "word": "price",
+      "start": 12.74,
+      "end": 13.08
+    },
+    {
+      "word": "the",
+      "start": 13.08,
+      "end": 13.4
+    },
+    {
+      "word": "previous",
+      "start": 13.4,
+      "end": 13.82
+    },
+    {
+      "word": "company's",
+      "start": 13.82,
+      "end": 14.34
+    },
+    {
+      "word": "promise",
+      "start": 14.34,
+      "end": 14.76
+    },
+    {
+      "word": "because",
+      "start": 14.76,
+      "end": 15.36
+    },
+    {
+      "word": "the",
+      "start": 15.36,
+      "end": 15.52
+    },
+    {
+      "word": "claim",
+      "start": 15.52,
+      "end": 15.76
+    },
+    {
+      "word": "is",
+      "start": 15.76,
+      "end": 15.96
+    },
+    {
+      "word": "against",
+      "start": 15.96,
+      "end": 16.22
+    },
+    {
+      "word": "the",
+      "start": 16.22,
+      "end": 16.4
+    },
+    {
+      "word": "shared",
+      "start": 16.4,
+      "end": 16.7
+    },
+    {
+      "word": "vault.",
+      "start": 16.7,
+      "end": 17.1
+    },
+    {
+      "word": "A",
+      "start": 18.0,
+      "end": 18.54
+    },
+    {
+      "word": "dollar",
+      "start": 18.54,
+      "end": 18.84
+    },
+    {
+      "word": "due",
+      "start": 18.84,
+      "end": 19.16
+    },
+    {
+      "word": "earlier",
+      "start": 19.16,
+      "end": 19.72
+    },
+    {
+      "word": "pays",
+      "start": 19.72,
+      "end": 20.38
+    },
+    {
+      "word": "a",
+      "start": 20.38,
+      "end": 20.56
+    },
+    {
+      "word": "bill",
+      "start": 20.56,
+      "end": 20.8
+    },
+    {
+      "word": "due",
+      "start": 20.8,
+      "end": 21.1
+    },
+    {
+      "word": "later",
+      "start": 21.1,
+      "end": 21.52
+    },
+    {
+      "word": "at",
+      "start": 21.52,
+      "end": 21.88
+    },
+    {
+      "word": "face",
+      "start": 21.88,
+      "end": 22.2
+    },
+    {
+      "word": "value.",
+      "start": 22.2,
+      "end": 22.62
+    },
+    {
+      "word": "If",
+      "start": 23.84,
+      "end": 24.38
+    },
+    {
+      "word": "you",
+      "start": 24.38,
+      "end": 24.48
+    },
+    {
+      "word": "push",
+      "start": 24.48,
+      "end": 24.74
+    },
+    {
+      "word": "the",
+      "start": 24.74,
+      "end": 24.88
+    },
+    {
+      "word": "date",
+      "start": 24.88,
+      "end": 25.08
+    },
+    {
+      "word": "out,",
+      "start": 25.08,
+      "end": 25.38
+    },
+    {
+      "word": "you",
+      "start": 25.58,
+      "end": 25.82
+    },
+    {
+      "word": "earn",
+      "start": 25.82,
+      "end": 26.02
+    },
+    {
+      "word": "the",
+      "start": 26.02,
+      "end": 26.16
+    },
+    {
+      "word": "yield",
+      "start": 26.16,
+      "end": 26.44
+    },
+    {
+      "word": "for",
+      "start": 26.44,
+      "end": 26.66
+    },
+    {
+      "word": "that",
+      "start": 26.66,
+      "end": 26.82
+    },
+    {
+      "word": "extra",
+      "start": 26.82,
+      "end": 27.12
+    },
+    {
+      "word": "time.",
+      "start": 27.12,
+      "end": 27.46
+    }
+  ]
+}

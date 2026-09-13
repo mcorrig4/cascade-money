@@ -1,0 +1,115 @@
+{
+  "scene": 11,
+  "words": [
+    {
+      "word": "Behind",
+      "start": 0.0,
+      "end": 0.8
+    },
+    {
+      "word": "this",
+      "start": 0.8,
+      "end": 1.06
+    },
+    {
+      "word": "new",
+      "start": 1.06,
+      "end": 1.3
+    },
+    {
+      "word": "folding",
+      "start": 1.3,
+      "end": 1.66
+    },
+    {
+      "word": "iPhone",
+      "start": 1.66,
+      "end": 2.12
+    },
+    {
+      "word": "was",
+      "start": 2.12,
+      "end": 2.82
+    },
+    {
+      "word": "an",
+      "start": 2.82,
+      "end": 2.94
+    },
+    {
+      "word": "invisible",
+      "start": 2.94,
+      "end": 3.36
+    },
+    {
+      "word": "chain",
+      "start": 3.36,
+      "end": 3.72
+    },
+    {
+      "word": "of",
+      "start": 3.72,
+      "end": 3.92
+    },
+    {
+      "word": "promises.",
+      "start": 3.92,
+      "end": 4.4
+    },
+    {
+      "word": "Cascade",
+      "start": 5.82,
+      "end": 6.48
+    },
+    {
+      "word": "would",
+      "start": 6.48,
+      "end": 6.66
+    },
+    {
+      "word": "have",
+      "start": 6.66,
+      "end": 6.76
+    },
+    {
+      "word": "let",
+      "start": 6.76,
+      "end": 6.94
+    },
+    {
+      "word": "those",
+      "start": 6.94,
+      "end": 7.16
+    },
+    {
+      "word": "promises",
+      "start": 7.16,
+      "end": 7.68
+    },
+    {
+      "word": "move",
+      "start": 7.68,
+      "end": 8.48
+    },
+    {
+      "word": "before",
+      "start": 8.48,
+      "end": 8.9
+    },
+    {
+      "word": "the",
+      "start": 8.9,
+      "end": 9.1
+    },
+    {
+      "word": "cash",
+      "start": 9.1,
+      "end": 9.4
+    },
+    {
+      "word": "does.",
+      "start": 9.4,
+      "end": 9.64
+    }
+  ]
+}
