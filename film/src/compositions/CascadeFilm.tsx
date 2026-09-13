@@ -601,7 +601,7 @@ const Scene1AppWindow: React.FC<{
   );
 
   return (
-    <BrowserFrame mode="framed" progress={progress}>
+    <BrowserFrame mode="framed" progress={progress} chrome="browser">
       {video}
     </BrowserFrame>
   );
@@ -617,12 +617,30 @@ const Scene1AppWindow: React.FC<{
  * the centre outward. Rendered as a sibling AFTER Scene1AppWindow (not
  * nested in its BrowserFrame), so it sits unclipped above the whole window
  * and casts its drop-shadow onto the app below it.
+ *
+ * Round 2 (product owner's brief, 2026-09-13): "Picture of the iPhone is way
+ * too small. Let's right align the iPhone, and then as it appears, skew back
+ * to the right edge of our window." The phone now sits at ~85% of frame
+ * height, right-edge flush with the (now settled, per Scene1AppWindow's own
+ * pull-back) framed window's inner right edge and vertically centered, and
+ * the reveal adds a subtle 3D skew on top of the existing unfold/mask: it
+ * starts rotated 10° away (perspective 1600px) and translated +6% further
+ * toward the right edge, settling flat over the same ~900ms ease-out.
  */
 const SCENE1_PHONE_REVEAL_FRAMES_AT_30 = 27; // ~900ms
-const SCENE1_PHONE_HEIGHT_FRAC = 0.62; // of the 1080-tall frame
+const SCENE1_PHONE_HEIGHT_FRAC = 0.85; // of the 1080-tall frame
 const SCENE1_PHONE_ASPECT = 1429 / 1101; // public/assets/iphone-duo-hands.png
 const SCENE1_PHONE_EDGE_BAND_PCT = 18;
 const SCENE1_PHONE_EDGE_BLUR_PX = 2;
+const SCENE1_PHONE_SKEW_DEG = 10; // starting rotateY, eases to 0
+const SCENE1_PHONE_SKEW_TRANSLATE_PCT = 6; // starting translateX, eases to 0
+const SCENE1_PHONE_PERSPECTIVE_PX = 1600;
+// Scene1AppWindow's BrowserFrame settles to scale 1 - 0.086 (see
+// BrowserFrame.tsx's 'framed' scale formula) once fully pulled back, which
+// is always true by the time the phone reveals — the reveal cue lands well
+// after the ~1.2s pull-back. Right margin = half the shrink, in the same
+// 1920-wide frame this overlay shares with that window.
+const SCENE1_FRAMED_WINDOW_RIGHT_MARGIN_PX = Math.round((1920 * 0.086) / 2);
 
 const PhoneRevealOverlay: React.FC = () => {
   const frame = useCurrentFrame();
@@ -635,20 +653,32 @@ const PhoneRevealOverlay: React.FC = () => {
   const edgeBand = SCENE1_PHONE_EDGE_BAND_PCT * (1 - p);
   const blur = SCENE1_PHONE_EDGE_BLUR_PX * (1 - p);
   const maskImage = `linear-gradient(to right, transparent 0%, black ${edgeBand}%, black ${100 - edgeBand}%, transparent 100%)`;
+  const rotateY = SCENE1_PHONE_SKEW_DEG * (1 - p);
+  const translateX = SCENE1_PHONE_SKEW_TRANSLATE_PCT * (1 - p);
 
   const height = 1080 * SCENE1_PHONE_HEIGHT_FRAC;
   const width = height * SCENE1_PHONE_ASPECT;
 
   return (
-    <AbsoluteFill style={{display: 'grid', placeItems: 'center', pointerEvents: 'none'}}>
+    <AbsoluteFill
+      style={{
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        paddingRight: SCENE1_FRAMED_WINDOW_RIGHT_MARGIN_PX,
+        pointerEvents: 'none',
+        perspective: SCENE1_PHONE_PERSPECTIVE_PX,
+      }}
+    >
       <div
         style={{
           position: 'relative',
           width,
           height,
           opacity,
-          transform: `scaleX(${scaleX})`,
-          transformOrigin: 'center',
+          transform: `translateX(${translateX}%) rotateY(${rotateY}deg) scaleX(${scaleX})`,
+          transformOrigin: 'right center',
           WebkitMaskImage: maskImage,
           maskImage,
           filter: `blur(${blur}px) drop-shadow(0 24px 48px rgba(0,0,0,0.5))`,

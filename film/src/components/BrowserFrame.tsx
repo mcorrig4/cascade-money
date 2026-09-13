@@ -17,6 +17,15 @@
  * modes. Callers own their own frame math and pass `progress` already eased
  * (use motion/timing's `enter`/`exit` or a plain interpolate).
  *
+ * `chrome` (default 'simple') selects the chrome look: 'simple' is the
+ * original traffic-lights + URL-pill bar every existing caller keeps getting
+ * unless it opts in. 'browser' is the fuller desktop-browser chrome (title
+ * bar with window controls, a one-tab tab strip, and a separate address bar
+ * with a lock glyph) that Scene 1's opening beat uses per the product
+ * owner's brief (2026-09-13, round 2): "add some window chrome... I want it
+ * to look like a web browser is actually running it." Scoped to 'framed'
+ * mode only — never touch other callers' look.
+ *
  * Implementation note: the whole window (chrome + content) is one native
  * 1920x1080 element that gets ONE CSS transform (scale, and rotateX/Y for
  * the tilt) — no nested/double scaling, so children (OffthreadVideo, scene
@@ -24,24 +33,41 @@
  */
 import React from 'react';
 import {AbsoluteFill} from 'remotion';
-import {color} from '../brand/tokens';
+import {color, font} from '../brand/tokens';
 
 export type FrameMode = 'tilt' | 'bleed' | 'framed';
+export type ChromeStyle = 'simple' | 'browser';
 
 const URL_LABEL = 'cascade.vellum.network';
+const FULL_URL_LABEL = 'https://cascade.vellum.network';
+const TAB_LABEL = 'Cascade — dated dollars on Arc';
 const CHROME_H = 64;
+// ~6% of the 1080-tall frame, per the product owner's brief.
+const CHROME_H_BROWSER = Math.round(1080 * 0.06);
+const TAB_STRIP_H = Math.round(CHROME_H_BROWSER * 0.52);
+const ADDRESS_BAR_H = CHROME_H_BROWSER - TAB_STRIP_H;
+
+const LockGlyph: React.FC<{size?: number; color: string}> = ({size = 11, color: c}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{flexShrink: 0}}>
+    <rect x={5} y={11} width={14} height={10} rx={2} stroke={c} strokeWidth={2} />
+    <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke={c} strokeWidth={2} fill="none" />
+  </svg>
+);
 
 export const BrowserFrame: React.FC<{
   mode: FrameMode;
   /** 0 = fully the OTHER state, 1 = fully this state. Ignored for 'bleed'. */
   progress?: number;
+  /** 'simple' (default) preserves the original chrome for every existing caller. */
+  chrome?: ChromeStyle;
   children: React.ReactNode;
-}> = ({mode, progress = 1, children}) => {
+}> = ({mode, progress = 1, chrome = 'simple', children}) => {
   if (mode === 'bleed') {
     return <AbsoluteFill>{children}</AbsoluteFill>;
   }
 
   const isTilt = mode === 'tilt';
+  const isBrowserChrome = mode === 'framed' && chrome === 'browser';
   const p = Math.max(0, Math.min(1, progress));
 
   // Tilt: starts small/rotated (p=0) and eases to flat/full (p=1).
@@ -52,6 +78,131 @@ export const BrowserFrame: React.FC<{
   const rotateY = isTilt ? -14 * (1 - p) : 0;
   const chromeOpacity = p;
   const radius = isTilt ? 22 - 10 * p : 8 + 14 * p;
+  const chromeH = isBrowserChrome ? CHROME_H_BROWSER : CHROME_H;
+
+  if (isBrowserChrome) {
+    return (
+      <AbsoluteFill
+        style={{
+          perspective: 2400,
+          display: 'grid',
+          placeItems: 'center',
+          background: color.bgOuter,
+        }}
+      >
+        <div
+          style={{
+            width: 1920,
+            height: 1080,
+            transform: `scale(${scale})`,
+            borderRadius: radius,
+            overflow: 'hidden',
+            boxShadow: `0 ${60 * p}px ${140 * p}px rgba(0,0,0,${0.55 * p})`,
+            border: `1px solid rgba(170,199,204,${0.22 * chromeOpacity})`,
+            position: 'relative',
+            background: color.bgOuter,
+          }}
+        >
+          {/* title bar: window controls + one-tab tab strip */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: TAB_STRIP_H,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              padding: '0 18px',
+              background: '#0a1520',
+              opacity: chromeOpacity,
+              zIndex: 2,
+            }}
+          >
+            {['#f19178', '#e8b768', '#69e6c0'].map((c) => (
+              <span key={c} style={{width: 11, height: 11, borderRadius: 6, background: c, opacity: 0.9}} />
+            ))}
+            <div
+              style={{
+                marginLeft: 8,
+                height: TAB_STRIP_H - 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '0 14px',
+                borderRadius: '8px 8px 0 0',
+                background: color.bgInner,
+                color: color.fg,
+                fontFamily: font.family,
+                fontSize: 12,
+                letterSpacing: 0.1,
+                maxWidth: 340,
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span style={{width: 7, height: 7, borderRadius: 4, background: color.money, flexShrink: 0}} />
+              <span style={{overflow: 'hidden', textOverflow: 'ellipsis'}}>{TAB_LABEL}</span>
+            </div>
+          </div>
+
+          {/* address bar */}
+          <div
+            style={{
+              position: 'absolute',
+              top: TAB_STRIP_H,
+              left: 0,
+              right: 0,
+              height: ADDRESS_BAR_H,
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 20px',
+              background: '#0e1e2a',
+              borderBottom: `1px solid ${color.hairline}`,
+              boxShadow: `0 4px 10px rgba(0,0,0,${0.32 * chromeOpacity})`,
+              opacity: chromeOpacity,
+              zIndex: 2,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                height: ADDRESS_BAR_H - 10,
+                borderRadius: (ADDRESS_BAR_H - 10) / 2,
+                background: '#0a1520',
+                border: `1px solid ${color.hairline}`,
+                padding: '0 14px',
+                color: color.muted,
+                fontFamily: font.family,
+                fontSize: 12,
+                letterSpacing: 0.1,
+              }}
+            >
+              <LockGlyph size={11} color={color.fgFaint} />
+              <span>{FULL_URL_LABEL}</span>
+            </div>
+          </div>
+
+          {/* content, inset below the full chrome */}
+          <div
+            style={{
+              position: 'absolute',
+              top: chromeH * chromeOpacity,
+              left: 0,
+              width: 1920,
+              height: 1080,
+              overflow: 'hidden',
+            }}
+          >
+            {children}
+          </div>
+        </div>
+      </AbsoluteFill>
+    );
+  }
 
   return (
     <AbsoluteFill
