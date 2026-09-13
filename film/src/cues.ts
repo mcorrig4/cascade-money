@@ -75,14 +75,9 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'phone-reveal', phrase: 'foldable'},
     {cue: 'phone-reveal-fallback', phrase: 'iPhone'},
   ],
-  // Scene 3 — Rewind: date card, then the four stat lines.
-  3: [
-    {cue: 'date-card', phrase: 'September 2025'},
-    {cue: 'stat-suppliers', phrase: '200 suppliers'},
-    {cue: 'stat-factories', phrase: 'thousands of factories'},
-    {cue: 'stat-countries', phrase: '50 countries'},
-    {cue: 'stat-cost', phrase: '$200 billion'},
-  ],
+  // Scene 3 (Rewind — date card + stat lines) is CUT (product owner
+  // decision 2026-09-13 02:13 ET, reply 21837); its cues are retired with
+  // it rather than left dangling for a scene number that no longer renders.
   // Scene 5 — The contradiction: the two receivable/payable rows, then the punchline.
   5: [
     {cue: 'rows-in', phrase: 'Samsung can have'},

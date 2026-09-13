@@ -6,7 +6,7 @@
 #
 # Usage:
 #   film/scripts/render-scenes.sh 3 7 12        # render scenes 3, 7, and 12 (draft)
-#   film/scripts/render-scenes.sh --full         # render all 17 scenes (draft)
+#   film/scripts/render-scenes.sh --full         # render all 16 surviving scenes (draft; scene 3 was cut)
 #   film/scripts/render-scenes.sh --final 3 7    # render scenes 3, 7 at final quality
 #   film/scripts/render-scenes.sh --profile final --full   # final quality, all scenes
 #
@@ -73,7 +73,10 @@ fi
 mkdir -p "$OUT_DIR"
 
 if [[ "${1:-}" == "--full" ]]; then
-  SCENE_NUMS=($(seq 1 17))
+  # Scene 3 was cut (product owner decision 2026-09-13 02:13 ET, reply
+  # 21837) — the surviving scene numbers are exactly SCENES[].num in
+  # schedule.ts, so --full renders that list, not a contiguous 1..17 range.
+  SCENE_NUMS=(1 2 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
 elif [[ $# -eq 0 ]]; then
   echo "usage: $0 [--final|--profile final] <scene-num> [scene-num...] | --full" >&2
   exit 1

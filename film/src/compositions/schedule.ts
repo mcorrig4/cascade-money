@@ -1,8 +1,12 @@
 /**
- * CascadeFilm schedule — the 17 scenes of docs/script-v6-liam.md, one entry
- * per scene, in order. This is the "product owner's final narration" cut
- * (Stage 12): every scene id/title below is copied verbatim from that
- * script's own "Scene N — Title" headers.
+ * CascadeFilm schedule — one entry per surviving scene of
+ * docs/script-v6-liam.md, in order. This is the "product owner's final
+ * narration" cut (Stage 12): every scene id/title below is copied verbatim
+ * from that script's own "Scene N — Title" headers. 16 scenes remain — scene
+ * 3 (Rewind) was CUT (product owner decision 2026-09-13 02:13 ET, reply
+ * 21837); its num/id/title stay retired below rather than being reused or
+ * renumbered, so this array is NOT a contiguous 1..17 run — every consumer
+ * looks scenes up by `num` (Record keys, `.find`), never by raw array index.
  *
  * `estimateFrames` is a FALLBACK duration, used only when
  * public/narration/narration.json has no entry for that scene yet (see
@@ -44,10 +48,19 @@ export interface SceneDef {
   motionGraphic: boolean;
 }
 
+/**
+ * Scene 3 (Rewind — date card + supply-chain stat lines) is CUT (product
+ * owner decision 2026-09-13 02:13 ET, reply 21837): the film goes straight
+ * from scene 2 into scene 4, whose VO/scene 2's own VO now carries the
+ * figures. Its `num`/id/title are RETIRED, not reused or renumbered — every
+ * downstream consumer (narration.ts, cues.ts, this array's own
+ * resolveSceneDurations, the render/splice scripts) is keyed by scene NUM
+ * (a Record or a .find), so a gap here is a normal, supported shape, not a
+ * special case any of them need to branch on.
+ */
 export const SCENES: SceneDef[] = [
   {num: 1, id: 'scene01', title: 'The object of desire', estimateFrames: 163, fallbackCapture: null, frame: 'tilt', motionGraphic: true},
   {num: 2, id: 'scene02', title: 'Apple Park', estimateFrames: 441, fallbackCapture: 'shot-01-apple-park.mp4', fallbackCaptureDurationInFrames: 89, frame: 'bleed', motionGraphic: false},
-  {num: 3, id: 'scene03', title: 'Rewind', estimateFrames: 546, fallbackCapture: null, frame: 'bleed', motionGraphic: true},
   {num: 4, id: 'scene04', title: 'The hidden supply chain', estimateFrames: 557, fallbackCapture: 'shot-02-network.mp4', fallbackCaptureDurationInFrames: 239, frame: 'bleed', motionGraphic: false},
   {num: 5, id: 'scene05', title: 'The contradiction', estimateFrames: 453, fallbackCapture: 'shot-02-network.mp4', fallbackCaptureDurationInFrames: 239, frame: 'bleed', motionGraphic: false},
   {num: 6, id: 'scene06', title: 'The question', estimateFrames: 209, fallbackCapture: null, frame: 'framed', motionGraphic: true},

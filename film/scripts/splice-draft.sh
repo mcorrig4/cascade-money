@@ -5,7 +5,7 @@
 # Draft mode (default):
 #   film/scripts/splice-draft.sh <tag>          # e.g. "r7"
 # Concats out/parts/scene-01.mp4 .. scene-17.mp4 into
-# out/cascade-draft-360p-<tag>.mp4. Requires all 17 out/parts/scene-NN.mp4 to
+# out/cascade-draft-360p-<tag>.mp4. Requires all 16 surviving out/parts/scene-NN.mp4 (scene 3 is cut) to
 # exist (run render-scenes.sh --full first, or render the missing ones
 # individually).
 #
@@ -53,7 +53,10 @@ fi
 CONCAT_LIST="$(mktemp)"
 trap 'rm -f "$CONCAT_LIST"' EXIT
 
-for num in $(seq -w 1 17); do
+# Scene 3 was cut (product owner decision 2026-09-13 02:13 ET, reply
+# 21837) — no scene-03.mp4 part exists or is expected; concat the surviving
+# scene numbers only.
+for num in 01 02 04 05 06 07 08 09 10 11 12 13 14 15 16 17; do
   part="$PARTS_DIR/scene-${num}.mp4"
   if [[ ! -f "$part" ]]; then
     echo "missing $part — render it first ($RENDER_HINT)" >&2
