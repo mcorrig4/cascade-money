@@ -74,9 +74,12 @@ const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: Wi
   });
   const on = (start: number) => progress(start - 1, 1) === 1;
   const rise = progress(question, 6 * fps / 30);
-  // 'a dated dollar' and 'Not as cash' are 0.64 s apart: one motion fits, not three.
-  const dissolve = progress(dollar, .25 * fps);
-  const enter = progress(dollar, .4 * fps);
+  const dissolve = progress(dollar, .35 * fps);
+  const slide = progress(dollar, .5 * fps);
+  // The settled ledger row reads for .45 s before converging; the coin then holds
+  // from dollar + 1.40 s until the measured 'not-as-cash' cue at 5.224 s.
+  const convergeAt = dollar + .95 * fps;
+  const converge = progress(convergeAt, .45 * fps);
   const size = 170 * unit, lockupWidth = size * 462 / 170;
   const discX = lockupWidth * .1775, discY = size * 82 / 170;
   return <>
@@ -87,11 +90,25 @@ const QuestionPresentation: React.FC<{at: (name: string) => number; geometry: Wi
         transform: `translateY(${12 * unit * (1 - rise)}px)`,
       }}>What if that future payment<br/>could move today?</h2>
       <div className="film-question-object">
+        {/* A zero-width grid anchors the gap on the disc, independent of text widths.
+            Each term's own half-width closes into that same anchor. */}
+        <div className="film-question-ledger" style={{
+          left: discX, top: discY, opacity: slide * (1 - converge),
+          transform: `translate(${120 * unit * (1 - slide)}px, -50%)`,
+          ...visibility(on(dollar) && converge < 1),
+        }}>
+          <strong className="film-question-amount" style={{
+            transform: `translateX(calc(${50 * converge}% - ${14 * unit * (1 - converge)}px))`,
+          }}>$100M</strong>
+          <span className="film-question-date" style={{
+            transform: `translateX(calc(${-50 * converge}% + ${14 * unit * (1 - converge)}px))`,
+          }}>DEC 8</span>
+        </div>
         {/* The lockup's own left edge sits on the gutter; the disc is its anchor point. */}
         <div className="film-question-token" style={{
-          left: 0, width: lockupWidth, height: size, opacity: enter,
-          transformOrigin: `${discX}px ${discY}px`, transform: `scale(${.85 + .15 * enter})`,
-          ...visibility(on(dollar)),
+          left: 0, width: lockupWidth, height: size, opacity: converge,
+          transformOrigin: `${discX}px ${discY}px`, transform: `scale(${.85 + .15 * converge})`,
+          ...visibility(on(convergeAt)),
         }}>
           <DatedDollar days={30} isoDate={illustrativeDate(30)} size={size}/>
         </div>
