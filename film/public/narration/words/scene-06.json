@@ -1,0 +1,110 @@
+{
+  "scene": 6,
+  "words": [
+    {
+      "word": "$100",
+      "start": 0.0,
+      "end": 0.76
+    },
+    {
+      "word": "million",
+      "start": 0.76,
+      "end": 1.12
+    },
+    {
+      "word": "deposited.",
+      "start": 1.12,
+      "end": 2.08
+    },
+    {
+      "word": "$450",
+      "start": 3.24,
+      "end": 4.04
+    },
+    {
+      "word": "million",
+      "start": 4.04,
+      "end": 4.44
+    },
+    {
+      "word": "transacted.",
+      "start": 4.44,
+      "end": 5.64
+    },
+    {
+      "word": "Nine",
+      "start": 6.26,
+      "end": 6.66
+    },
+    {
+      "word": "invoices",
+      "start": 6.66,
+      "end": 7.32
+    },
+    {
+      "word": "settled.",
+      "start": 7.32,
+      "end": 7.7
+    },
+    {
+      "word": "The",
+      "start": 8.2,
+      "end": 8.62
+    },
+    {
+      "word": "payments",
+      "start": 8.62,
+      "end": 9.0
+    },
+    {
+      "word": "add",
+      "start": 9.0,
+      "end": 9.22
+    },
+    {
+      "word": "up.",
+      "start": 9.22,
+      "end": 9.48
+    },
+    {
+      "word": "The",
+      "start": 9.72,
+      "end": 10.22
+    },
+    {
+      "word": "backing",
+      "start": 10.22,
+      "end": 10.52
+    },
+    {
+      "word": "does",
+      "start": 10.52,
+      "end": 10.8
+    },
+    {
+      "word": "not",
+      "start": 10.8,
+      "end": 10.94
+    },
+    {
+      "word": "multiply.",
+      "start": 10.94,
+      "end": 11.42
+    },
+    {
+      "word": "That's",
+      "start": 12.24,
+      "end": 12.62
+    },
+    {
+      "word": "the",
+      "start": 12.62,
+      "end": 12.92
+    },
+    {
+      "word": "cascade.",
+      "start": 12.92,
+      "end": 13.28
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const endpoint = 'tile.googleapis.com';
@@ -20,13 +20,13 @@ export async function checkTilesBundle(directory, enabled) {
   for (const file of compiled) {
     if ((await readFile(file)).includes(Buffer.from(endpoint))) endpointFiles.push(file);
   }
-  const rendererFiles = compiled.filter(file => /^site-scene(?:[.-]).*\.js$/.test(basename(file)));
+  // W4 chunk-merge incident: Vite filenames cannot establish whether the Google endpoint survived.
   if (enabled) {
-    if (!endpointFiles.length || !rendererFiles.length) throw new Error('Tiles-enabled bundle is missing its site-scene renderer or Google endpoint');
-  } else if (endpointFiles.length || rendererFiles.length) {
+    if (!endpointFiles.length) throw new Error('Tiles-enabled bundle is missing its Google tiles endpoint');
+  } else if (endpointFiles.length) {
     throw new Error('Tiles-disabled bundle unexpectedly includes the Google tiles renderer');
   }
-  return { enabled, rendererChunks: rendererFiles.length };
+  return { enabled, rendererChunks: endpointFiles.length };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

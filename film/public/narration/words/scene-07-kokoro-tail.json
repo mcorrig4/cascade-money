@@ -1,0 +1,25 @@
+{
+  "scene": 7,
+  "words": [
+    {
+      "word": "One",
+      "start": 0.0,
+      "end": 0.22
+    },
+    {
+      "word": "dollar.",
+      "start": 0.22,
+      "end": 0.48
+    },
+    {
+      "word": "One",
+      "start": 0.82,
+      "end": 1.22
+    },
+    {
+      "word": "date.",
+      "start": 1.22,
+      "end": 1.44
+    }
+  ]
+}
