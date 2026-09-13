@@ -59,14 +59,14 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'hook-open', phrase: 'crazy'},
     {cue: 'stat-cost', phrase: 'billion'},
     {cue: 'stat-suppliers', phrase: 'suppliers'},
-    // Citation chip 3 (factories/countries report) keys off "countries" —
-    // added round 3 (Liam 2026-09-13, msg 21865: citations must appear just
-    // after their fact). Fallback phrase "factories" covers a re-narration
-    // that drops "countries" but keeps "factories" (findPhrase only advances
-    // the cursor on a match, so this fallback still searches from the same
-    // point 'stat-suppliers' left off).
+    // Round 5 (Liam 2026-09-13, reply 21910: "don't show all three facts
+    // in a single reveal ... they should appear as I say them ... same
+    // with staggering the citations"): the three facts each get their own
+    // cue now instead of sharing 'stat-suppliers' as a single combined
+    // line, so 'stat-factories' resolves against its own spoken word
+    // rather than piggybacking on the countries chip's old fallback.
+    {cue: 'stat-factories', phrase: 'factories'},
     {cue: 'stat-countries', phrase: 'countries'},
-    {cue: 'stat-countries-fallback', phrase: 'factories'},
     {cue: 'promises', phrase: 'promises'},
     {cue: 'wordmark', phrase: 'Cascade'},
     {cue: 'apple-cta', phrase: 'Apple'},

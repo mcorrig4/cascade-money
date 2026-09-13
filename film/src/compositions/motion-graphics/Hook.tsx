@@ -12,18 +12,25 @@
  *   All of it running on payment terms and promises. Cascade Money settles
  *   those terms on Arc. Let me show you, with Apple."
  *
- * Five exclusive text beats (A-E), each keyed to a cues.ts phrase (see
- * cues.ts's scene-2 block), with an even fixed-fraction fallback for the
- * rare case a future re-narration drops one of these words entirely:
+ * Text beats, each keyed to a cues.ts phrase (see cues.ts's scene-2 block),
+ * with an even fixed-fraction fallback for the rare case a future
+ * re-narration drops one of these words entirely:
  *   A "$200B of product costs"                    <- 'hook-open' ("crazy")
- *   B "200 suppliers · thousands of factories ·
- *      50 countries"                               <- 'stat-suppliers'
+ *   B1 "200 suppliers"                             <- 'stat-suppliers'
+ *   B2 "thousands of factories"                    <- 'stat-factories'
+ *   B3 "50 countries"                              <- 'stat-countries'
  *   C "payment terms and promises"                 <- 'promises'
  *   D Cascade wordmark + "on Arc"                  <- 'wordmark' ("Cascade")
  *   E "Let me show you. Apple."                     <- 'apple-cta' ("Apple")
- * A, B and C occupy exclusive slots (fade+rise in, fade+rise out before the
+ * A and C occupy exclusive slots (fade+rise in, fade+rise out before the
  * next enters, per ConservationLaws' pattern); D and E are the closing pair
  * and simply hold once in (no exit — the scene ends on E).
+ *
+ * Round 5 (Liam, reply 21910, verbatim: "don't show all three facts in a
+ * single reveal. They should appear as I say them, why would we combine?"):
+ * B1/B2/B3 each reveal on their own word instead of one combined line —
+ * they STACK (each earlier line stays on screen, dimmed once a later one
+ * appears) until beat C takes over, at which point all three exit together.
  *
  * Citation chips (Liam's picture note: "show a little citations on screen
  * to show we are smart and looked up reports") key off the FIGURE cue, not
@@ -32,13 +39,15 @@
  * figure and staying"). Wording is copied verbatim from
  * docs/cascade/hackathon/verified-figures-v6.md; nothing invented beyond it.
  *
- * Round 3 (Liam, msg 21865, verbatim: "the citation should be timed with
- * each fact. It should appear just after the fact it is for."): each chip
- * now fires CHIP_DELAY_SECONDS (350ms) after its own figure's cue instead of
- * a shared beat-B fallback slot — chip 1 -> 'stat-cost' ("billion"), chip 2
- * -> 'stat-suppliers' ("suppliers"), chip 3 -> the new 'stat-countries'
- * cue ("countries", falling back to "factories"). A chip can only appear at
- * or after its own figure's cue plus the delay — never earlier.
+ * Round 5 (Liam, reply 21910, verbatim: "same with staggering the
+ * citations. Also citation should appear slightly faster the delay is too
+ * long."): each chip fires CHIP_DELAY_SECONDS (now 150ms, down from 350ms)
+ * after its own figure's cue — chip 1 -> 'stat-cost' ("billion"), chip 2 ->
+ * 'stat-suppliers' ("suppliers"), chip 3 -> 'stat-factories' ("factories").
+ * Chip 3 covers both the factories AND countries facts (same Supply Chain
+ * Progress Report source) so it appears once, right after "factories",
+ * rather than waiting for "countries". A chip can only appear at or after
+ * its own figure's cue plus the delay — never earlier.
  *
  * Constraint (4): the wordmark beat (D) must never land before 10.5s of
  * FILM time (scene 2 starts ~9.3s in, right after scene 1) — `sceneStartFrame`
@@ -89,11 +98,14 @@ interface Citation {
 const CITATIONS: Citation[] = [
   {cue: 'stat-cost', source: 'Apple 10-K FY2025', fact: 'product cost of sales $194.1B'},
   {cue: 'stat-suppliers', source: 'Apple Supplier List 2025', fact: '~200 direct suppliers, 98% of spend'},
-  {cue: 'stat-countries', source: 'Apple Supply Chain 2025 Progress Report', fact: 'thousands of facilities, 50+ countries'},
+  // Keyed off 'stat-factories', not 'stat-countries' — this report covers
+  // both facts, and round 5 (Liam, reply 21910) wants it appearing right
+  // after "factories" rather than waiting for "countries".
+  {cue: 'stat-factories', source: 'Apple Supply Chain 2025 Progress Report', fact: 'thousands of facilities, 50+ countries'},
 ];
 
-/** Citation chips land 350ms after their own figure's cue, never before it (Liam round 3, msg 21865). */
-const CHIP_DELAY_SECONDS = 0.35;
+/** Citation chips land 150ms after their own figure's cue, never before it (Liam round 5, reply 21910: "the delay is too long"). */
+const CHIP_DELAY_SECONDS = 0.15;
 
 const CitationChip: React.FC<{citation: Citation; appearAt: number}> = ({citation, appearAt}) => {
   const frame = useCurrentFrame();
@@ -146,7 +158,12 @@ export const Hook: React.FC<{
   const fallbackE = slot * 4;
 
   const startA = cueFrame(cues, 'hook-open', fps, fallbackA);
-  const startB = cueFrame(cues, 'stat-suppliers', fps, fallbackB);
+  // B1/B2/B3 — the three facts, each on its own word (round 5, reply
+  // 21910: "why would we combine?"), fanned out across beat B's old slot
+  // as a fixed-fraction fallback.
+  const startB1 = cueFrame(cues, 'stat-suppliers', fps, fallbackB);
+  const startB2 = cueFrame(cues, 'stat-factories', fps, fallbackB + slot * 0.33);
+  const startB3 = cueFrame(cues, 'stat-countries', fps, fallbackB + slot * 0.66);
   const startC = cueFrame(cues, 'promises', fps, fallbackC);
   let startD = cueFrame(cues, 'wordmark', fps, fallbackD);
   const startE = cueFrame(cues, 'apple-cta', fps, fallbackE);
@@ -156,38 +173,58 @@ export const Hook: React.FC<{
   const minWordmarkLocalFrame = Math.max(0, minWordmarkFilmFrame - sceneStartFrame);
   startD = Math.max(startD, minWordmarkLocalFrame);
 
-  const exitAAt = Math.max(startA, startB - exitDur);
-  const exitBAt = Math.max(startB, startC - exitDur);
+  const exitAAt = Math.max(startA, startB1 - exitDur);
+  // The B group (B1/B2/B3) exits together, right before beat C — never
+  // before the last of the three (B3) has actually appeared.
+  const exitBAt = Math.max(startB3, startC - exitDur);
   const exitCAt = Math.max(startC, startD - exitDur);
 
   const beatA = frame < exitAAt ? enter(frame, fps, startA, 'rise') : exitUp(frame, exitAAt, exitDur);
-  const beatB = frame < exitBAt ? enter(frame, fps, startB, 'rise') : exitUp(frame, exitBAt, exitDur);
+  const beatB1 = frame < exitBAt ? enter(frame, fps, startB1, 'rise') : exitUp(frame, exitBAt, exitDur);
+  const beatB2 = frame < exitBAt ? enter(frame, fps, startB2, 'rise') : exitUp(frame, exitBAt, exitDur);
+  const beatB3 = frame < exitBAt ? enter(frame, fps, startB3, 'rise') : exitUp(frame, exitBAt, exitDur);
   const beatC = frame < exitCAt ? enter(frame, fps, startC, 'rise') : exitUp(frame, exitCAt, exitDur);
   const beatD = enter(frame, fps, startD, 'settle'); // holds — D/E are the closing pair, no exit
   const beatE = enter(frame, fps, startE, 'settle');
 
-  const showA = frame >= startA && frame < Math.min(startB, exitAAt + exitDur);
-  const showB = frame >= startB && frame < Math.min(startC, exitBAt + exitDur);
+  const showA = frame >= startA && frame < Math.min(startB1, exitAAt + exitDur);
+  const bGroupEnd = Math.min(startC, exitBAt + exitDur);
+  const showB1 = frame >= startB1 && frame < bGroupEnd;
+  const showB2 = frame >= startB2 && frame < bGroupEnd;
+  const showB3 = frame >= startB3 && frame < bGroupEnd;
+  const showB = showB1 || showB2 || showB3;
   const showC = frame >= startC && frame < Math.min(startD, exitCAt + exitDur);
   const showD = frame >= startD && frame < startE;
   const showE = frame >= startE;
 
+  // Once the group starts exiting, all three fade+rise out together (no
+  // more dimming distinction). Before that, only the LATEST-appeared line
+  // is at full opacity — earlier lines dim slightly, per Liam's "stack,
+  // previous stays, dimmed" direction.
+  const bExiting = frame >= exitBAt;
+  const DIM = 0.55;
+  const b1Latest = !showB2 && !showB3;
+  const b2Latest = showB2 && !showB3;
+  const dimStyle = (beat: {opacity: number; transform: string}, isLatest: boolean) => ({
+    opacity: beat.opacity * (bExiting || isLatest ? 1 : DIM),
+    transform: beat.transform,
+  });
+
   // Citation chip appearance frames — figure-keyed, not beat-keyed, and each
   // stays up once shown (no exit) for the rest of the scene. Each chip fires
-  // 350ms AFTER its own figure's cue (never before it's spoken) — Liam
-  // round 3, msg 21865: "the citation should be timed with each fact ...
-  // appear just after the fact it is for". 'stat-countries' chains its own
-  // 'stat-countries-fallback' cue the same way CascadeFilm's scene 9 chains
-  // primary/fallback narration cues.
+  // CHIP_DELAY_SECONDS (150ms, round 5) AFTER its own figure's cue (never
+  // before it's spoken). 'stat-factories' chains a 'stat-countries' fallback
+  // the same way CascadeFilm's scene 9 chains primary/fallback narration
+  // cues, in case a re-narration drops "factories" but keeps "countries".
   const chipDelayFrames = Math.round(CHIP_DELAY_SECONDS * fps);
   const chipCueFrame = (cue: string, staticFallback: number): number =>
-    cue === 'stat-countries'
-      ? cueFrame(cues, 'stat-countries', fps, cueFrame(cues, 'stat-countries-fallback', fps, staticFallback))
+    cue === 'stat-factories'
+      ? cueFrame(cues, 'stat-factories', fps, cueFrame(cues, 'stat-countries', fps, staticFallback))
       : cueFrame(cues, cue, fps, staticFallback);
   const chipStaticFallbacks: Record<string, number> = {
     'stat-cost': fallbackA + slot * 0.55,
     'stat-suppliers': fallbackB + slot * 0.4,
-    'stat-countries': fallbackB + slot * 0.7,
+    'stat-factories': fallbackB + slot * 0.7,
   };
   const chipStarts = CITATIONS.map(
     (c) => chipCueFrame(c.cue, chipStaticFallbacks[c.cue] ?? fallbackB + slot * 0.4) + chipDelayFrames,
@@ -221,19 +258,52 @@ export const Hook: React.FC<{
         )}
 
         {showB && (
-          <div
-            style={{
-              opacity: beatB.opacity,
-              transform: beatB.transform,
-              textAlign: 'center',
-              color: color.fg,
-              fontSize: 44,
-              fontWeight: 500,
-              letterSpacing: -0.4,
-              lineHeight: 1.3,
-            }}
-          >
-            200 suppliers · thousands of factories · 50 countries
+          <div style={{display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center'}}>
+            {showB1 && (
+              <div
+                style={{
+                  ...dimStyle(beatB1, b1Latest),
+                  textAlign: 'center',
+                  color: color.fg,
+                  fontSize: 44,
+                  fontWeight: 500,
+                  letterSpacing: -0.4,
+                  lineHeight: 1.3,
+                }}
+              >
+                200 suppliers
+              </div>
+            )}
+            {showB2 && (
+              <div
+                style={{
+                  ...dimStyle(beatB2, b2Latest),
+                  textAlign: 'center',
+                  color: color.fg,
+                  fontSize: 44,
+                  fontWeight: 500,
+                  letterSpacing: -0.4,
+                  lineHeight: 1.3,
+                }}
+              >
+                thousands of factories
+              </div>
+            )}
+            {showB3 && (
+              <div
+                style={{
+                  ...dimStyle(beatB3, true),
+                  textAlign: 'center',
+                  color: color.fg,
+                  fontSize: 44,
+                  fontWeight: 500,
+                  letterSpacing: -0.4,
+                  lineHeight: 1.3,
+                }}
+              >
+                50 countries
+              </div>
+            )}
           </div>
         )}
 
