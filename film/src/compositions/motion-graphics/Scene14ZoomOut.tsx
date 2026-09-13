@@ -26,17 +26,17 @@ export const Scene14ZoomOut: React.FC<{durationInFrames: number; cues?: SceneCue
   const {fps} = useVideoConfig();
   const wordsPhaseEnd = dur * 0.45;
   const moneyTimeAt = cueFrame(cues, 'money-plus-time', fps, Math.round(dur * 0.52));
-  const moneyTimeOut = dur * 0.82;
-  const finalAt = cueFrame(cues, 'final-line', fps, Math.round(dur * 0.86));
+  // Round 7 (Liam 2026-09-13 11:00 EDT): the closing "A second dimension to
+  // money." card is DELETED — the scene ends on "Money plus time", which now
+  // holds to the end instead of fading out at 82% of the scene.
+  const finalAt = dur;
   const stepFallback = Math.max(at30(8, fps), Math.floor(wordsPhaseEnd / WORDS.length));
   const wordAt = WORD_CUES.map((cue, i) =>
     cueFrame(cues, cue, fps, stagger(i, stepFallback, at30(6, fps))),
   );
 
   const moneyTime = enter(frame, fps, moneyTimeAt, 'settle');
-  const moneyTimeFade =
-    frame > moneyTimeOut ? Math.max(0, 1 - (frame - moneyTimeOut) / at30(16, fps)) : 1;
-  const finalLine = enter(frame, fps, finalAt, 'fade');
+  const moneyTimeFade = 1;
 
   return (
     <AbsoluteFill style={{background: scrim, fontFamily: font.family, color: color.fg}}>
@@ -86,20 +86,6 @@ export const Scene14ZoomOut: React.FC<{durationInFrames: number; cues?: SceneCue
         </AbsoluteFill>
       )}
 
-      {frame >= finalAt && (
-        <AbsoluteFill style={{display: 'grid', placeItems: 'center'}}>
-          <div
-            style={{
-              fontSize: 52,
-              fontWeight: 450,
-              letterSpacing: -1.5,
-              opacity: finalLine.opacity,
-            }}
-          >
-            A second dimension to money.
-          </div>
-        </AbsoluteFill>
-      )}
     </AbsoluteFill>
   );
 };

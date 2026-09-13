@@ -38,9 +38,9 @@ import {BrowserFrame, FrameMode} from '../components/BrowserFrame';
 import {resolveSceneDurations, SCENES, SceneDef, sceneByNum} from './schedule';
 import {captureFileFor, NarrationMap} from './narration';
 import {DEFAULT_NARRATION_CONTROLS, NarrationControls} from './narrationControlsSchema';
-import {at30, CLAMP} from '../motion/timing';
+import {at30, CLAMP, enter} from '../motion/timing';
 import {cameraAt, cameraStyle, FULL_FRAME, RostrumMove} from '../motion/rostrumCamera';
-import {cueFrame} from '../cues';
+import {cueFrame, SceneCues} from '../cues';
 import cueTimesData from '../generated/cues.json';
 import captureDurations from '../generated/capture-durations.json';
 
@@ -266,6 +266,72 @@ const WindowedBeat: React.FC<{
     {children}
   </>
 );
+
+/**
+ * Cut a capture short at a SOURCE timestamp (Liam, round 7, 2026-09-13 11:00
+ * EDT). Two cards the film must not show any more are burned into the app's
+ * own recordings, not drawn by this film — scene 6's "The payments add up.
+ * The backing does not multiply." (app/src/director/ShotOverlays.tsx, the
+ * 'totals' overlay's h2) and scene 10's "a second dimension to money"
+ * (shots.ts SCENE_TEXT_BEATS) — and the app and the captures are frozen for
+ * this cut. Lowering `captureDurationInFrames` to the frame just before the
+ * unwanted card fades in makes CaptureScene hold its last real frame for the
+ * rest of the scene (its existing behavior when a scene outruns its capture),
+ * so the card never reaches the screen and everything above it stays.
+ *
+ * `seconds` is measured on the SOURCE file (public/captures/scene-NN.mp4),
+ * so it stays correct whatever playbackRate the fit computes: composition
+ * frame = source seconds * fps / playbackRate.
+ */
+const capUntilSourceSeconds = (
+  cap: SceneCapture | null,
+  seconds: number,
+  fps: number,
+): SceneCapture | null => {
+  if (!cap) return null;
+  const rate = cap.playbackRate || 1;
+  const lastFrame = Math.max(1, Math.round(((seconds - cap.startFrom / fps) * fps) / rate));
+  return {...cap, captureDurationInFrames: Math.min(cap.captureDurationInFrames, lastFrame)};
+};
+
+/** Source-time cut points for the two captures whose burned-in cards are removed (round 7). */
+const SCENE6_TAGLINE_SOURCE_SECONDS = 8.0; // measured: the h2 fades in at ~8.1s
+const SCENE10_MONEY_TIME_SOURCE_SECONDS = 10.95; // measured: the burned-in "Money plus time" fades in at ~11.1s
+
+/**
+ * Scene 10's closing card, film-side (round 7). The capture's own "Money plus
+ * time" is cut off above, because it fires at a source time that predates the
+ * measured onset of Liam saying the words; this card takes its place, keyed
+ * to the 'money-plus-time' cue (cues.ts, resolved against the installed wav),
+ * and holds to the end of the scene — it is the last thing the scene shows.
+ */
+const MoneyPlusTimeCard: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
+  durationInFrames: dur,
+  cues,
+}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const at = cueFrame(cues, 'money-plus-time', fps, Math.round(dur * 0.86));
+  if (frame < at) return null;
+  const e = enter(frame, fps, at, 'settle');
+  return (
+    <AbsoluteFill style={{display: 'grid', placeItems: 'center', fontFamily: font.family}}>
+      <div
+        style={{
+          fontSize: 88,
+          fontWeight: 450,
+          letterSpacing: -3,
+          textAlign: 'center',
+          color: color.fg,
+          opacity: e.opacity,
+          transform: e.transform,
+        }}
+      >
+        Money <span style={{color: color.fgDim}}>plus</span> <span style={{color: color.money}}>time</span>
+      </div>
+    </AbsoluteFill>
+  );
+};
 
 /** A scene that plays a capture (real or fallback), framed per framingRamp, with optional overlay. */
 const CaptureBeat: React.FC<{
@@ -599,6 +665,15 @@ const ExampleGlobeLabels: React.FC<{durationInFrames: number; cues?: Record<stri
 const STRESS_FLASH_SECONDS = 2.5;
 const STRESS_FLASH_FADE_MS = 350;
 
+/**
+ * Scene 9's closing card (Liam, round 7, 2026-09-13 11:00 EDT): one card,
+ * shown while he speaks the closing stress line, replacing the old
+ * "Separately... ten thousand operations" paragraph + 10,000 OPERATIONS
+ * badge. The figure is the app's VERIFIED_YEAR_INVOICES
+ * (app/src/director/shots.ts = 12029, verified 2026-09-13) — inlined rather
+ * than imported so the film bundle stays independent of the app's module
+ * graph; if that constant ever changes, this string changes with it.
+ */
 const StressResultFlash: React.FC<{durationInFrames: number; cues?: Record<string, number>}> = ({
   durationInFrames,
   cues,
@@ -618,22 +693,23 @@ const StressResultFlash: React.FC<{durationInFrames: number; cues?: Record<strin
     fps,
     cueFrame(cues, 'stress-flash-fallback', fps, durationInFrames - flashFrames),
   );
+  // Round 7: the card belongs to the stress line only — it fades out as the
+  // narration moves on to "That's where this user interface came from"
+  // ('ui-origin'), instead of holding over that line to the end of the scene.
+  const flashEnd = cueFrame(cues, 'ui-origin', fps, durationInFrames);
   const opacity = interpolate(
     frame,
-    [flashStart, flashStart + fadeFrames, durationInFrames - fadeFrames, durationInFrames],
+    [flashStart, flashStart + fadeFrames, Math.max(flashStart + fadeFrames + 1, flashEnd - fadeFrames), flashEnd],
     [0, 1, 1, 0],
     CLAMP,
   );
   if (opacity <= 0) return null;
   return (
     <AbsoluteFill style={{display: 'grid', placeItems: 'center', background: 'rgba(6,17,27,0.55)', opacity}}>
-      <div style={{textAlign: 'center', maxWidth: 900, padding: '0 40px'}}>
-        <p style={{fontFamily: font.family, fontSize: 30, fontWeight: 500, color: color.fg, lineHeight: 1.35, margin: 0}}>
-          Separately, we tested ten thousand operations with zero accounting invariant violations.
+      <div style={{textAlign: 'center', maxWidth: 1000, padding: '0 40px'}}>
+        <p style={{fontFamily: font.family, fontSize: 38, fontWeight: 500, color: color.fg, lineHeight: 1.35, margin: 0}}>
+          12,029 simulated invoices. Every invariant held under adversarial conditions.
         </p>
-        <div style={{marginTop: 18, fontFamily: font.family, fontSize: 16, letterSpacing: 2, fontWeight: 600, color: color.money}}>
-          10,000 OPERATIONS · 0 VIOLATIONS
-        </div>
       </div>
     </AbsoluteFill>
   );
@@ -828,7 +904,14 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(6);
             const dur = durationFor(durations, 6);
-            const cap = captureFor(sc, captureOverrides, dur, fps);
+            // Round 7: hold the capture's last frame before its burned-in
+            // "The payments add up..." h2 fades in — the counters stay, the
+            // line never appears (see capUntilSourceSeconds).
+            const cap = capUntilSourceSeconds(
+              captureFor(sc, captureOverrides, dur, fps),
+              SCENE6_TAGLINE_SOURCE_SECONDS,
+              fps,
+            );
             // The scene-06 recapture is the app's own recording, which
             // already burns in the $100M/$400M/4-companies counters
             // (app/src/director/ShotOverlays.tsx, overlay 'totals', stage
@@ -893,12 +976,25 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(10);
             const dur = durationFor(durations, 10);
-            const cap = captureFor(sc, captureOverrides, dur, fps);
+            // Round 7: hold the capture before its burned-in "Money plus
+            // time" (which fires early) and, with it, the "a second
+            // dimension to money" card that followed — that card is deleted
+            // outright, and MoneyPlusTimeCard below plays the closing line
+            // on its measured narration onset instead.
+            const cap = capUntilSourceSeconds(
+              captureFor(sc, captureOverrides, dur, fps),
+              SCENE10_MONEY_TIME_SOURCE_SECONDS,
+              fps,
+            );
             // scene-10 recapture already burns in "Composable." plus the
             // Loans/Forwards/Bonds/Derivatives + "Money plus time" beats
             // (app's 'composable' overlay). Scene14ZoomOut duplicates that;
             // render it only in the fallback path.
-            const overlay10 = captureOverrides[10] ? null : <Scene14ZoomOut durationInFrames={dur} cues={CUE_TIMES[10]} />;
+            const overlay10 = captureOverrides[10] ? (
+              <MoneyPlusTimeCard durationInFrames={dur} cues={CUE_TIMES[10]} />
+            ) : (
+              <Scene14ZoomOut durationInFrames={dur} cues={CUE_TIMES[10]} />
+            );
             return cap ? (
               <CaptureBeat sc={sc} duration={dur} cap={cap}>
                 {overlay10}

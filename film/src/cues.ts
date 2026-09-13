@@ -133,7 +133,14 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     // rather than piggybacking on the countries chip's old fallback.
     {cue: 'stat-factories', phrase: 'factories'},
     {cue: 'stat-countries', phrase: 'countries'},
-    {cue: 'promises', phrase: 'promises'},
+    // Round 7 (Liam 2026-09-13 11:00 EDT): the "payment terms and
+    // promises" card lands on the measured onset of "payment terms"
+    // (11.76s), not on the later word "promises" (12.78s) — and the "50
+    // countries" line therefore holds on screen until that card takes over
+    // instead of being cut short. 'promises-fallback' keeps the old word as
+    // the resolver's second try for a re-narration that drops the phrase.
+    {cue: 'promises', phrase: 'payment terms'},
+    {cue: 'promises-fallback', phrase: 'promises'},
     {cue: 'wordmark', phrase: 'Cascade'},
   ],
   // Scene 1 — The object of desire (round 3, product owner's brief
@@ -251,7 +258,6 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
     {cue: 'word-derivatives', phrase: 'derivatives'},
     {cue: 'wordmark', phrase: 'Cascade'},
     {cue: 'money-plus-time', phrase: 'money plus time'},
-    {cue: 'final-line', phrase: 'a second dimension to money'},
   ],
   // Scene 11 — New York: "Behind this new folding iPhone was an
   // invisible chain of promises. Cascade would have let those promises
