@@ -26,7 +26,8 @@ function LoadedApp({ index }: { index: EventIndex }) {
   const openOnchain = () => { engine.update({ playing: false, shotRunning: false }); setOnchain(true); };
   const openDirector = () => { engine.update({ recording: false }); setLedgerOpen(false); setDirector(v => !v); };
   useEffect(() => {
-    let last = performance.now(), raf = 0;
+    const frameDriven = window.__cascade?.frameDriven === true;
+    let last = frameDriven ? 0 : performance.now(), raf = 0;
     const tick = (now: number) => {
       // Clamp the per-tick delta: a main-thread stall (GC pause, a heavy
       // overlay mount — reproduced at the shot 19→12 "Beneath it"→"Close"
@@ -44,9 +45,9 @@ function LoadedApp({ index }: { index: EventIndex }) {
       if (now - last >= 32) { const elapsed = Math.min(now - last, 100); last = now; if (!document.hidden) engine.tick(elapsed / 1000); }
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+    if (!frameDriven) raf = requestAnimationFrame(tick);
     const visibility = () => { last = performance.now(); };
-    document.addEventListener('visibilitychange', visibility);
+    if (!frameDriven) document.addEventListener('visibilitychange', visibility);
     const keyboard = (event: KeyboardEvent) => {
       const element = event.target as HTMLElement;
       if (element.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) || event.repeat) return;
@@ -55,7 +56,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
       if (event.code === 'Escape') { engine.stopShot(); setDirector(false); engine.update({ recording: false }); }
       if (event.code === 'KeyR') { void engine.ready().then(()=>{engine.update({ recording: !engine.state.recording }); setDirector(false);}); }
     };
-    window.addEventListener('keydown', keyboard);
+    if (!frameDriven) window.addEventListener('keydown', keyboard);
     const shot = Number(new URLSearchParams(location.search).get('shot'));
     if (SHOTS.some(s=>s.id===shot)) playShot(engine, shot);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('keydown', keyboard); document.removeEventListener('visibilitychange', visibility); };

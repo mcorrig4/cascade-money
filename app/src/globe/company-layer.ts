@@ -19,7 +19,9 @@ export class CompanyLayer {
       if (logo) {
         // Official mark: pre-colored, single-fill SVG file (see public/logos/LICENSES.md), scaled
         // to fit the same 40x40 box the monogram used, letter-boxed rather than cropped.
-        const img = document.createElement('img'); img.src = `/logos/${logo}.svg`; img.alt = '';
+        const img = document.createElement('img');
+        const base = window.__cascade?.frameDriven ? `${(window as typeof window & {remotion_staticBase?:string}).remotion_staticBase ?? ''}/` : '/';
+        img.src = `${base}logos/${logo}.svg`; img.alt = '';
         img.width = 40; img.height = 40; img.className = 'company-logo';
         disc.append(img);
       } else {
