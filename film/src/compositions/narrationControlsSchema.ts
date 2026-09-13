@@ -62,4 +62,5 @@ export const DEFAULT_FPS = 30 as const;
 export const cascadeFilmSchema = z.object({
   narrationControls: narrationControlsSchema,
   fps: fpsSchema.default(DEFAULT_FPS),
+  source: z.enum(['live', 'captures']).default('live'),
 });

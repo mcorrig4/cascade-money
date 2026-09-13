@@ -1,9 +1,10 @@
 import React from 'react';
 import {CalculateMetadataFunction, Composition} from 'remotion';
-import {CascadeFilm, CascadeFilmProps} from './compositions/CascadeFilm';
-import {ESTIMATED_TOTAL_DURATION, FPS_BASE, filmDurationAtFps, SCENES} from './compositions/schedule';
+import {CascadeFilm, CascadeFilmProps, CascadeLiveScene, CascadeLiveSceneProps} from './compositions/CascadeFilm';
+import {ESTIMATED_TOTAL_DURATION, FPS_BASE, filmDurationAtFps, resolveSceneDurations, SCENES} from './compositions/schedule';
 import {loadCaptureOverrides, loadNarration} from './compositions/narration';
 import {cascadeFilmSchema, DEFAULT_FPS, DEFAULT_NARRATION_CONTROLS} from './compositions/narrationControlsSchema';
+import {AppFrame} from './live/AppFrame';
 
 const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async ({props}) => {
   // `fps` is a Studio/CLI-editable input prop (15 for the draft profile, 30
@@ -21,6 +22,12 @@ const calculateMetadata: CalculateMetadataFunction<CascadeFilmProps> = async ({p
   // live-computed narration/captureOverrides — it never drops a prop the
   // caller passed in.
   return {durationInFrames, fps, props: {...props, narration, captureOverrides}};
+};
+
+const calculateSceneMetadata: CalculateMetadataFunction<CascadeLiveSceneProps> = async ({props}) => {
+  const fps=props.fps??DEFAULT_FPS,sceneIndex=Math.max(1,Math.min(17,Math.round(props.sceneIndex??1)));
+  const [narration,captureOverrides]=await Promise.all([loadNarration(fps),loadCaptureOverrides([sceneIndex])]);
+  return {fps,durationInFrames:resolveSceneDurations(narration,fps)[sceneIndex-1],props:{...props,sceneIndex,fps,narration,captureOverrides}};
 };
 
 export const RemotionRoot: React.FC = () => {
@@ -50,8 +57,15 @@ export const RemotionRoot: React.FC = () => {
         reviewLabels: false,
         narrationControls: DEFAULT_NARRATION_CONTROLS,
         fps: DEFAULT_FPS,
+        source: 'live',
       }}
       calculateMetadata={calculateMetadata}
     />
+    <Composition id="CascadeLiveScene" component={CascadeLiveScene} durationInFrames={163} fps={30} width={1920} height={1080}
+      defaultProps={{sceneIndex:1,fps:30,source:'live',narration:{},captureOverrides:{},narrationControls:DEFAULT_NARRATION_CONTROLS}}
+      calculateMetadata={calculateSceneMetadata}/>
+    <Composition id="CascadeLive" component={AppFrame} durationInFrames={301} fps={30} width={1920} height={1080}/>
+    <Composition id="CascadeLiveSite" component={AppFrame} durationInFrames={30} fps={30} width={1920} height={1080} defaultProps={{scene:2}}/>
+    <Composition id="CascadeSeekProbe" component={AppFrame} durationInFrames={3} fps={30} width={1920} height={1080} defaultProps={{scene:4,timesMs:[4000,10000,4000]}}/>
   );
 };
