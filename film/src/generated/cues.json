@@ -10,7 +10,9 @@
     "stat-factories": 7.202,
     "stat-countries": 9.148,
     "promises": 11.748,
+    "payment-terms": 11.76,
     "promises-fallback": 12.672,
+    "promises-word": 12.78,
     "wordmark": 14.16,
     "hook-arc": 16.17
   },
@@ -22,7 +24,9 @@
     "question-card-fallback": 2.342,
     "dated-dollar": 3.396,
     "dated-dollar-fallback": 3.58,
-    "not-cash": 5.642
+    "not-as-cash": 4.04,
+    "not-cash": 5.642,
+    "as-dollar-with-date": 6.04
   },
   "5": {
     "cascade-open": 0.14,
