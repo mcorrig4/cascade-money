@@ -145,9 +145,35 @@ export const CUE_PHRASES: Record<number, CuePhrase[]> = {
   // (at Corning) globe labels land on the scene's last line — cue phrase
   // "obligation", falling back to "waits" for a re-narration that drops it
   // (see ExampleGlobeLabels in CascadeFilm.tsx).
+  //
+  // Scene 3's bake-off pass (Director, 2026-09-13) drives the WHOLE scene from
+  // these phrases: the app's shot 3 resolves each one through
+  // PlaybackEngine.atWord (see app/src/director/shots.ts), and the obligation
+  // card reads the last four. Resolved against the recorded v9 take
+  // (scene-03.wav, 33.15s) — the order-sensitive walk is what separates the
+  // two spoken "orders" ("Apple orders ..." at 2.36s, "Samsung orders ..." at
+  // 7.94s) and the two spoken "today"s.
   3: [
-    {cue: 'example-labels', phrase: 'obligation'},
-    {cue: 'example-labels-fallback', phrase: 'waits'},
+    // The three order cues keep the app's own names (shots.ts orderCues /
+    // company-cues.ts, which also draws the company callout off `word`):
+    // "Samsung" is the beat where Apple's order to Samsung Display fires, not
+    // the word "Samsung" — the arc has to leave Cupertino as he STARTS the
+    // sentence, and the camera follows it, so it keys to "orders".
+    {cue: 'Samsung', phrase: 'orders'},
+    {cue: 'Corning', phrase: 'Samsung orders'},
+    {cue: 'Sony', phrase: 'Sony'},
+    {cue: 'chain-fanout', phrase: 'Everyone'},
+    {cue: 'parts-move', phrase: 'parts'},
+    {cue: 'money-waits', phrase: 'waits'},
+    {cue: 'display-maker', phrase: 'display'},
+    {cue: 'owes-glass', phrase: 'owes'},
+    // "The glass maker HAS suppliers" — the four-word phrase is what skips the
+    // identical "the glass maker" two seconds earlier, at the end of the
+    // previous line.
+    {cue: 'glass-maker', phrase: 'the glass maker has'},
+    {cue: 'pay-today', phrase: 'suppliers'},
+    {cue: 'incoming-value', phrase: 'incoming'},
+    {cue: 'obligation', phrase: 'obligation'},
   ],
   // Scene 4 — The question (renumbered from old scene 6): v9 narration
   // reads "Cascade gives that value a form that can move. A dated dollar.

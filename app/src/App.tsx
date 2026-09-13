@@ -13,10 +13,11 @@ import { SceneLabels } from './director/SceneLabels.tsx';
 import { ShotOverlays } from './director/ShotOverlays.tsx';
 import { OnchainPanel } from './components/OnchainPanel.tsx';
 import { FilmEffects } from './director/FilmEffects.tsx';
-import { SHOTS, playShot, loadNarrationDurations } from './director/shots.ts';
+import { SHOTS, playShot, loadNarrationDurations, narratedOrders } from './director/shots.ts';
 import './stage.css';
 import './film.css';
 import { recordingVisibility, setRecordingMode } from './director/recording.ts';
+import { ObligationCard } from './director/ObligationCard.tsx';
 
 function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: () => void; onError: (message: string) => void }) {
   const [engine] = useState(() => { const value = new PlaybackEngine(index); value.prepareScene(); return value; });
@@ -98,7 +99,8 @@ function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: ()
     {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
     {state.caption && <p className="year-caption">Global supply chain</p>}
     <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
-    <SceneLabels payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?engine.storyEvents??[]:[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
+    <ObligationCard engine={engine} state={state} />
+    <SceneLabels payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?narratedOrders(engine.index,engine.storyEvents):[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
     {(onchain || state.onchainGlimpse) && <OnchainPanel tMs={state.tMs} onClose={() => {setOnchain(false);engine.update({onchainGlimpse:false});}} />}
     {director && visibility.director && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;

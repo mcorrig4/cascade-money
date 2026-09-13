@@ -88,7 +88,10 @@ test('stage18: generic primitives and bookmarks default north-up; recording entr
  engine.playBookmarkPath(bookmarks);assert.equal(cameraAllowsRoll(engine.state.camera,500),false);
  engine.playBookmarkPath(bookmarks.map(bookmark=>({...bookmark,allowRoll:true})));assert.equal(cameraAllowsRoll(engine.state.camera,500),true);
  engine.playBookmarkPath([{...bookmarks[0],allowRoll:true},bookmarks[1]]);assert.equal(cameraAllowsRoll(engine.state.camera,1000),false);
- playShot(engine,10);engine.playBookmarkPath(bookmarks);assert.equal(cameraAllowsRoll(engine.state.camera,500),true);
+ // Shot 10 ("New York") is cut on this branch; shot 19 (Beneath it) is the
+ // interior shot that carries allowRoll now, and a bookmark path played inside
+ // it inherits that opt-out.
+ playShot(engine,19);engine.playBookmarkPath(bookmarks);assert.equal(cameraAllowsRoll(engine.state.camera,500),true);
  assert.throws(()=>normalizeBookmarks([{...bookmarks[0],allowRoll:'yes'}]),/roll|orientation|bookmark/i);
  playShot(engine,1);const revision=engine.state.orientationRevision;
  setRecordingMode(engine,true);assert.ok(engine.state.orientationRevision>revision);assert.equal(engine.state.allowRoll,false);

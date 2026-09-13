@@ -6,6 +6,9 @@ export const CUE_NAMES = [
   'backing-card','contract','kicker','op-extensions','op-transfers','op-redemptions','op-sales',
   'law-ownership','law-yield','word-loans','word-forwards','word-bonds','word-derivatives',
   'money-plus-time','final-line','promises','before-cash','close-line','wordmark','company',
+  // Scene 3 (the example) — every beat keyed to a word of the recorded v9 take.
+  'chain-fanout','parts-move','money-waits',
+  'display-maker','owes-glass','glass-maker','pay-today','incoming-value','obligation',
 ] as const;
 export type CueName = typeof CUE_NAMES[number];
 export type CueClock = {shotElapsed:number;shotDuration:number;cues:Record<string,number>};

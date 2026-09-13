@@ -1,65 +1,16 @@
 {
-  "1": {
-    "phone-reveal": 4.67,
-    "phone-reveal-fallback": 5.15
-  },
-  "2": {
-    "hook-open": 0.33,
-    "stat-cost": 2.37,
-    "stat-suppliers": 5.73,
-    "stat-factories": 7.69,
-    "stat-countries": 9.23,
-    "promises": 12.63,
-    "wordmark": 14.09,
-    "apple-cta": 18.15
-  },
   "3": {
-    "example-labels": 31.71
-  },
-  "4": {
-    "question-card": 1.57,
-    "question-card-fallback": 2.19,
-    "dated-dollar": 3.19,
-    "dated-dollar-fallback": 3.45,
-    "not-cash": 5.35
-  },
-  "6": {
-    "committed-counter": 0.97,
-    "settled-counter": 4.29,
-    "companies-counter": 6.51,
-    "tagline": 12.77
-  },
-  "7": {
-    "swap": 2.79,
-    "earlier-pays-later": 21.73,
-    "extend": 24.33,
-    "final-card": 28.59
-  },
-  "8": {
-    "contract": 1.19,
-    "contract-fallback": 1.81,
-    "reserve": 8.59
-  },
-  "9": {
-    "pan-to-ledger": 2.61,
-    "pull-back-full": 6.13,
-    "stress-flash": 15.99,
-    "stress-flash-fallback": 17.17,
-    "ui-origin": 25.27
-  },
-  "10": {
-    "word-loans": 4.33,
-    "word-forwards": 5.21,
-    "word-bonds": 6.39,
-    "word-derivatives": 7.19,
-    "wordmark": 12.71,
-    "money-plus-time": 15.29
-  },
-  "11": {
-    "promises": 3.77,
-    "cascade-would": 5.67
-  },
-  "12": {
-    "wordmark": 1.67
+    "Samsung": 2.21,
+    "Corning": 7.15,
+    "Sony": 12.29,
+    "chain-fanout": 15.37,
+    "parts-move": 18.63,
+    "money-waits": 19.77,
+    "display-maker": 21.57,
+    "owes-glass": 24.33,
+    "glass-maker": 25.59,
+    "pay-today": 26.67,
+    "incoming-value": 29.29,
+    "obligation": 32.13
   }
 }

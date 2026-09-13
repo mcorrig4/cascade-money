@@ -31,9 +31,11 @@ export type AppFrameProps = {
   /** A deterministic opening state. The app remains mounted underneath. */
   loadingFrames?: number;
   absoluteTimeline?: boolean;
+  /** Render the app in the film's recording presentation (see seekTo). */
+  recordingHud?: boolean;
 };
 
-export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFrames = 0, absoluteTimeline = false}) => {
+export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFrames = 0, absoluteTimeline = false, recordingHud = false}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const [handle] = useState(() => delayRender('Loading Cascade globe, textures, models, and stream'));
@@ -56,8 +58,15 @@ export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFr
   }, []);
 
   useLayoutEffect(() => {
+    // Release the render early ONLY inside the authored loading window (scene 1's
+    // designed cold open). Outside it, `isLoadingFrame` means the app has not
+    // signaled ready yet, and continuing there is a race the renderer wins every
+    // time: it draws this placeholder for every frame of the scene and finishes
+    // long before a 28 MB event stream, the globe's textures and the site models
+    // have loaded. Holding the delayRender handle is what makes the live path
+    // wait for the real app (remotion.config.ts allows 20 minutes for it).
     if (isLoadingFrame) {
-      if (!continued.current) {
+      if (frame < loadingFrames && !continued.current) {
         continued.current = true;
         continueRender(handle);
       }
@@ -67,7 +76,7 @@ export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFr
     const localMs = timesMs?.[frame] ?? (frame - loadingFrames) / fps * 1000;
     const sceneStartMs = SHOTS.find((shot) => shot.scene === scene)?.startTime ?? 0;
     const tMs = localMs + (absoluteTimeline ? sceneStartMs * 1000 : 0);
-    seekTo(tMs, scene, absoluteTimeline, Object.fromEntries(Object.entries((cueTimes as Record<string,Record<string,number>>)[String(scene)]??{}).map(([name,seconds])=>[name,seconds*1000])));
+    seekTo(tMs, scene, absoluteTimeline, Object.fromEntries(Object.entries((cueTimes as Record<string,Record<string,number>>)[String(scene)]??{}).map(([name,seconds])=>[name,seconds*1000])), recordingHud);
     // Rendering phases are authored scene-locally even though the public seek
     // coordinate is the absolute film timeline.
     const sample=browserWindow.__cascade?.renderFrame?.(localMs);
@@ -77,7 +86,7 @@ export const AppFrame: React.FC<AppFrameProps> = ({scene = 4, timesMs, loadingFr
       continued.current = true;
       continueRender(handle);
     }
-  }, [absoluteTimeline, fps, frame, handle, isLoadingFrame, loadingFrames, ready, scene, timesMs]);
+  }, [absoluteTimeline, fps, frame, handle, isLoadingFrame, loadingFrames, ready, recordingHud, scene, timesMs]);
 
   return <div className="cascade-live-frame" style={{position: 'absolute', inset: 0, width: 1920, height: 1080, overflow: 'hidden'}}>
     <style>{`.cascade-live-frame *, .cascade-live-frame *::before, .cascade-live-frame *::after {animation: none !important; transition: none !important;}`}</style>

@@ -26,8 +26,53 @@ const table:ShotDefinition[]=[
  // (buildShots' `i+1` below) now runs 1..13 in THIS array order, which is
  // no longer the shots' own `id` order — ids are stable camera/API
  // contracts (unchanged), only the sequence changes.
- {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'westward payment sweep',overlay:'none',orderCues:[
-  {word:'Samsung',beat:'display',at:4.4},{word:'Corning',beat:'cover-glass',at:9.2},{word:'Sony',beat:'camera-sensors',at:13.4}]},
+ // Scene 3's camera is an authored bookmark flight (bake-off entry, Director
+ // 2026-09-13). Every knot time below is measured off the recorded v9 take
+ // (film/public/narration/scene-03.wav, 33.15s; word timestamps transcribed
+ // with mlx_whisper large-v3-turbo, condition_on_previous_text=False), so the
+ // flight lands on the spoken line, not on a scaled fraction of the scene:
+ //   0.00  "Here's how it actually works."   hold the scene-2 exit pose —
+ //         the whole Earth, still centred on Cupertino.
+ //   2.30  "Apple orders $100 million ..."   ride the Apple->Samsung arc out
+ //         over the north Pacific (the great circle bows past the Aleutians)
+ //   6.80  "... from Samsung."               land on Korea (alt .62)
+ //   7.60  "Samsung orders cover glass."     pull out and rotate east until
+ //   9.80  "Corning upstream gets paid       Asan AND Harrodsburg are both on
+ //         later."                           the lit disc (45 deg / 58 deg off
+ //                                           centre at alt 2.15)
+ //  12.60  "Sony ships the camera sensors"   rotate back west into East Asia
+ //  15.50  "Everyone down the chain ..."     pull back east across the Pacific
+ //         as the branched cascade fans out
+ //  18.00  "The parts move, the money        settle over North America, where
+ //         waits."                           the nine downstream hops sit
+ //  20.60  the obligation card               one slow inland drift, ending on
+ //  27.00                                    Harrodsburg — this shot's own
+ //                                           authored `end` pose, so scene 4
+ //                                           still inherits it unchanged.
+ // Altitudes that the spline must not overshoot (the two close poses) each
+ // carry a hold, which fromBookmarks encodes as duplicated zero-tangent
+ // knots — the camera rests exactly there instead of arcing through it.
+ {id:3,title:"The hidden supply chain",words:48,end:p(37.8,-84.85,1.5),motion:'Pacific relay · East Asia return · North American settle',overlay:'none',
+  path:[
+   {lat:37.3349,lng:-122.009,altitude:1.65,sceneId:3,time:0,holdMs:2300,travelMs:2500},
+   {lat:48,lng:-178,altitude:1.95,sceneId:3,time:2.3,holdMs:0,travelMs:2300},
+   {lat:36.9,lng:127.06,altitude:.62,sceneId:3,time:4.6,holdMs:800,travelMs:2200},
+   {lat:46,lng:-166,altitude:1.95,sceneId:3,time:7.6,holdMs:2800,travelMs:2200},
+   {lat:35.5,lng:129.5,altitude:.4,sceneId:3,time:12.6,holdMs:700,travelMs:2200},
+   {lat:44,lng:-150,altitude:2.3,sceneId:3,time:15.5,holdMs:0,travelMs:2500},
+   {lat:40,lng:-120,altitude:1.95,sceneId:3,time:18,holdMs:0,travelMs:2600},
+   {lat:38.5,lng:-96,altitude:1.7,sceneId:3,time:20.6,holdMs:0,travelMs:6400},
+   {lat:37.8,lng:-84.85,altitude:1.5,sceneId:3,time:27,holdMs:0,travelMs:6550},
+  ],
+  // Fallback seconds are the recorded take's own word times (minus the 150ms
+  // reveal lead cues-from-words.mjs applies): "Apple ORDERS ..." 2.36,
+  // "SAMSUNG ORDERS cover glass" 7.30, "SONY ships ..." 12.44. The film
+  // resolves the same three cue names against the words JSON, so these only
+  // apply to a standalone app run.
+  orderCues:[
+   {word:'Samsung',beat:'display',at:2.21},
+   {word:'Corning',beat:'cover-glass',at:7.15},
+   {word:'Sony',beat:'camera-sensors',at:12.29}]},
  {id:16,title:"The question",words:18,end:p(34,-76,1.8),motion:'idle drift',overlay:'question'},
  {id:4,title:"The cascade",words:55,end:p(33.77,-118.2,1.9),motion:'westward chain sweep',overlay:'none'},
  {id:17,title:"Let it land",words:30,end:p(34,-112,2),motion:'idle drift',overlay:'totals'},
@@ -229,6 +274,43 @@ export function californiaPath(from:Pose,seconds:number,incomingLngVelocity=0):K
   {...APPLE_MARKER_APPROACH,t:seconds*.75,tangent:zero},
   {...table[1].end,t:seconds,tangent:zero}];
 }
+/**
+ * Real payments from the same opening week, outside the narrated Apple chain,
+ * used to light the rest of the globe on "everyone down the chain". These are
+ * indexed events, never invented ones: only payments whose payer and payee are
+ * both located firms are eligible, they are taken in stream order, one per
+ * firm pair, and they are deliberately NOT added to focusInvoices — the ledger
+ * keeps reading the narrated chain.
+ */
+export function networkFanout(index:EventIndex,exclude:Event[],limit=16) {
+ const taken=new Set(exclude.map(e=>e.seq)),pairs=new Set<string>(),picked:Event[]=[];
+ for(const day of index.days.slice(0,5)){
+  for(const event of day.events){
+   if(picked.length>=limit)return picked;
+   if(taken.has(event.seq)||!['issue','pay'].includes(event.type))continue;
+   const from=index.firms.get(event.from??''),to=index.firms.get(event.to??'');
+   if(from?.lat==null||from.lng==null||to?.lat==null||to.lng==null)continue;
+   const pair=`${event.from}>${event.to}`;
+   if(pairs.has(pair))continue;
+   pairs.add(pair);picked.push(event);
+  }
+ }
+ return picked;
+}
+/**
+ * Scene 3's on-globe order list stays at the THREE narrated orders (Samsung
+ * Display, Corning, Sony) however many payments the scene has revealed — the
+ * downstream cascade and the wider network light the globe, they do not each
+ * earn a labelled row, and the list has to stay clear of the obligation card
+ * that lands under it. Order follows the narration, not the event stream.
+ */
+export function narratedOrders(index:EventIndex,revealed:Event[]|null) {
+ if(!revealed)return [];
+ const seen=new Set(revealed.map(event=>event.seq));
+ return ['display','cover-glass','camera-sensors']
+  .map(beat=>narratedOrder(index,beat))
+  .filter((event):event is Event=>!!event&&seen.has(event.seq));
+}
 export function shotAvailable(_engine:PlaybackEngine,id:number){return SHOTS.some(s=>s.id===id);}
 const chase:Ease={kind:'bezier',points:[.12,.65,.18,1]};
 export function nextShot(id:number,direction=1){return SHOTS[Math.max(0,Math.min(SHOTS.length-1,SHOTS.findIndex(s=>s.id===id)+direction))].id;}
@@ -254,15 +336,30 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  }else if(id===2){
   engine.splinePath(californiaPath(continuous?incoming:shot.start,shot.seconds,continuous?OPENING_ROTATION:0),ms);
   }else if(id===3){
+  // The camera is the authored bookmark `path` above (playBookmarkPath has
+  // already taken the flight over), so nothing here calls fly(): every beat
+  // below is a REVEAL, keyed to the recorded narration.
   const orders=sceneThreeOrders(engine.index);
-  focus(orders);engine.setPosition(0,true);engine.update({paymentPresentation:'waiting'});
-  // Keep the narrated orders together, independently of their simulation days.
-  fly(p(42,-170,1.8),4400*scale,'west');
-  for(const cue of shot.orderCues??[])engine.atWord(cue.word,cue.at*scale,()=>{
-   const event=narratedOrder(engine.index,cue.beat)??(cue.word==='Samsung'?orders[0]:undefined);
+  const downstream=branchedProofPayments(engine.index,engine.state.story).slice(1);
+  const network=networkFanout(engine.index,orders.concat(downstream));
+  // Only the story's own hops are focused: the ledger keeps reading the
+  // narrated chain while the wider real payments below light the globe.
+  focus([...orders,...downstream]);engine.setPosition(0,true);engine.update({paymentPresentation:'waiting'});
+  const reveal=(events:Event[])=>events.forEach(event=>engine.reveal(event));
+  // Three named orders, each on its own spoken words (see cues.ts scene 3):
+  // "Apple ORDERS ..." / "SAMSUNG ORDERS cover glass" / "SONY ships ...".
+  for(const cue of shot.orderCues??[])engine.atWord(cue.word,cue.at,()=>{
+   const event=narratedOrder(engine.index,cue.beat)??(cue.beat==='display'?orders[0]:undefined);
    if(event)engine.reveal(event);
   });
-  at(16.4,()=>fly(shot.end,ms-16400*scale,'east'));
+  // "Everyone down the chain is waiting on the one above." — the rest of the
+  // branched cascade fans out a generation at a time, and the wider network
+  // of real same-week payments lights up behind it, so the globe is busy by
+  // the time the line reaches "the money waits".
+  const generations=cascadeBeats(downstream);
+  engine.atWord('chain-fanout',15.37,()=>reveal(generations[1]??[]));
+  engine.after(16.4,()=>{reveal(generations[2]??[]);reveal(network.slice(0,8));});
+  engine.after(17.45,()=>{reveal(generations[3]??[]);reveal(network.slice(8));});
  }else if(id===4){
   const chain=USE_EXTENDED_FIGURES?branchedProofPayments(engine.index,engine.state.story):straightProofPayments(engine.index,engine.state.story);
   focus(chain,!USE_EXTENDED_FIGURES);

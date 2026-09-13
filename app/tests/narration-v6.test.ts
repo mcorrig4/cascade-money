@@ -24,10 +24,15 @@ test('each v6 scene title, word count and provisional duration comes from its na
  // position.
  const cutTitles=new Set(['Rewind','The contradiction','Stress test','The rules survive','New York']);
  const byTitle=new Map(allScenes.filter(scene=>!cutTitles.has(scene[2])).map(scene=>[scene[2],scene]));
+ // Stage 18 renamed shot 2 from "Apple Park" to "California": the scene now
+ // holds on the coast and approaches the Apple marker instead of orbiting the
+ // campus. The script doc keeps its original heading, so the shot title maps
+ // back to it here rather than editing the narration source.
+ const scriptTitle=(title:string)=>title==='California'?'Apple Park':title;
  assert.equal(byTitle.size,12);assert.equal(SHOTS.length,12);
  for(const shot of SHOTS){
-  const scene=byTitle.get(shot.title);
-  assert.ok(scene,`no script scene named "${shot.title}"`);
+  const scene=byTitle.get(scriptTitle(shot.title));
+  assert.ok(scene,`no script scene named "${scriptTitle(shot.title)}"`);
   const words=scene![3].match(/\b[\w]+(?:[’'-][\w]+)*\b/g)?.length??0;
   assert.equal(shot.words,words);
   assert.equal(shot.baseSeconds,Math.round((words*.4+1)*10)/10);

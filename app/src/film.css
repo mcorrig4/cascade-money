@@ -214,3 +214,25 @@
 
 /* The California subject caption must fit independently of its logo width. */
 .app.california-hook .company-label[data-firm="Apple"]>span{overflow:visible;text-overflow:clip;width:max-content;max-width:none;position:relative;left:50%;transform:translateX(-50%)}
+
+/* Scene 3's obligation card in the 1920 × 1080 film design space (see the top of
+   this file). Anchored in the lower left, above the ledger strip and the
+   playback panel, and narrow enough that the globe and its arcs stay readable
+   to the right of it. */
+@media (min-aspect-ratio: 4/3) {
+  .app .obligation-card {left:calc(48 * var(--film-unit));top:calc(196 * var(--film-unit));bottom:auto;width:calc(1010 * var(--film-unit));padding:calc(24 * var(--film-unit)) calc(30 * var(--film-unit)) calc(22 * var(--film-unit));border-radius:calc(14 * var(--film-unit));box-shadow:0 calc(24 * var(--film-unit)) calc(60 * var(--film-unit)) #00000073}
+  .app .obligation-card header,.app .obligation-row {grid-template-columns:calc(248 * var(--film-unit)) 1fr 1fr;gap:calc(20 * var(--film-unit))}
+  .app .obligation-heads span {white-space:nowrap}
+  .app .obligation-card header {padding-bottom:calc(12 * var(--film-unit))}
+  .app .obligation-card .eyebrow {font-size:calc(26 * var(--film-unit));letter-spacing:calc(2 * var(--film-unit))}
+  .app .obligation-heads span {font-size:calc(26 * var(--film-unit));letter-spacing:calc(1.6 * var(--film-unit))}
+  .app .obligation-row {padding:calc(15 * var(--film-unit)) 0}
+  .app .obligation-firm {gap:calc(8 * var(--film-unit))}
+  .app .obligation-wordmark {height:calc(34 * var(--film-unit))}
+  .app .obligation-firm strong {font-size:calc(38 * var(--film-unit))}
+  .app .obligation-firm span {font-size:calc(26 * var(--film-unit))}
+  .app .obligation-cell strong {font-size:calc(52 * var(--film-unit))}
+  .app .obligation-cell span {font-size:calc(27 * var(--film-unit))}
+  .app .obligation-cell em {font-size:calc(33 * var(--film-unit));margin-top:calc(4 * var(--film-unit))}
+  .app .obligation-close {font-size:calc(38 * var(--film-unit));margin-top:calc(16 * var(--film-unit))}
+}

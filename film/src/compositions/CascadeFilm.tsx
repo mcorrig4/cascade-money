@@ -596,7 +596,10 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
 
   let visual: React.ReactNode;
   if(source==='live'){
-    const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
+    // Scene 3 is a full-app scene: it renders in the same recording presentation
+    // the film's other app scenes were CAPTURED in, so the live path and the
+    // captures path look like one film.
+    const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline recordingHud={sceneIndex===3} />;
     if(sceneIndex===1){
       const pullbackFrames=at30(SCENE1_PULLBACK_FRAMES_AT_30,fps);
       const pullback=interpolate(frame,[0,pullbackFrames],[0,1],{...CLAMP,easing:Easing.out(Easing.cubic)});

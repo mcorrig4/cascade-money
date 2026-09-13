@@ -19,11 +19,16 @@ test('live narrated orders retain their individual amounts, due dates and word c
  assert.deepEqual(apple.map(e=>e.to),['Samsung Display','Sony']);
  assert.ok(apple.every(e=>e.type==='issue'));
  const engine=new PlaybackEngine(index);playShot(engine,3);
- const shot=SHOTS.find(s=>s.id===3)!,scale=shot.seconds/shot.baseSeconds;
+ const shot=SHOTS.find(s=>s.id===3)!;
+ // The three order reveals are timed to the RECORDED take's own words, in
+ // absolute scene seconds (shots.ts orderCues) — they no longer scale with a
+ // word-count estimate, because the scene's length is now its bookmark
+ // flight's length. Each fallback is that word's start minus the 150ms reveal
+ // lead the film's cue resolver applies.
  let previous=0;
- for(const [at,count] of [[4.4,1],[9.2,2],[13.4,3]]){
-  engine.tick(at*scale-previous-.001);assert.equal(engine.storyEvents!.length,count-1);
-  engine.tick(.001);previous=at*scale;assert.deepEqual(engine.storyEvents,orders.slice(0,count));
+ for(const [at,count] of shot.orderCues!.map((cue,i)=>[cue.at,i+1] as const)){
+  engine.tick(at-previous-.001);assert.equal(engine.storyEvents!.length,count-1);
+  engine.tick(.001);previous=at;assert.deepEqual(engine.storyEvents,orders.slice(0,count));
  }
  assert.equal(engine.state.day,0,'Narrated juxtaposition keeps the simulation day');
  assert.equal(engine.state.paymentAmount,null);assert.equal(engine.state.paymentMaturity,null);
@@ -36,19 +41,27 @@ test('live narrated orders retain their individual amounts, due dates and word c
  }
  pool.tick(20000,true);
  assert.equal(pool.arcs.length,3);assert.ok(pool.arcs.every(a=>a.clipStart===0&&a.clipEnd===1&&a.alpha===1));
- engine.tick(shot.seconds-previous);assert.equal(engine.storyEvents!.length,3,'Each narrated order reveals exactly once');
+ // Past the fan-out the scene also lights the branched cascade and the wider
+ // same-week network (shots.ts networkFanout) — the three narrated orders are
+ // still revealed exactly once each inside that larger set.
+ engine.tick(shot.seconds-previous);
+ assert.deepEqual(engine.storyEvents!.filter(e=>orders.some(o=>o.seq===e.seq)),orders,'Each narrated order reveals exactly once');
 });
 
 test('recorded word timestamps suppress fallback order reveals and never duplicate an order',()=>{
  const engine=new PlaybackEngine(index);playShot(engine,3);
+ const orders=sceneThreeOrders(index);
+ const revealedOrders=()=>engine.storyEvents!.filter(e=>orders.some(o=>o.seq===e.seq));
  engine.cue('Samsung',undefined,15000);engine.cue('Corning',undefined,16000);engine.cue('Sony',undefined,17000);
  engine.tick(14);assert.deepEqual(engine.storyEvents,[],'All three default narration times have passed, but explicit cues own the timing');
+ // Counted over the narrated orders only: from 15.37s the scene is also
+ // revealing the branched cascade and the wider same-week network.
  for(const [word,count] of [['Samsung',1],['Corning',2],['Sony',3]] as const){
-  engine.tick(1);assert.equal(engine.storyEvents!.length,count,word);
+  engine.tick(1);assert.equal(revealedOrders().length,count,word);
  }
- assert.deepEqual(engine.storyEvents,sceneThreeOrders(index));
+ assert.deepEqual(revealedOrders(),orders);
  engine.cue('Sony',undefined,17500);engine.tick(.5);
- assert.equal(engine.storyEvents!.length,3,'Re-cueing an already revealed order cannot duplicate its invoice');
+ assert.equal(revealedOrders().length,3,'Re-cueing an already revealed order cannot duplicate its invoice');
 });
 
 test('live branch lights each generation and finishes at $100M / $450M / eight payees',()=>{

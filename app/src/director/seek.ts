@@ -10,7 +10,7 @@ export const FRAME_DRIVEN_STATE_SOURCES = [
 let loggedSources = false;
 
 /** Deterministically reconstruct a scene at an absolute timeline position. */
-export function seekTo(tMs: number, scene = LIVE_SCENE, absoluteTimeline = false, cues:Record<string,number> = {}) {
+export function seekTo(tMs: number, scene = LIVE_SCENE, absoluteTimeline = false, cues:Record<string,number> = {}, recordingHud = false) {
   const engine = window.__cascade?.engine;
   if (!engine) throw new Error('Cascade is not ready to seek');
   const shot = SHOTS.find(candidate => candidate.scene === scene);
@@ -27,7 +27,12 @@ export function seekTo(tMs: number, scene = LIVE_SCENE, absoluteTimeline = false
   engine.update({
     speed: 1,
     story: 'apple',
-    recording: false,
+    // `recordingHud` puts the app in the same presentation the film's own
+    // captures were recorded in (brand + ledger + timeline, no director/story/
+    // site chrome), so a live-rendered scene matches the captured ones instead
+    // of showing the interactive app's controls.
+    recording: recordingHud,
+    hud: true,
     camera: {
       ...shot.start,
       from: shot.start,
