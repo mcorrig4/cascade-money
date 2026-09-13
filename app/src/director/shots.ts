@@ -58,10 +58,17 @@ const table:ShotDefinition[]=[
  //         as the branched cascade fans out
  //  18.00  "The parts move, the money        settle over North America, where
  //         waits."                           the nine downstream hops sit
- //  20.60  the closing lines                 one slow inland drift, ending on
- //  27.00                                    Harrodsburg — this shot's own
- //                                           authored `end` pose, so scene 4
- //                                           still inherits it unchanged.
+ //  20.40  "Today, incoming value is only     one slow inland drift, ending on
+ //         useful if it can meet the next     Harrodsburg at 24.50 — this shot's
+ //  24.50  obligation."                       own authored `end` pose, so scene 4
+ //                                            still inherits it unchanged.
+ // Re-timed 2026-09-13 for the CORRECTED take: 7.8s of Liam's mid-chunk ("A
+ // display maker has money coming from Apple ... suppliers to pay today") is cut
+ // between 20.4s and 28.24s of the old recording, so every knot at or before
+ // 18.0s keeps its measured time and only the two closing knots move. The
+ // trailing travelMs makes the path floor the film's own 25.75s Sequence
+ // (25.35s clip + the 0.4s settle pad), exactly as the 33.6s version floored
+ // the 33.55s one.
  // Altitudes that the spline must not overshoot (the two close poses) each
  // carry a hold, which fromBookmarks encodes as duplicated zero-tangent
  // knots — the camera rests exactly there instead of arcing through it.
@@ -74,9 +81,9 @@ const table:ShotDefinition[]=[
    {lat:44.5,lng:-158,altitude:1.9,sceneId:3,time:9.8,holdMs:0,travelMs:2800},
    {lat:35.5,lng:129.5,altitude:.4,sceneId:3,time:12.6,holdMs:700,travelMs:2200},
    {lat:44,lng:-150,altitude:2.3,sceneId:3,time:15.5,holdMs:0,travelMs:2500},
-   {lat:40,lng:-120,altitude:1.95,sceneId:3,time:18,holdMs:0,travelMs:2600},
-   {lat:38.5,lng:-96,altitude:1.7,sceneId:3,time:20.6,holdMs:0,travelMs:6400},
-   {lat:37.8,lng:-84.85,altitude:1.5,sceneId:3,time:27,holdMs:0,travelMs:6550},
+   {lat:40,lng:-120,altitude:1.95,sceneId:3,time:18,holdMs:0,travelMs:2400},
+   {lat:38.5,lng:-96,altitude:1.7,sceneId:3,time:20.4,holdMs:0,travelMs:4100},
+   {lat:37.8,lng:-84.85,altitude:1.5,sceneId:3,time:24.5,holdMs:0,travelMs:1250},
   ],
   // Fallback seconds are the recorded take's own word times (minus the 150ms
   // reveal lead cues-from-words.mjs applies): "Apple ORDERS ..." 2.36,

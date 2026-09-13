@@ -1,17 +1,17 @@
 {
-  "_comment": "Recorded v9 narration lengths, in the app's own scene numbering (1-12). Each value is the film's resolved Sequence duration for that scene, so the app's shot clock and the film's timeline agree frame for frame: raw clip length (+ tail + gap where a scene has one) + the 0.4s settle pad, with scene 1's 1.0s tail and scene 9's 2.5s closing flash applied exactly as film/src/compositions/schedule.ts does. Source: film/public/narration/narration.json.",
-  "durations": {
-    "1": 11.29,
-    "2": 19.2,
-    "3": 33.55,
-    "4": 7.79,
-    "5": 19.09,
-    "6": 14.12,
-    "7": 30.8,
-    "8": 11.88,
-    "9": 35.5,
-    "10": 17.45,
-    "11": 10.18,
-    "12": 5.0
-  }
+ "_comment": "Recorded v9 narration lengths, in the app's own scene numbering (1-12). Each value is the film's resolved Sequence duration for that scene, so the app's shot clock and the film's timeline agree frame for frame: raw clip length (+ tail + gap where a scene has one) + the 0.4s settle pad, with scene 1's 1.0s tail and scene 9's 2.5s closing flash applied exactly as film/src/compositions/schedule.ts does. Source: film/public/narration/narration.json.",
+ "durations": {
+  "1": 11.29,
+  "2": 19.2,
+  "3": 25.75,
+  "4": 7.79,
+  "5": 19.09,
+  "6": 14.12,
+  "7": 30.8,
+  "8": 11.88,
+  "9": 35.5,
+  "10": 17.45,
+  "11": 10.18,
+  "12": 5.0
+ }
 }

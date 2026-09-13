@@ -19,8 +19,10 @@ test('12 scenes cover narration v6, preserve API IDs and connect every declared 
  // Shot 5 ("Run the year") carries an explicit seconds:35.6 — the film's own
  // scene-9 length (narration + settle + the 2.5s stress-result flash) — which
  // this expectation had not been restamped for; 199.8 - 18.2 + 35.6 = 217.2.
- assert.ok(Math.abs(FILM_SECONDS-217.2)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,12);
- assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,33.6,8.2,23,13,27.8,20.6,35.6,17.8,10.2,4.6]);
+ // Scene 3's bookmark flight was re-timed to the CORRECTED narration take
+ // (25.35s clip, 7.8s of Liam's mid-chunk cut), so its path floor is 25.8s.
+ assert.ok(Math.abs(FILM_SECONDS-209.4)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,12);
+ assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,25.8,8.2,23,13,27.8,20.6,35.6,17.8,10.2,4.6]);
  for(let i=0;i<SHOTS.length;i++){
   // Stage 18's scene 2 (California zoom -> Apple marker approach -> pull-out)
   // legitimately names a hold beat in its motion string; every other shot
