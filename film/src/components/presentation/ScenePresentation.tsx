@@ -262,7 +262,7 @@ const BackingPresentation: React.FC<{at: (name: string) => number; geometry: Win
     return {id: String(Math.floor(Date.UTC(year, month - 1, maturityDay) / 86400000)), date};
   }), {id: '…', date: '…'}];
   return <section className="film-backing" aria-label="Vault token IDs by UTC maturity day"
-    style={{top: pane.height * .22, bottom: pane.bottom - footerTop}}>
+    style={{top: pane.height * .40, bottom: pane.bottom - footerTop}}>
     <div style={rise(heading)}>
       <div className="film-backing-eyebrow">THE VAULT</div>
       <h2 className="film-backing-heading">ERC-1155</h2>

@@ -138,7 +138,7 @@
 }
 .app.film-app-surface.film-presentation .film-coin-bills-label {
   position: absolute; transform: translate(-50%, -100%); white-space: nowrap;
-  font-size: calc(14 * var(--film-unit)); letter-spacing: calc(1.8 * var(--film-unit)); color: #718692;
+  font-size: calc(16 * var(--film-unit)); letter-spacing: calc(1.8 * var(--film-unit)); color: #abc0bd;
 }
 .app.film-app-surface.film-presentation .film-coin-bill {
   position: absolute; overflow: visible; fill: var(--money, #69e6c0); stroke: var(--money, #69e6c0); stroke-width: 2px;
