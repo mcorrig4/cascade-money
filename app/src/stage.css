@@ -103,6 +103,7 @@
 /* Keep the dated unit readable above the endpoint company cards (z-index 13). */
 .app .amount-layer{z-index:14}
 .app .floating-amount strong{display:block;line-height:1.2}
+.app .question-card>.dated-dollar{width:100%;max-width:490px;height:auto}
 .app .coin-stage>.dated-dollar{width:min(44vw,490px);height:auto}
 .app .extension-ticks{display:grid;grid-template-columns:repeat(90,1fr);gap:2px;height:24px;margin:18px 0}
 .extension-ticks i{display:block}

@@ -13,6 +13,17 @@ export const CALIFORNIA_HOLD=p(37.65,-122.45,.18);
 export const APPLE_MARKER_APPROACH=p(APPLE.lat,APPLE.lng,.06);
 export const CALIFORNIA_EXIT=p(OPENING_WIDE.lat,APPLE.lng,1.65);
 export type OrderCue={word:'Samsung'|'Corning'|'Sony';beat:string;at:number};
+// W1 (product owner, 2026-09-13): the film owns slides and token animations;
+// only globe/data-layer coins belong inside the recorded application window.
+export const OVERLAY_OWNERS={
+ none:'product',title:'product',vault:'product',
+ question:'presentation',totals:'presentation',coin:'presentation',backing:'presentation',
+ composable:'presentation',contradiction:'presentation',laws:'presentation',wordmark:'presentation',
+ 'scene-narration':'presentation','ending-line':'presentation','year-caption':'presentation',
+ 'vault-heading':'presentation','globe-dimmer':'presentation',
+ 'onchain-glimpse':'presentation','debt-card':'presentation','scene-heading':'presentation',
+} as const;
+export type OverlayKind=keyof typeof OVERLAY_OWNERS;
 /**
  * `seconds` is an AUTHORED duration override. Without it a shot runs for
  * `baseSeconds` — a word-count estimate (words/150*60 + 1s) that has no
@@ -24,7 +35,7 @@ export type OrderCue={word:'Samsung'|'Corning'|'Sony';beat:string;at:number};
  * (Director frame check, 2026-09-13). Set this whenever a shot's recorded
  * narration is the real clock.
  */
-export type ShotDefinition={id:number;title:string;words:number;seconds?:number;end:Pose;motion:string;overlay:string;allowRoll?:boolean;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];orderCues?:OrderCue[]};
+export type ShotDefinition={id:number;title:string;words:number;seconds?:number;end:Pose;motion:string;overlay:OverlayKind;allowRoll?:boolean;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];orderCues?:OrderCue[]};
 const table:ShotDefinition[]=[
  {id:1,title:"The object of desire",words:14,end:OPENING_WIDE,motion:'wide globe rotation',overlay:'none'},
  {id:2,title:"California",words:38,end:CALIFORNIA_EXIT,motion:'California hold · Apple marker approach · full globe',overlay:'none'},
