@@ -452,10 +452,45 @@ const StressPresentation: React.FC<{at: (name: string) => number; geometry: Wind
   </>;
 };
 
-const ComposablePresentation: React.FC<{shown: Beat}> = ({shown}) => {
-  if (shown('money-plus-time')) return <section className="overlay-card film-money-time"><h2>Money{shown('money-plus') && <> plus</>}{shown('money-time') && <> time</>}</h2></section>;
-  if (shown('wordmark')) return <section className="overlay-card film-cascade"><Wordmark/></section>;
-  return <section className="overlay-card architecture-card film-composable" aria-label="Composable finance"><ol className="composable-items">{['Loans', 'Forwards', 'Bonds', 'Derivatives'].map((title, i) => <li key={title} className="beat-visible" style={visibility(shown(`word-${title.toLowerCase()}`))}><span>{String(i + 1).padStart(2, '0')}</span><div><strong>{title}</strong></div></li>)}</ol></section>;
+const ComposablePresentation: React.FC<{at: (name: string) => number; geometry: WindowGeometry}> = ({at, geometry}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const unit = geometry.width / 1920;
+  const pane = presentationRect(geometry, 'left', 32 * filmUnitFor(geometry.width, geometry.height));
+  const wordmark = at('wordmark'), closing = at('money-plus-time');
+  const plus = at('money-plus'), time = at('money-time');
+  const progress = (start: number, duration: number) => interpolate(frame, [start, start + duration], [0, 1], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+  });
+  const on = (start: number) => progress(start - 1, 1) === 1;
+  const reveal = (start: number): React.CSSProperties => ({
+    ...visibility(on(start)), opacity: progress(start, .2 * fps),
+  });
+  // Centre the evidence itself; the closing slot never moves or replaces its rows.
+  return <section className="film-composable" aria-label="Composable finance" style={{
+    left: 16 * unit, width: Math.max(0, pane.width - 16 * unit), top: (pane.height - 344 * unit) / 2,
+    '--film-unit': `${unit}px`,
+  } as React.CSSProperties}>
+    <div className="film-composable-close">
+      <section className="overlay-card film-hook-close" style={{
+        ...visibility(on(wordmark) && !on(closing)),
+        opacity: progress(wordmark, .2 * fps) * (1 - progress(closing - 1, 1)),
+      }}><Wordmark/></section>
+      <h2 className="film-composable-statement" style={reveal(closing)}>
+        <span>Money<span style={reveal(plus)}> plus</span></span>
+        <span style={reveal(time)}>time</span>
+      </h2>
+    </div>
+    <ul className="film-composable-register" style={{opacity: 1 - .65 * progress(wordmark, .4 * fps)}}>
+      {['Loans', 'Forwards', 'Bonds', 'Derivatives'].map(title => {
+        const start = at(`word-${title.toLowerCase()}`);
+        return <li className="film-composable-row" key={title} style={visibility(on(start))}>
+          <span style={{opacity: progress(start, .2 * fps)}}>{title}</span>
+          <i className="film-composable-rule" aria-hidden="true" style={{transform: `scaleX(${progress(start, .35 * fps)})`}}/>
+        </li>;
+      })}
+    </ul>
+  </section>;
 };
 
 export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometry; cues: SceneCues}> = ({scene, geometry, cues}) => {
@@ -468,7 +503,7 @@ export const ScenePresentation: React.FC<{scene: number; geometry: WindowGeometr
   const inset = scene === 3 || scene === 4 || scene === 9;
   const content = scene === 3 ? <ExamplePresentation at={at} geometry={geometry}/> : scene === 4 ? <QuestionPresentation at={at} geometry={geometry}/> : scene === 5 ? <CascadePresentation at={at} geometry={geometry}/> : scene === 6 ? <TotalsPresentation at={at} geometry={geometry}/>
     : scene === 7 ? <CoinPresentation at={at} geometry={geometry}/>
-    : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation at={at} geometry={geometry}/> : <ComposablePresentation shown={shown}/>;
+    : scene === 8 ? <BackingPresentation at={at} geometry={geometry}/> : scene === 9 ? <StressPresentation at={at} geometry={geometry}/> : <ComposablePresentation at={at} geometry={geometry}/>;
   return <AppSurface className={`film-presentation film-presentation-${scene}`}>
     {scene === 2 ? <HookPresentation at={at} geometry={geometry}/>
       : inset ? scene === 3 ? <div className="film-presentation-inset" style={{

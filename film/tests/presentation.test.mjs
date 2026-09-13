@@ -7,6 +7,7 @@ import postcss from 'postcss';
 import {readFileSync} from 'node:fs';
 import {swapPositions, swapProgress, extensionState, YEAR_INVOICES, STRESS_OPERATIONS, STRESS_ACCEPTED, STRESS_REJECTED} from '../src/components/presentation/presentationMath.ts';
 import {windowGeometryAt, presentationRect} from '../src/components/windowGeometry.ts';
+import {filmUnitFor} from '../src/components/appSurfaceGeometry.ts';
 
 const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-8, `${a} != ${b}`);
 test('swap follows opposite semicircles, pauses, retraces, and stops once', () => {
@@ -250,16 +251,113 @@ test('scene 6 draws the reserve-to-settlement proportion, cue-gated, with no cou
   assert.equal(nodes(totals, node => ts.isJsxElement(node) && node.openingElement.tagName.getText(source) === 'h2').length, 0);
 });
 
-test('scene 10 final card takes priority and reveals plus/time independently', () => {
-  const composable = component('ComposablePresentation');
-  const statements = composable.body.statements;
-  assert.ok(ts.isIfStatement(statements[0]));
-  assert.equal(statements[0].expression.getText(source), "shown('money-plus-time')");
-  assert.ok(ts.isReturnStatement(statements[0].thenStatement));
-  assert.match(statements[0].thenStatement.getText(source), /shown\('money-plus'\)/);
-  assert.match(statements[0].thenStatement.getText(source), /shown\('money-time'\)/);
-  assert.equal(statements[1].expression.getText(source), "shown('wordmark')");
+// Execute scene 10 and its actual dispatcher, retaining the pane and all evidence.
+const composableCode = ts.transpileModule(['requiredFrame', 'visibility', 'Wordmark', 'ComposablePresentation', 'ScenePresentation']
+  .map(name => `const ${name} = ${component(name).getText(source)};`).join('\n')
+  + '\nexport {ScenePresentation};', {
+  compilerOptions: {module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX},
+}).outputText;
+const renderComposable = (frame, fps = 30, width = 1920, cues = generatedCues[10]) => {
+  const exports = {};
+  new Function('require', 'exports', 'interpolate', 'useCurrentFrame', 'useVideoConfig', 'cueFrame',
+    'presentationRect', 'filmUnitFor', 'AppSurface', 'PresentationPane', composableCode)(
+    name => {assert.equal(name, 'react/jsx-runtime'); return jsxRuntime;}, exports,
+    interpolate, () => frame, () => ({fps}), cueFrame, presentationRect,
+    filmUnitFor, 'surface', 'pane',
+  );
+  const geometry = windowGeometryAt({preset: 'skewRight'}, frame, width, width * 1080 / 1920);
+  const surface = exports.ScenePresentation({scene: 10, geometry, cues});
+  const [pane] = children(surface), [content] = children(pane);
+  assert.equal(pane.type, 'pane'); assert.equal(pane.props.side, 'left');
+  assert.equal(content.props.geometry, geometry);
+  const block = content.type(content.props);
+  const [close, register] = children(block), [wordmark, statement] = children(close);
+  return {geometry, block, close, register, wordmark, statement};
+};
 
+test('scene 10 closing statement takes priority, reserves independent plus/time reveals, and holds dimmed evidence', () => {
+  assert.doesNotMatch(component('ComposablePresentation').getText(source), /shown\(|architecture-card|composable-items|padStart|<ol/);
+  const titles = ['Loans', 'Forwards', 'Bonds', 'Derivatives'];
+  const clamp = value => Math.max(0, Math.min(1, value));
+  for (const fps of [24, 30, 60]) {
+    const at = name => cueFrame(generatedCues[10], name, fps, NaN);
+    for (let frame = 0; frame < Math.ceil(17.51 * fps); frame++) {
+      const {register, wordmark, statement} = renderComposable(frame, fps);
+      const rows = children(register);
+      assert.equal(register.type, 'ul'); assert.equal(rows.length, 4);
+      near(register.props.style.opacity, 1 - .65 * clamp((frame - at('wordmark')) / (.4 * fps)));
+      rows.forEach((row, i) => {
+        const start = at(`word-${titles[i].toLowerCase()}`);
+        assert.equal(row.key, titles[i]); assert.equal(row.type, 'li');
+        assert.equal(row.props.style.visibility, frame < start ? 'hidden' : 'visible');
+        const [name, rule] = children(row);
+        assert.equal(name.props.children, titles[i]);
+        near(name.props.style.opacity, clamp((frame - start) / (.2 * fps)));
+        assert.equal(rule.props.className, 'film-composable-rule');
+        near(Number(rule.props.style.transform.match(/scaleX\(([^)]+)\)/)[1]), clamp((frame - start) / (.35 * fps)));
+      });
+      assert.equal(wordmark.props.className, 'overlay-card film-hook-close');
+      assert.equal(children(children(wordmark)[0].type())[1], 'Cascade Money');
+      assert.equal(wordmark.props.style.visibility, frame >= at('wordmark') && frame < at('money-plus-time') ? 'visible' : 'hidden');
+      near(wordmark.props.style.opacity, frame >= at('money-plus-time') ? 0 : clamp((frame - at('wordmark')) / (.2 * fps)));
+      assert.equal(statement.props.style.visibility, frame < at('money-plus-time') ? 'hidden' : 'visible');
+      near(statement.props.style.opacity, clamp((frame - at('money-plus-time')) / (.2 * fps)));
+      const [firstLine, time] = children(statement), [money, plus] = children(firstLine);
+      assert.equal(money, 'Money'); assert.equal(plus.props.children, ' plus'); assert.equal(time.props.children, 'time');
+      for (const [word, cue] of [[plus, 'money-plus'], [time, 'money-time']]) {
+        assert.equal(word.props.style.visibility, frame < at(cue) ? 'hidden' : 'visible');
+        assert.equal(word.props.style.display, undefined, 'unspoken words retain their layout space');
+        near(word.props.style.opacity, clamp((frame - at(cue)) / (.2 * fps)));
+      }
+    }
+  }
+  for (const cue of ['wordmark', 'money-plus-time', 'money-plus', 'money-time', ...titles.map(title => `word-${title.toLowerCase()}`)]) {
+    const missing = {...generatedCues[10]}; delete missing[cue];
+    assert.throws(() => renderComposable(0, 30, 1920, missing), {message: `Missing presentation cue: ${cue}`});
+  }
+});
+
+test('scene 10 hairline register and reserved two-line close fit wholly in the skewRight column', () => {
+  const css = postcss.parse(readFileSync(new URL('../src/components/presentation/presentation.css', import.meta.url), 'utf8'));
+  const rule = name => {
+    const found = css.nodes.find(node => node.selector === `.app.film-app-surface.film-presentation .${name}`);
+    assert.ok(found, name);
+    return Object.fromEntries(found.nodes.filter(node => node.type === 'decl').map(node => [node.prop, node.value]));
+  };
+  const row = rule('film-composable-row'), line = rule('film-composable-rule');
+  const statement = rule('film-composable-statement'), close = rule('film-composable-close');
+  assert.equal(rule('film-composable-register')['list-style'], 'none');
+  assert.equal(rule('film-composable-register').padding, '0');
+  assert.equal(row.height, 'calc(86 * var(--film-unit))');
+  assert.equal(row['font-size'], 'calc(44 * var(--film-unit))');
+  assert.equal(row['font-weight'], '400'); assert.equal(row.color, '#e6eceb');
+  assert.equal(row.border, undefined); assert.equal(row.background, undefined);
+  assert.equal(line.height, 'calc(1 * var(--film-unit))'); assert.equal(line.background, 'var(--line)');
+  assert.equal(line.bottom, '0'); assert.equal(line.left, '0'); assert.equal(line.right, '0');
+  assert.equal(line['transform-origin'], 'left center');
+  assert.equal(statement['font-size'], 'calc(96 * var(--film-unit))');
+  assert.equal(statement['letter-spacing'], 'calc(-3 * var(--film-unit))');
+  assert.equal(statement['grid-area'], '1 / 1'); assert.equal(statement.margin, '0');
+  assert.equal(rule('film-composable-statement > span').display, 'block');
+  assert.equal(rule('film-composable-statement > span')['white-space'], 'pre');
+  assert.equal(close.bottom, 'calc(100% + 32 * var(--film-unit))');
+  assert.equal(close.height, 'calc(208 * var(--film-unit))');
+  assert.equal(rule('film-composable .film-hook-close').background, 'transparent');
+  assert.equal(rule('film-composable .wordmark-icon').color, 'var(--money)');
+  for (const width of [1280, 1920, 2560]) {
+    const {geometry, block} = renderComposable(525, 30, width);
+    const unit = width / 1920, padding = 32 * filmUnitFor(width, geometry.height);
+    const pane = presentationRect(geometry, 'left', padding);
+    const left = pane.left + block.props.style.left, right = left + block.props.style.width;
+    const top = pane.top + block.props.style.top, bottom = top + 4 * 86 * unit;
+    near(left, padding + 16 * unit); near((top + bottom) / 2, geometry.height / 2);
+    assert.ok(right <= pane.right + 1e-7); assert.ok(right < geometry.rect.left);
+    assert.ok(top - (208 + 32) * unit >= pane.top); assert.ok(bottom <= pane.bottom);
+    assert.ok(2 * 96 * Number(statement['line-height']) <= 208, 'two closing lines fit the reserved height');
+    // Inter glyph advances at the specified size/tracking: Money plus is < 500px;
+    // the existing 84px wordmark fits on two lines, including its .9em mark/margin.
+    assert.ok(block.props.style.width >= 500 * unit);
+  }
 });
 
 // Render the actual scene-9 element tree with measured cue fixtures, without media.
