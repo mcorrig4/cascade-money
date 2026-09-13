@@ -181,7 +181,9 @@ export const Hook: React.FC<{
   const startB1 = cueFrame(cues, 'stat-suppliers', fps, fallbackB);
   const startB2 = cueFrame(cues, 'stat-factories', fps, fallbackB + slot * 0.33);
   const startB3 = cueFrame(cues, 'stat-countries', fps, fallbackB + slot * 0.66);
-  const startC = cueFrame(cues, 'promises', fps, fallbackC);
+  // Round 7: 'promises' now resolves to the measured onset of "payment
+  // terms" (cues.ts), with the old "promises" word as its fallback.
+  const startC = cueFrame(cues, 'promises', fps, cueFrame(cues, 'promises-fallback', fps, fallbackC));
   let startD = cueFrame(cues, 'wordmark', fps, fallbackD);
 
   // (4) The wordmark must never land before 10.5s of FILM time.
