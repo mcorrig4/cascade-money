@@ -118,25 +118,3 @@
 
 .app .shot-overlay,.app .shot-overlay *{animation:none;transition:none}
 .app .shot-overlay .coin-fungibility{width:100%;max-width:none;height:100%;padding:0}
-
-/* Scene 3's closing obligation card (bake-off pass, 2026-09-13). Anchored over
-   the globe's lower left, clear of the transactions ledger on the right and of
-   the timeline panel below, so the app's own UI stays fully readable behind it. */
-.obligation-card{position:absolute;left:34px;bottom:330px;z-index:22;width:min(830px,52vw);padding:20px 26px 18px;border-radius:14px;background:linear-gradient(180deg,#07161fef,#061019f2);border:1px solid #1d4b4a;box-shadow:0 24px 60px #00000073;color:#dceff2;font-variant-numeric:tabular-nums}
-.obligation-card header{display:grid;grid-template-columns:210px 1fr 1fr;align-items:end;gap:18px;padding-bottom:10px;border-bottom:1px solid #1d4b4a}
-.obligation-card .eyebrow{font-size:14px;letter-spacing:2px;color:#79b6ad}
-.obligation-heads{display:contents}
-.obligation-heads span{font-size:13px;letter-spacing:1.6px;color:#79b6ad;white-space:nowrap}
-.obligation-row{display:grid;grid-template-columns:210px 1fr 1fr;align-items:center;gap:18px;padding:13px 0;border-bottom:1px solid #12333a}
-.obligation-firm{display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0}
-.obligation-wordmark{display:block;height:22px;max-width:100%;width:auto;object-fit:contain;object-position:left center;filter:brightness(0) invert(1);opacity:.94}
-.obligation-firm strong{display:block;font-size:20px;font-weight:550;line-height:1.15;white-space:nowrap}
-.obligation-firm span{display:block;font-size:13px;color:#7fa6ac;letter-spacing:.4px}
-.obligation-cell{display:flex;flex-direction:column;gap:1px;min-width:0}
-.obligation-cell strong{font-size:27px;font-weight:600;color:#8ef0cb;line-height:1.1}
-.obligation-cell span{font-size:14px;color:#9fbcc1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.obligation-cell em{font-size:17px;font-style:normal;font-weight:600;letter-spacing:.4px;color:#cfe6ea;margin-top:3px}
-.obligation-now strong{color:#f3c98a}
-.obligation-now em{color:#f7d9a6}
-.obligation-close{margin:14px 0 0;font-size:21px;line-height:1.35;color:#e6f4f5}
-@media(max-width:850px){.obligation-card{left:12px;right:12px;width:auto;bottom:190px;padding:12px 14px}.obligation-card header,.obligation-row{grid-template-columns:120px 1fr 1fr;gap:10px}.obligation-firm strong{font-size:14px}.obligation-cell strong{font-size:18px}.obligation-close{font-size:15px}}

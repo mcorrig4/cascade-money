@@ -3,14 +3,6 @@
     "Samsung": 2.21,
     "Corning": 7.15,
     "Sony": 12.29,
-    "chain-fanout": 15.37,
-    "parts-move": 18.63,
-    "money-waits": 19.77,
-    "display-maker": 21.57,
-    "owes-glass": 24.33,
-    "glass-maker": 25.59,
-    "pay-today": 26.67,
-    "incoming-value": 29.29,
-    "obligation": 32.13
+    "chain-fanout": 15.37
   }
 }

@@ -38,14 +38,16 @@ const table:ShotDefinition[]=[
  //   6.80  "... from Samsung."               land on Korea (alt .62)
  //   7.60  "Samsung orders cover glass."     pull out and rotate east until
  //   9.80  "Corning upstream gets paid       Asan AND Harrodsburg are both on
- //         later."                           the lit disc (45 deg / 58 deg off
- //                                           centre at alt 2.15)
+ //         later."                           the lit disc (50 deg / 57 deg off
+ //                                           centre at alt 1.98), then keep
+ //                                           turning slowly through the line
+ //                                           rather than freezing on the pose
  //  12.60  "Sony ships the camera sensors"   rotate back west into East Asia
  //  15.50  "Everyone down the chain ..."     pull back east across the Pacific
  //         as the branched cascade fans out
  //  18.00  "The parts move, the money        settle over North America, where
  //         waits."                           the nine downstream hops sit
- //  20.60  the obligation card               one slow inland drift, ending on
+ //  20.60  the closing lines                 one slow inland drift, ending on
  //  27.00                                    Harrodsburg — this shot's own
  //                                           authored `end` pose, so scene 4
  //                                           still inherits it unchanged.
@@ -57,7 +59,8 @@ const table:ShotDefinition[]=[
    {lat:37.3349,lng:-122.009,altitude:1.65,sceneId:3,time:0,holdMs:2300,travelMs:2500},
    {lat:48,lng:-178,altitude:1.95,sceneId:3,time:2.3,holdMs:0,travelMs:2300},
    {lat:36.9,lng:127.06,altitude:.62,sceneId:3,time:4.6,holdMs:800,travelMs:2200},
-   {lat:46,lng:-166,altitude:1.95,sceneId:3,time:7.6,holdMs:2800,travelMs:2200},
+   {lat:46,lng:-168,altitude:1.98,sceneId:3,time:7.6,holdMs:0,travelMs:2200},
+   {lat:44.5,lng:-158,altitude:1.9,sceneId:3,time:9.8,holdMs:0,travelMs:2800},
    {lat:35.5,lng:129.5,altitude:.4,sceneId:3,time:12.6,holdMs:700,travelMs:2200},
    {lat:44,lng:-150,altitude:2.3,sceneId:3,time:15.5,holdMs:0,travelMs:2500},
    {lat:40,lng:-120,altitude:1.95,sceneId:3,time:18,holdMs:0,travelMs:2600},
@@ -301,8 +304,7 @@ export function networkFanout(index:EventIndex,exclude:Event[],limit=16) {
  * Scene 3's on-globe order list stays at the THREE narrated orders (Samsung
  * Display, Corning, Sony) however many payments the scene has revealed — the
  * downstream cascade and the wider network light the globe, they do not each
- * earn a labelled row, and the list has to stay clear of the obligation card
- * that lands under it. Order follows the narration, not the event stream.
+ * earn a labelled row. Order follows the narration, not the event stream.
  */
 export function narratedOrders(index:EventIndex,revealed:Event[]|null) {
  if(!revealed)return [];
