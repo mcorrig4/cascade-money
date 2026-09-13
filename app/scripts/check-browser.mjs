@@ -59,6 +59,15 @@ async function captureScenes(context, legibility=false) {
   page.on('pageerror',e=>errors.push(e.message));
   const target=new URL(url);target.searchParams.set('inspect','1');
   await page.goto(target.href);await page.waitForFunction(()=>!!window.__cascade&&window.__cascade.globe.globeMaterial().userData.textureStage!=='pending');
+  await page.keyboard.press('Shift+D');
+  await page.keyboard.press('b');
+  assert.equal(await page.evaluate(()=>window.__cascade.bookmarks.length),1,'B appends a rendered view');
+  await page.evaluate(()=>{window.__bookmarkClipboard='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__bookmarkClipboard=text;}}});});
+  const logged=page.waitForEvent('console',{predicate:message=>message.type()==='log'&&message.text().includes('travelMs')});
+  await page.keyboard.press('Shift+B');await logged;
+  assert.equal(await page.evaluate(()=>JSON.parse(window.__bookmarkClipboard)[0].travelMs),2500);
+
+  await page.keyboard.press('Shift+D');
   const shots=await page.evaluate(()=>window.__cascade.shots);
   assert.equal(shots.length,17,'Narration v6 has exactly 17 scenes');
   const directory=legibility?'legibility':'scenes';await mkdir(`artifacts/${directory}`,{recursive:true});
@@ -66,7 +75,7 @@ async function captureScenes(context, legibility=false) {
   for(const [width,height] of legibility?[[640,360],[426,240]]:[[1920,1080],[640,360]]) {
     await page.setViewportSize({width,height});
     await page.evaluate(()=>{const e=window.__cascade.engine;e.setClockMode('manual');window.__cascade.playFilm();
-      window.__capturePlaying=e.state.playing;e.update({recording:true,playing:false,shotRunning:false});});
+      window.__capturePlaying=e.state.playing;e.update({recording:true,hud:true,playing:false,shotRunning:true});});
     let clock=0;
     for(const shot of shots) {
       const seconds=shot.captureAt;
@@ -75,25 +84,36 @@ async function captureScenes(context, legibility=false) {
       await page.evaluate(delta=>{
         const e=window.__cascade.engine;
         if(window.__capturePlaying!==undefined)e.update({playing:window.__capturePlaying,shotRunning:true});
-        e.tick(delta,'manual');window.__capturePlaying=e.state.playing;e.update({playing:false,shotRunning:false});
+        e.tick(delta,'manual');window.__capturePlaying=e.state.playing;e.update({playing:false,shotRunning:true});
       },targetTime-clock);clock=targetTime;
       await page.waitForTimeout(700);
       await page.waitForFunction(()=>window.__cascade.models().every(m=>!m.pending));
       const path=`artifacts/${directory}/scene-${String(shot.scene).padStart(2,'0')}-${width}x${height}.png`;
       await page.screenshot({path});
       const audit=await page.evaluate(()=>{
+        const visible=selector=>{const e=document.querySelector(selector);return !!e&&getComputedStyle(e).display!=='none'&&getComputedStyle(e).visibility!=='hidden'&&getComputedStyle(e).opacity!=='0'&&e.getBoundingClientRect().height>0;};
         const hud=document.querySelector('.bottom-panel'),bottom=hud&&getComputedStyle(hud).visibility!=='hidden'?hud.getBoundingClientRect().top:innerHeight;
-        const content=[...document.querySelectorAll('.law:last-child,.invariant-list>div:last-child,.composable-items li:last-child')];
-        return {mode:window.__cascade.engine.state.shot,elapsed:window.__cascade.engine.state.shotElapsed,exposure:window.__cascade.engine.state.exposure,
-          clipped:content.filter(e=>e.getBoundingClientRect().bottom>bottom+1).map(e=>e.textContent),
+        const ledger=document.querySelector('.ledger');
+        const safeBottom=document.querySelector('.overlay-active')?Math.min(bottom,ledger.getBoundingClientRect().top):bottom;
+        const content=[...document.querySelectorAll('.law:last-child,.invariant-list>div,.vault-card dt,.vault-card dd,.vault-card h2,.vault-card .eyebrow,.composable-items li:last-child')];
+        return {hud:['.topbar','.ledger','.bottom-panel','.volume-chart','.scrubber'].every(visible),hidden:['.director','.story-selector','.network-status'].every(s=>!visible(s)),mode:window.__cascade.engine.state.shot,elapsed:window.__cascade.engine.state.shotElapsed,exposure:window.__cascade.engine.state.exposure,
+          clipped:content.filter(e=>e.getBoundingClientRect().bottom>safeBottom+1).map(e=>e.textContent),
+          vaultClipped:[...document.querySelectorAll('.vault-card dt,.vault-card dd,.vault-card .invariant-list>div,.vault-card h2,.vault-card .eyebrow')].filter(e=>{
+            const r=e.getBoundingClientRect(),card=e.closest('.overlay-card').getBoundingClientRect();
+            return r.top<card.top-1||r.bottom>card.bottom+1||r.left<card.left-1||r.right>card.right+1;
+          }).map(e=>e.textContent),
           overflow:[...document.querySelectorAll('.overlay-card')].filter(e=>e.scrollHeight>e.clientHeight+2).map(e=>e.getAttribute('aria-label'))};
       });
       manifest.push({scene:shot.scene,id:shot.id,title:shot.title,seconds,width,height,path,audit});
+      assert.equal(audit.hud,true,'Recording keeps the product HUD');assert.equal(audit.hidden,true,'Recording hides production controls');
       assert.equal(audit.mode,shot.id,`Capture follows the 17-scene order (scene ${shot.scene}, film time ${targetTime}s)`);
       assert.ok(Math.abs(audit.elapsed-seconds)<1e-7, 'Capture uses the declared scene-relative time');
-      assert.deepEqual(audit.clipped,[],`${shot.title} stays above the collapsed HUD at ${width}×${height}`);
+      assert.deepEqual(audit.vaultClipped,[], 'Every stress-test label fits inside its card');
+      assert.deepEqual(audit.clipped,[],`${shot.title} stays above the visible HUD at ${width}×${height}`);
     }
-    await page.evaluate(()=>{delete window.__capturePlaying;});
+    await page.evaluate(()=>{delete window.__capturePlaying;window.__cascade.engine.update({recording:true,hud:false});});
+    assert.equal(await page.locator('.topbar').evaluate(e=>getComputedStyle(e).opacity),'0','Clean-frame option hides HUD');
+    await page.evaluate(()=>window.__cascade.engine.update({hud:true}));
   }
   await writeFile(`artifacts/${directory}/manifest.json`,JSON.stringify(manifest,null,2));
   assert.deepEqual(errors,[],'Scene captures have no page errors');

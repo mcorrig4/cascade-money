@@ -130,3 +130,78 @@ test('scene 2 stays in orbit for ten seconds, swoops, and pulls out only on the 
   }
  }finally{applyNarrationDurations({});}
 });
+
+test('recording visibility defaults to the product HUD with an explicit clean-frame option',async()=>{
+ const {recordingVisibility}=await import('../src/director/recording.ts');
+ const e=new PlaybackEngine(index);
+ assert.equal(e.state.hud,true);
+ for(const recording of [false,true])for(const hud of [false,true]){
+  e.update({recording,hud});
+  assert.deepEqual(recordingVisibility(recording,hud),{hud:!recording||hud,director:!recording,story:!recording,network:!recording});
+ }
+ e.update({recording:true,hud:false});assert.equal(e.state.hud,false);
+});
+
+test('bookmarks append immutable camera snapshots and export the same JSON',async()=>{
+ const {CameraBookmarks}=await import('../src/director/bookmarks.ts');
+ const book=new CameraBookmarks(),pose={lat:37,lng:-122,altitude:.001};
+ book.append(pose,2,3);pose.lat=0;
+ book.append({lat:38,lng:-121,altitude:.002},2,6);
+ let downloaded='';
+ let logged='';
+ const json=await book.export(async value=>{downloaded=value;},value=>{logged=value;});
+ assert.equal(logged,json);assert.equal(book.items[0].holdMs,0);assert.equal(book.items[0].travelMs,2500);
+ assert.equal(downloaded,json);assert.deepEqual(JSON.parse(json),book.items);
+ assert.equal(book.items[0].lat,37);assert.equal(book.items.length,2);
+});
+
+test('bookmark spline uses editable timing, unwraps longitude and rejects invalid poses',async()=>{
+ const {fromBookmarks}=await import('../src/camera/primitives.ts');
+ const a={lat:1,lng:179,altitude:1,time:5,sceneId:2};
+ const b={lat:2,lng:-179,altitude:2,time:8,sceneId:2};
+ const keys=fromBookmarks([a,b]);
+ assert.deepEqual(keys,[{lat:1,lng:179,altitude:1,t:0},{lat:2,lng:181,altitude:2,t:2.5}]);
+ assert.deepEqual(splineAt(keys,3),{lat:2,lng:181,altitude:2});
+ assert.throws(()=>fromBookmarks([a]));
+ assert.equal(fromBookmarks([a,{...b,time:5,sceneId:10}]).at(-1)!.t,2.5);
+ assert.throws(()=>fromBookmarks([a,{...b,lat:NaN}]));
+});
+
+test('edited bookmarks replace in memory atomically and preserve defaults',async()=>{
+ const {CameraBookmarks}=await import('../src/director/bookmarks.ts');
+ const book=new CameraBookmarks(),reference=book.items;
+ book.append({lat:1,lng:2,altitude:1},1,0);
+ book.load(JSON.stringify([{lat:3,lng:4,altitude:2,sceneId:10,time:0,holdMs:1200,travelMs:4000}]));
+ assert.equal(book.items,reference);assert.equal(book.items.length,1);
+ assert.equal(book.items[0].holdMs,1200);assert.equal(book.items[0].travelMs,4000);
+ assert.throws(()=>book.load('[{"lat":0}]'));assert.equal(book.items[0].lat,3);
+});
+
+test('bookmark flight has continuous velocity between legs and exact stationary dwell',async()=>{
+ const {fromBookmarks}=await import('../src/camera/primitives.ts');
+ const list=[0,1,2].map((lat,i)=>({lat,lng:lat,altitude:1,sceneId:1,time:i,holdMs:0,travelMs:i===2?4000:2000}));
+ let keys=fromBookmarks(list);
+ const epsilon=.00001;
+ const before=(splineAt(keys,2).lat-splineAt(keys,2-epsilon).lat)/epsilon;
+ const after=(splineAt(keys,2+epsilon).lat-splineAt(keys,2).lat)/epsilon;
+ assert.ok(Math.abs(before-after)<.0001);assert.ok(after>0);
+ list[1].holdMs=1000;keys=fromBookmarks(list);
+ assert.equal(keys.at(-1)!.t,7);
+ for(const t of [2,2.3,2.9,3])assert.deepEqual(splineAt(keys,t),{lat:1,lng:1,altitude:1});
+ const e=new PlaybackEngine(index);assert.equal(e.playBookmarkPath(list),7000);
+ assert.equal(e.state.camera.primitive?.kind,'spline');
+});
+
+test('shot bookmark path supersedes initial and scheduled authored moves',()=>{
+ const shot=SHOTS.find(s=>s.id===2)!;
+ shot.path=[0,1,2].map((n)=>({lat:37+n*.01,lng:-122,altitude:.001,sceneId:2,time:n,holdMs:0,travelMs:2000}));
+ try{
+  const e=new PlaybackEngine(index);playShot(e,2);
+  const id=e.state.camera.id;
+  assert.equal(e.state.camera.bookmarkPath,true);
+  e.tick(14);
+  assert.equal(e.state.camera.id,id,'Scheduled arch and pull-out do not replace edited path');
+  assert.equal(e.state.camera.primitive?.kind,'spline');
+  playShot(e,6);assert.notEqual(e.state.camera.id,id,'Next scene restores authored camera');
+ }finally{delete shot.path;}
+});

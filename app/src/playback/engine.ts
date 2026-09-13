@@ -1,4 +1,4 @@
-import { sampleCamera, type CameraCommand, type Pose, type Center, type Ease, type Route, type Keyframe, orbitAt } from '../camera/primitives.ts';
+import { fromBookmarks, type BookmarkInput, sampleCamera, type CameraCommand, type Pose, type Center, type Ease, type Route, type Keyframe, orbitAt } from '../camera/primitives.ts';
 import { DAYS } from '../data/types.ts';
 import type { Event, EventIndex, Totals } from '../data/types.ts';
 
@@ -8,7 +8,7 @@ export interface PlaybackState {
   revision: number; shot: number | null; shotRunning: boolean; story: string;
   presentationTotals: Totals | null;
   paymentPresentation: 'settled' | 'waiting'; paymentMaturity: number | null; paymentAmount: bigint | null; onchainGlimpse: boolean;
-  recording: boolean; camera: CameraCommand; cameraElapsed:number; film:boolean; exposure:number; flash: {from:number;to:number;elapsed:number;duration:number}|null; timelapse:{days:number;direction:number;duration:number;elapsed:number}|null;
+  recording: boolean; hud: boolean; camera: CameraCommand; cameraElapsed:number; film:boolean; exposure:number; flash: {from:number;to:number;elapsed:number;duration:number}|null; timelapse:{days:number;direction:number;duration:number;elapsed:number}|null;
   showDebt: boolean; caption: boolean; shotElapsed: number; shotDuration: number; stage: 'main' | 'cube' | 'wide'; focusInvoices: string[] | null;
 }
 export const eventPosition = (index: number, count: number) => 0.08 + (index + 1) / (count + 1) * 0.84;
@@ -18,6 +18,7 @@ export class PlaybackEngine {
   index: EventIndex;
   state: PlaybackState;
   listeners = new Set<() => void>();
+  private bookmarkOverride=false;
   private scheduled: { time: number; run: () => void }[] = [];
   private shotClock = 0;
   private clockMode: 'realtime' | 'manual' = 'realtime';
@@ -35,7 +36,7 @@ export class PlaybackEngine {
   constructor(index: EventIndex) {
     this.index = index;
     this.state = { position: 0.999, day: 0, cursor: index.days[0].events.length, playing: false, speed: 1,
-      presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,cameraElapsed:0, film:false, exposure:0, flash:null, timelapse:null, revision: 0, shot: null, shotRunning: false, story: 'all', recording: false, showDebt: false, caption: false,
+      presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,cameraElapsed:0, film:false, exposure:0, flash:null, timelapse:null, revision: 0, shot: null, shotRunning: false, story: 'all', recording: false, hud: true, showDebt: false, caption: false,
       shotElapsed: 0, shotDuration: 0, stage: 'main', focusInvoices: null,
       camera: { lat: 36, lng: -145, altitude: 2.15, duration: 0, id: 0 } };
   }
@@ -62,6 +63,8 @@ export class PlaybackEngine {
     if (speed === 'year') { this.setPosition(0, true); this.update({ playing: true }); }
   }
   stopShot() {
+    this.bookmarkOverride=false;
+    if(this.state.camera.bookmarkPath)this.update({camera:{...this.state.camera,bookmarkPath:false}});
     this.scheduled = []; this.range = undefined; this.storyEvents = null; this.storyQueue = [];
     this.update({ presentationTotals:null,paymentPresentation:'settled',paymentMaturity:null,paymentAmount:null,onchainGlimpse:false,exposure:0,flash:null,timelapse:null,film:false, shot: null, shotRunning: false, stage: 'main', focusInvoices: null, showDebt: false, caption: false, playing: false });
   }
@@ -80,18 +83,28 @@ export class PlaybackEngine {
   }
   currentCamera():Pose { return this.observedCamera?.id===this.state.camera.id && this.state.cameraElapsed>=this.state.camera.duration ? this.observedCamera.pose : sampleCamera(this.state.camera,this.state.cameraElapsed); }
   fly(lat:number,lng:number,altitude:number,duration=1800,siteOrOptions?:CameraCommand['site']|{ease?:Ease;route?:Route;site?:CameraCommand['site']}) {
+    if(this.bookmarkOverride)return;
     const options=typeof siteOrOptions==='string'?{site:siteOrOptions}:siteOrOptions??{};
     this.update({camera:{lat,lng,altitude,duration,id:this.state.camera.id+1,from:this.currentCamera(),primitive:{kind:'fly'},ease:{kind:'cubic'},...options},cameraElapsed:0});
   }
   orbit(center:Center,radius:number,altitude:number,angularSpeed:number,duration:number,bearing=0) {
+    if(this.bookmarkOverride)return;
     const end=orbitAt(center,radius,altitude,bearing+angularSpeed*duration/1000);
     this.update({camera:{...end,id:this.state.camera.id+1,duration,from:this.currentCamera(),site:'apple-park',primitive:{kind:'orbit',center,radius,angularSpeed,bearing}},cameraElapsed:0});
   }
   splinePath(keyframes:Keyframe[],duration:number,landmarkPath?:CameraCommand['landmarkPath']) {
-    if(keyframes.length<3 || keyframes.some((k,i)=>i>0&&k.t<=keyframes[i-1].t))throw new Error('Spline requires three ordered keyframes');
+    if(this.bookmarkOverride)return;
+    if(keyframes.length<2 || keyframes.some((k,i)=>i>0&&k.t<=keyframes[i-1].t))throw new Error('Spline requires two ordered keyframes');
     this.update({camera:{...keyframes.at(-1)!,id:this.state.camera.id+1,duration,from:this.currentCamera(),primitive:{kind:'spline',keyframes},landmarkPath},cameraElapsed:0});
   }
+  playBookmarkPath(list:BookmarkInput[],override=false) {
+    const keys=fromBookmarks(list),duration=keys.at(-1)!.t*1000;
+    this.bookmarkOverride=false;this.splinePath(keys,duration);
+    this.update({camera:{...this.state.camera,bookmarkPath:true,from:keys[0]}});
+    this.bookmarkOverride=override;return duration;
+  }
   snapAndPullOut(center:Center,snapAltitude:number,pullOutAltitude:number,duration:number) {
+    if(this.bookmarkOverride)return;
     // The spline lands here first. Re-centering is a short continuous settle
     // when invoked elsewhere, never a zero-duration teleport.
     const now=this.currentCamera();

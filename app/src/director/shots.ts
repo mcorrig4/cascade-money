@@ -2,7 +2,7 @@ import { eventPosition, PlaybackEngine } from '../playback/engine.ts';
 import type { PlaybackState } from '../playback/engine.ts';
 import type { Event, EventIndex } from '../data/types.ts';
 import { appleParkShotCamera, siteFrame } from '../globe/site-math.ts';
-import { orbitAt, EARTH_METERS, type Pose, type Ease } from '../camera/primitives.ts';
+import { orbitAt, EARTH_METERS, type Pose, type Ease, type Bookmark, fromBookmarks } from '../camera/primitives.ts';
 export const APPLE={lat:37.3349,lng:-122.009,altitude:.0003};
 export const STORE={lat:40.7638,lng:-73.973,altitude:.05};
 const p=(lat:number,lng:number,altitude:number):Pose=>({lat,lng,altitude});
@@ -18,7 +18,8 @@ const openingOrbit={
  altitude:opening.position.length()/EARTH_METERS-1,
  bearing:Math.atan2(openingEast,openingNorth)*180/Math.PI,
 };
-const table=[
+type ShotDefinition={id:number;title:string;words:number;end:Pose;motion:string;overlay:string;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];openingOrbit?:typeof openingOrbit;orbitUntil?:number;pullOutAt?:number};
+const table:ShotDefinition[]=[
  {id:1,title:"The object of desire",words:14,openingOrbit,end:orbitAt(APPLE,openingOrbit.radius,openingOrbit.altitude,openingOrbit.bearing+32),motion:'orbit',overlay:'none',site:'apple-park' as const},
  {id:2,title:"Apple Park",words:38,orbitUntil:10,pullOutAt:13.6,end:p(37.3349,-122.009,2.5),motion:'orbit + arch spline + pull-out',overlay:'none',site:'apple-park' as const},
  {id:13,title:"Rewind",words:47,end:p(37.3349,-122.009,.35),motion:'reverse time-lapse + flash + push',overlay:'title'},
@@ -182,7 +183,9 @@ export function nextShot(id:number,direction=1){return SHOTS[Math.max(0,Math.min
 export function playFilm(engine:PlaybackEngine){playShot(engine,SHOTS[0].id,true);}
 export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const shot=SHOTS.find(s=>s.id===id);if(!shot)return;
- engine.beginShot(id,shot.seconds);engine.update({film:continuous});
+ const duration=shot.path?Math.max(shot.seconds,fromBookmarks(shot.path).at(-1)!.t):shot.seconds;
+ engine.beginShot(id,duration);engine.update({film:continuous});
+ if(shot.path)engine.playBookmarkPath(shot.path,true);
  const ms=shot.seconds*1000,scale=shot.seconds/shot.baseSeconds;
  const at=(seconds:number,run:()=>void)=>engine.after(seconds*scale,run);
  const fly=(target:Pose,duration:number,route:'west'|'east'|'shortest'='shortest')=>engine.fly(target.lat,target.lng,target.altitude,duration,{route,ease:chase});
@@ -240,11 +243,11 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  else if(id===10){
   engine.update({stage:'cube'});
   engine.fly(STORE.lat,STORE.lng,8/EARTH_METERS,ms*.28,'fifth-avenue');
-  engine.after(shot.seconds*.28,()=>engine.subsurfaceInteriorCameraHook?.(ms*.72));
+  engine.after(shot.seconds*.28,()=>!shot.path&&engine.subsurfaceInteriorCameraHook?.(ms*.72));
  }else if(id===19){
   // Continue the landed hall pose; the camera layer retains the descent end
   // and adds the same quiet idle motion as the rest of the continuous take.
-  if(!continuous){engine.update({stage:'cube'});engine.fly(STORE.lat,STORE.lng,8/EARTH_METERS,Math.min(ms*.15,1000),'fifth-avenue');engine.after(shot.seconds*.15,()=>engine.subsurfaceInteriorCameraHook?.(ms*.25));}
+  if(!continuous){engine.update({stage:'cube'});engine.fly(STORE.lat,STORE.lng,8/EARTH_METERS,Math.min(ms*.15,1000),'fifth-avenue');engine.after(shot.seconds*.15,()=>!shot.path&&engine.subsurfaceInteriorCameraHook?.(ms*.25));}
  }else if(id===12){engine.flashToWhite(ms*.2);}
- engine.after(shot.seconds,()=>{const next=SHOTS[shot.scene];if(continuous&&next)playShot(engine,next.id,true);else engine.update({playing:false,shotRunning:false,film:false});});
+ engine.after(duration,()=>{const next=SHOTS[shot.scene];if(continuous&&next)playShot(engine,next.id,true);else engine.update({playing:false,shotRunning:false,film:false});});
 }

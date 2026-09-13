@@ -1,3 +1,4 @@
+import { CameraBookmarks } from '../director/bookmarks.ts';
 import { SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
 import { easeAt, sampleCamera, splineAt } from '../camera/primitives.ts';
 import { useEffect, useRef, useState } from 'react';
@@ -133,7 +134,7 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
         // Start from the authored pose; continuous film transitions still inherit.
         if(state.shot!==null&&!state.film&&state.shotElapsed<.1){
           const authored=SHOTS.find(shot=>shot.id===state.shot);
-          if(authored){flight=undefined;globe.pointOfView(authored.start,0);cameraId=-1;}
+          if(authored){flight=undefined;globe.pointOfView(state.camera.bookmarkPath?state.camera.from!:authored.start,0);cameraId=-1;}
         }
       }
       if(cinematic!==(state.shot!==null)){cinematic=state.shot!==null;if(cinematic)globe.globeOffset([0,0]);else resize();}
@@ -327,8 +328,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    if (new URLSearchParams(location.search).has('inspect')) {
-      window.__cascade = { engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
+    {
+      const bookmarks=new CameraBookmarks();
+      window.__cascade = { bookmarks:bookmarks.items,exportBookmarks:()=>bookmarks.export(),loadBookmarks:(json)=>{const result=bookmarks.load(json);engine.update({});return result;},fromBookmarks:(list)=>{engine.stopShot();return engine.playBookmarkPath(list);},addBookmark:()=>{const result=bookmarks.append(globe.pointOfView(),engine.state.shot,engine.state.shotElapsed);engine.update({});return result;}, engine, globe, pool, shots:SHOTS,sceneTransitions,get filmStartMs(){return filmStartMs;},
         playScene:(id)=>playShot(engine,id),playFilm:()=>{sceneTransitions.length=0;lastTransitionShot=null;filmStartMs=performance.now();playFilm(engine);}, models: models.status, cameraFlightActive: () => !!flight,
         tiles: () => siteStatus,
         siteView: (site, orbit = 0) => {

@@ -10,7 +10,7 @@ export function ShotPanel({ engine, state, onClose }: { engine: PlaybackEngine; 
     <div className="director-controls"><button onClick={() => playShot(engine, nextShot(state.shot??1,-1))}><Icon name="left" />Previous</button><button onClick={() => playShot(engine, state.shot ?? 1)}><Icon name="replay" />Restart</button><button onClick={() => playShot(engine, nextShot(state.shot??1))}>Next<Icon name="right" /></button></div>
     <button className="record-button" onClick={()=>{playFilm(engine);engine.update({recording:true});onClose();}}>Play full film · {filmDuration()}</button>
     <button className="record-button" onClick={() => { engine.update({ recording: true }); onClose(); }}><Icon name="expand" />Recording mode</button>
-    <p className="director-help">Shift+D director · Space pause · Esc exit shot · R recording</p>
+    <p className="director-help">B bookmark · Shift+B export · {window.__cascade?.bookmarks.length??0} bookmarks<br/>Shift+D director · Space pause · Esc exit shot · R recording</p>
     {engine.index.warnings.length > 0 && <p className="director-warning">{engine.index.warnings.join('; ')}</p>}
   </section>;
 }

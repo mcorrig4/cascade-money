@@ -5,7 +5,7 @@ export type Ease={kind:'cubic'}|{kind:'bezier';points:[number,number,number,numb
 export type Route='shortest'|'west'|'east';
 export type Keyframe=Pose & {t:number;tangent?:Pose};
 export type Primitive={kind:'orbit';center:Center;radius:number;angularSpeed:number;bearing:number}|{kind:'spline';keyframes:Keyframe[]}|{kind:'fly'};
-export type CameraCommand=Pose & {landmarkPath?:'apple-park-arch';id:number;duration:number;site?:'apple-park'|'fifth-avenue';ease?:Ease;route?:Route;from?:Pose;primitive?:Primitive};
+export type CameraCommand=Pose & {landmarkPath?:'apple-park-arch';id:number;duration:number;bookmarkPath?:boolean;site?:'apple-park'|'fifth-avenue';ease?:Ease;route?:Route;from?:Pose;primitive?:Primitive};
 export const clamp=(n:number)=>Math.max(0,Math.min(1,n));
 export function easeAt(t:number,ease:Ease={kind:'cubic'}) {
   t=clamp(t);
@@ -48,3 +48,34 @@ export function sampleCamera(command:CameraCommand,elapsedMs:number):Pose {
 }
 /** Deliberately named extension point: no underground geometry/camera is fabricated. */
 export const SUBSURFACE_INTERIOR_CAMERA_HOOK='subsurface-interior-camera';
+
+
+export type Bookmark = Pose & { sceneId:number|null; time:number; heading?:number; tilt?:number; holdMs:number; travelMs:number };
+export type CameraBookmark = Bookmark;
+export type BookmarkInput = Omit<Bookmark,'holdMs'|'travelMs'> & Partial<Pick<Bookmark,'holdMs'|'travelMs'>>;
+export function normalizeBookmarks(value:unknown):Bookmark[] {
+ if(!Array.isArray(value))throw new Error('Expected a bookmark array');
+ return value.map(b=>{
+  if(!b||typeof b!=='object')throw new Error('Invalid bookmark');
+  const result={...b,holdMs:b.holdMs??0,travelMs:b.travelMs??2500} as Bookmark;
+  if(![result.lat,result.lng,result.altitude,result.time,result.holdMs,result.travelMs].every(Number.isFinite)
+   || Math.abs(result.lat)>90 || result.altitude<0 || result.holdMs<0 || result.travelMs<=0
+   || !(result.sceneId===null||Number.isInteger(result.sceneId)))throw new Error('Invalid bookmark pose or timing');
+  return result;
+ });
+}
+/** One nonuniform Catmull-Rom path; duplicate zero-tangent knots encode dwell. */
+export function fromBookmarks(input:BookmarkInput[]):Keyframe[] {
+ const bookmarks=normalizeBookmarks(input);
+ if(bookmarks.length<2)throw new Error('At least two bookmarks are required');
+ const keys:Keyframe[]=[];let t=0,lng=bookmarks[0].lng;
+ const zero={lat:0,lng:0,altitude:0};
+ bookmarks.forEach((b,i)=>{
+  if(i){t+=b.travelMs/1000;lng+=longitudeDelta(bookmarks[i-1].lng,b.lng);}
+  const key:Keyframe={lat:b.lat,lng,altitude:b.altitude,t};
+  if(b.holdMs>0)key.tangent={...zero};
+  keys.push(key);
+  if(b.holdMs>0){t+=b.holdMs/1000;keys.push({...key,t,tangent:{...zero}});}
+ });
+ return keys;
+}

@@ -14,6 +14,7 @@ import { OnchainPanel } from './components/OnchainPanel.tsx';
 import { FilmEffects } from './director/FilmEffects.tsx';
 import { SHOTS, playShot, loadNarrationDurations } from './director/shots.ts';
 import './stage.css';
+import { recordingVisibility } from './director/recording.ts';
 
 function LoadedApp({ index }: { index: EventIndex }) {
   const [engine] = useState(() => new PlaybackEngine(index));
@@ -44,8 +45,18 @@ function LoadedApp({ index }: { index: EventIndex }) {
     if (SHOTS.some(s=>s.id===shot)) playShot(engine, shot);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('keydown', keyboard); document.removeEventListener('visibilitychange', visibility); };
   }, [engine]);
+  useEffect(()=>{
+    const keyboard=(event:KeyboardEvent)=>{
+      const target=event.target as HTMLElement;
+      if(!director||event.repeat||event.code!=='KeyB'||target.isContentEditable||['INPUT','TEXTAREA','SELECT'].includes(target.tagName))return;
+      event.preventDefault();
+      if(event.shiftKey)void window.__cascade?.exportBookmarks().catch(error=>console.error("Clipboard unavailable; bookmark JSON is logged above.",error));else window.__cascade?.addBookmark();
+    };
+    window.addEventListener('keydown',keyboard);return()=>window.removeEventListener('keydown',keyboard);
+  },[director]);
+  const visibility=recordingVisibility(state.recording,state.hud);
   const tesla = [...index.firms.values()].some(f => f.id.toLowerCase().includes('tesla'));
-  return <main className={`app ${state.recording ? 'recording' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
+  return <main className={`app ${state.recording ? visibility.hud?'recording recording-hud':'recording clean-frame' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
     <div className={state.timelapse&&state.timelapse.elapsed<state.timelapse.duration?'time-lapse-blur':''}><Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense></div>
     <header className="topbar"><Brand onDirector={openDirector} />
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>
@@ -63,7 +74,7 @@ function LoadedApp({ index }: { index: EventIndex }) {
     <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
     <SceneLabels shot={state.shot} elapsed={state.shotElapsed} /><FilmEffects state={state} />
     {(onchain || state.onchainGlimpse) && <OnchainPanel onClose={() => {setOnchain(false);engine.update({onchainGlimpse:false});}} />}
-    {director && !state.recording && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
+    {director && visibility.director && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;
 }
 export default function App() {

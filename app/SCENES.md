@@ -80,3 +80,49 @@ during loading, screenshots or between browser evaluations. Each offset is
 strictly inside its scene's half-open interval.
 
 Use the manifests from a successful run; old captures do not verify this cut.
+
+## Recording HUD and camera bookmarks
+
+R enables recording with the brand, live ledger, timeline/volume chart, scene labels
+and overlays visible. Only the director, story selector and network pill disappear.
+For a clean frame, use
+`window.__cascade.engine.update({recording:true,hud:false})`;
+restore the product HUD with `{recording:true,hud:true}`.
+Overlay scenes place the live log in a strip above the playback bar.
+
+
+Open the director (Shift+D or long-press the brand). **B** appends the current
+rendered camera; **Shift+B** copies the full JSON to the clipboard and logs the
+same text to the console. The panel shows the count. If clipboard access fails,
+the JSON remains in the console for copying.
+
+Each bookmark has latitude/longitude in degrees, altitude in globe radii,
+sceneId (stable API id, or null), original scene-local time in seconds, plus
+editable **holdMs** (default 0) and **travelMs** (default 2500). Original time and
+sceneId are metadata; edited timing controls flight playback. Heading/tilt are
+optional and omitted because the current engine does not track them.
+
+```json
+[
+ {"lat":37.3349,"lng":-122.009,"altitude":0.0001,"sceneId":2,"time":1,"holdMs":1000,"travelMs":2500},
+ {"lat":37.3355,"lng":-122.0085,"altitude":0.0006,"sceneId":2,"time":4,"holdMs":0,"travelMs":4000}
+]
+```
+
+Paste edited JSON with `window.__cascade.loadBookmarks(jsonText)`; this replaces
+the list in place, preserving the panel/API reference. Play with
+`window.__cascade.fromBookmarks(window.__cascade.bookmarks)`. Playback starts at
+the first pose, holds there for holdMs, then takes each destination's travelMs to
+reach it. The first travelMs is retained for editing but has no previous leg.
+Travel must be positive and holds nonnegative. Lists may cross scenes.
+
+The camera helper `fromBookmarks(list)` in `src/camera/primitives.ts` returns
+time-indexed Catmull-Rom/Hermite knots with longitude unwrapping. Travel legs share
+velocity at intermediate poses; positive holds add identical zero-tangent knots
+so the camera rests exactly at the pose. No per-leg easing restarts occur.
+
+Attach `path: Bookmark[]` to a SHOTS table entry in `src/director/shots.ts` to
+override its camera while retaining its events, overlays and narration. Scheduled
+authored camera moves cannot interrupt that path. A path longer than the scene
+extends playback to finish it; a shorter path finishes before the normal scene
+boundary. Timing overrides do not rescale bookmark milliseconds.

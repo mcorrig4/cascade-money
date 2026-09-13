@@ -31,12 +31,12 @@
 @media(max-height:280px) and (min-aspect-ratio:4/3){.ledger-inspecting{width:270px}}
 /* Stage 11: overlays own the vertical frame; the HUD becomes one line. */
 .director-active .scene-heading,.director-active .globe-coordinate{display:none}
-.overlay-active .bottom-panel{height:34px;padding:4px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.overlay-active .timeline-top,.overlay-active .chart-track,.overlay-active .timeline-months,.overlay-active .speed-options,.overlay-active .playback-state{display:none}
-.overlay-active .timeline-region{width:auto}.overlay-active .transport{margin:0}.overlay-active .headline-counters{display:flex;gap:18px;border:0;padding:0;width:auto}
-.overlay-active .headline{display:flex;align-items:center;gap:7px}.overlay-active .headline>span,.overlay-active .ratio span{font-size:12px;max-width:none}.overlay-active .headline>strong,.overlay-active .ratio strong{font-size:19px;letter-spacing:0}.overlay-active .ratio{padding:0;display:flex;align-items:center;gap:6px}
+.overlay-active:not(.recording-hud) .bottom-panel{height:34px;padding:4px 12px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.overlay-active:not(.recording-hud) .timeline-top,.overlay-active:not(.recording-hud) .chart-track,.overlay-active:not(.recording-hud) .timeline-months,.overlay-active:not(.recording-hud) .speed-options,.overlay-active:not(.recording-hud) .playback-state{display:none}
+.overlay-active:not(.recording-hud) .timeline-region{width:auto}.overlay-active:not(.recording-hud) .transport{margin:0}.overlay-active:not(.recording-hud) .headline-counters{display:flex;gap:18px;border:0;padding:0;width:auto}
+.overlay-active:not(.recording-hud) .headline{display:flex;align-items:center;gap:7px}.overlay-active:not(.recording-hud) .headline>span,.overlay-active:not(.recording-hud) .ratio span{font-size:12px;max-width:none}.overlay-active:not(.recording-hud) .headline>strong,.overlay-active:not(.recording-hud) .ratio strong{font-size:19px;letter-spacing:0}.overlay-active:not(.recording-hud) .ratio{padding:0;display:flex;align-items:center;gap:6px}
 .overlay-active .shot-overlay{inset:55px 0 38px;display:grid;place-items:center;overflow:visible}.overlay-active .overlay-card{height:auto;min-height:0;max-height:100%;padding:8px 18px}
-.overlay-active .ledger-toggle{display:none}.scene-clean .topbar,.scene-clean .bottom-panel,.scene-clean .ledger,.scene-clean .ledger-toggle{visibility:hidden;pointer-events:none}
+.overlay-active .ledger-toggle{display:none}.scene-clean:not(.recording-hud) .topbar,.scene-clean:not(.recording-hud) .bottom-panel,.scene-clean:not(.recording-hud) .ledger,.scene-clean:not(.recording-hud) .ledger-toggle{visibility:hidden;pointer-events:none}
 .scene-clean .shot-overlay{inset:0}.scene-clean .scene-location{bottom:20px}.scene-clean .scene-narration{inset:10% 5% 25%}
 .network-card,.catch-card{text-align:center}.network-card h2,.catch-card h2{font-size:clamp(48px,8vw,130px)}
 .scene-overlay-coin .globe-dimmer,.scene-overlay-treasury .globe-dimmer{background:#030a0f66}.scene-overlay-network .globe-dimmer{background:#030a0f33}
@@ -51,11 +51,11 @@
 @keyframes pay-bill{0%,15%{translate:0}60%,100%{translate:30%;opacity:.3}}
 @keyframes bill-paid{0%,40%{opacity:.2}65%{opacity:1}100%{opacity:0}}
 @media(max-height:480px) and (min-aspect-ratio:4/3){
- .overlay-active .shot-overlay{inset:34px 0 30px}.overlay-active .bottom-panel{height:27px;padding:2px 8px}.overlay-active .headline-counters{gap:9px}.overlay-active .headline>span{font-size:10px}.overlay-active .headline>strong,.overlay-active .ratio strong{font-size:14px}.overlay-active .ratio span{font-size:10px}.overlay-active .transport .icon-button{display:none}
+ .overlay-active .shot-overlay{inset:34px 0 30px}.overlay-active:not(.recording-hud) .bottom-panel{height:27px;padding:2px 8px}.overlay-active:not(.recording-hud) .headline-counters{gap:9px}.overlay-active:not(.recording-hud) .headline>span{font-size:10px}.overlay-active:not(.recording-hud) .headline>strong,.overlay-active:not(.recording-hud) .ratio strong{font-size:14px}.overlay-active:not(.recording-hud) .ratio span{font-size:10px}.overlay-active:not(.recording-hud) .transport .icon-button{display:none}
  .overlay-active .overlay-card h2{font-size:27px;margin:2px 0 6px}.overlay-active .curve-card svg{height:185px;font-size:32px}.overlay-active .law{padding:7px 0}.overlay-active .law strong{font-size:18px}.overlay-active .law p{font-size:15px}.overlay-active .vault-card h2 br{display:none}.overlay-active .vault-columns dl>div{font-size:16px;padding:6px 0}.overlay-active .invariant-list>div{font-size:14px;line-height:1.15;padding:2px 0}.overlay-active .composable-items li{padding:9px 4px}.overlay-active .composable-items strong{font-size:19px}.overlay-active .composable-items p{font-size:14px}.asset-composition{font-size:15px;gap:5px}.treasury-dates{margin:20px 0}.treasury-dates strong{font-size:44px}.treasury-dates span{font-size:18px}.treasury-gap{font-size:21px}.coin-stage{width:100%}.ghost-bill{padding:7px}.ghost-bill span{font-size:11px}.scene-clean .shot-overlay{inset:0}.scene-overlay-network .network-card h2,.scene-overlay-catch .catch-card h2{font-size:55px}
 }
 @media(max-height:280px) and (min-aspect-ratio:4/3){
- .overlay-active .shot-overlay{inset:28px 0 27px}.overlay-active .overlay-card{padding:3px 9px}.overlay-active .overlay-card h2{font-size:19px;margin:0 0 3px}.overlay-active .curve-card svg{height:123px;font-size:34px}.overlay-active .law{padding:4px 0}.overlay-active .law strong{font-size:14px}.overlay-active .law p{font-size:12px}.overlay-active .laws-card .law>span{font-size:11px}.overlay-active .vault-columns dl>div{font-size:13px;padding:4px 0}.overlay-active .invariant-list>div{font-size:11px;padding:1px 0;line-height:1.1}.overlay-active .vault-card h2 br{display:none}.overlay-active .composable-items li{padding:4px 2px}.overlay-active .composable-items strong{font-size:15px}.overlay-active .composable-items p{font-size:11px}.overlay-active .headline-counters{gap:5px}.overlay-active .headline>span{max-width:60px;font-size:9px}.overlay-active .ratio span{display:none}.treasury-dates{margin:15px 0;gap:8px}.treasury-dates strong{font-size:32px}.treasury-dates span{font-size:13px}.treasury-gap{font-size:15px}.asset-composition{font-size:12px;gap:3px}.asset-composition b{padding:5px}.scene-clean .shot-overlay{inset:0}.scene-overlay-network .network-card h2,.scene-overlay-catch .catch-card h2{font-size:40px}.curve-ghost{height:40px;width:45px}.coin-stage .ghost-bill strong{font-size:25px}
+ .overlay-active .shot-overlay{inset:28px 0 27px}.overlay-active .overlay-card{padding:3px 9px}.overlay-active .overlay-card h2{font-size:19px;margin:0 0 3px}.overlay-active .curve-card svg{height:123px;font-size:34px}.overlay-active .law{padding:4px 0}.overlay-active .law strong{font-size:14px}.overlay-active .law p{font-size:12px}.overlay-active .laws-card .law>span{font-size:11px}.overlay-active .vault-columns dl>div{font-size:13px;padding:4px 0}.overlay-active .invariant-list>div{font-size:11px;padding:1px 0;line-height:1.1}.overlay-active .vault-card h2 br{display:none}.overlay-active .composable-items li{padding:4px 2px}.overlay-active .composable-items strong{font-size:15px}.overlay-active .composable-items p{font-size:11px}.overlay-active:not(.recording-hud) .headline-counters{gap:5px}.overlay-active:not(.recording-hud) .headline>span{max-width:60px;font-size:9px}.overlay-active:not(.recording-hud) .ratio span{display:none}.treasury-dates{margin:15px 0;gap:8px}.treasury-dates strong{font-size:32px}.treasury-dates span{font-size:13px}.treasury-gap{font-size:15px}.asset-composition{font-size:12px;gap:3px}.asset-composition b{padding:5px}.scene-clean .shot-overlay{inset:0}.scene-overlay-network .network-card h2,.scene-overlay-catch .catch-card h2{font-size:40px}.curve-ghost{height:40px;width:45px}.coin-stage .ghost-bill strong{font-size:25px}
 }
 .wordmark-icon{width:.65em;height:.65em;margin-right:.2em;color:#397c5c}
 @media(max-height:280px) and (min-aspect-ratio:4/3){
@@ -63,7 +63,7 @@
  .overlay-active .laws-card .law>span{grid-column:1;grid-row:1/3;font-size:11px;line-height:1.15}
  .overlay-active .laws-card .law strong{grid-column:2;font-size:14px;line-height:1.1}
  .overlay-active .laws-card .law p{grid-column:2;font-size:12px;line-height:1.1}
- .overlay-active .headline>span{font-size:10px}
+ .overlay-active:not(.recording-hud) .headline>span{font-size:10px}
 }
 .treasury-card{width:min(1280px,88vw)}
 .yield-axis-bridge{position:fixed;left:16vw;top:53vh;width:4px;height:65px;background:#8ce8c2;transform-origin:bottom left;pointer-events:none}
@@ -95,3 +95,94 @@
 }
 @media(max-width:600px) and (max-aspect-ratio:1/1){.cascade-totals{grid-template-columns:1fr;gap:16px}.cascade-totals h2{grid-column:auto}.backing-card .asset-composition{flex-wrap:wrap}.payment-timeline{font-size:17px}.question-card .dated-coin{width:160px;height:160px}}
 @keyframes coin-enter{0%{opacity:0;transform:scale(1.8) rotate(-8deg)}65%{opacity:1;transform:scale(.94) rotate(1deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+
+
+/* HUD recordings retain the product. Overlay scenes reserve a live ledger strip. */
+.recording .story-selector,.recording .network-status,.recording .director{display:none!important}
+.recording-hud{--film-top:100px;--film-bottom:285px;--film-log:44px}
+.recording-hud .topbar,.recording-hud .bottom-panel,.recording-hud .ledger{visibility:visible;opacity:1;pointer-events:auto}
+.app.recording-hud .shot-overlay,.app.recording-hud .scene-narration{inset:var(--film-top) 0 calc(var(--film-bottom) + var(--film-log) + 8px)}
+.recording-hud .overlay-card{max-width:100%;max-height:100%;overflow:hidden}
+.app.recording-hud .scene-location{bottom:calc(var(--film-bottom) + var(--film-log) + 12px)}
+.recording-hud.overlay-active .ledger{top:auto;bottom:var(--film-bottom);left:12px;right:12px;width:auto;height:var(--film-log);padding:0 8px;z-index:28;overflow:hidden}
+.recording-hud.overlay-active .ledger-heading,.recording-hud.overlay-active .ledger-columns,.recording-hud.overlay-active .ledger-foot{display:none}
+.recording-hud.overlay-active .ledger-scroll{overflow:hidden}
+.recording-hud .globe-dimmer{position:fixed;inset:0;z-index:-1}
+.clean-frame .scene-location{bottom:20px}
+.clean-frame .scene-narration{inset:10% 5% 25%}
+@media(max-height:480px) and (min-aspect-ratio:4/3){
+ .recording-hud{--film-top:36px;--film-bottom:102px;--film-log:30px}
+ .recording-hud .overlay-card{padding:3px 12px}
+ .recording-hud .overlay-card h2{font-size:23px;margin:2px 0 5px}
+ .recording-hud .law{padding:3px 0}
+ .recording-hud .law strong{font-size:17px}
+ .recording-hud .law p{font-size:13px}
+ .recording-hud .vault-columns dl>div{padding:3px 0}
+ .recording-hud .invariant-list>div{font-size:12px;padding:1px 0}
+ .recording-hud .composable-items li{padding:4px}
+ .recording-hud .promise-graph{height:95px}
+ .recording-hud .scene-narration p{font-size:36px}
+}
+@media(max-height:280px) and (min-aspect-ratio:4/3){
+ .recording-hud{--film-top:28px;--film-bottom:77px;--film-log:22px}
+ .recording-hud .overlay-card h2{font-size:17px}
+ .recording-hud .law{padding:1px 0}
+ .recording-hud .law strong{font-size:12px}
+ .recording-hud .law p{font-size:10px}
+ .recording-hud .scene-narration p{font-size:26px}
+}
+@media(max-width:600px) and (min-height:481px){
+ .recording-hud{--film-top:60px;--film-bottom:335px;--film-log:30px}
+}
+
+@media(max-height:480px) and (min-aspect-ratio:4/3){
+ .app.recording-hud .laws-card .law{display:grid;grid-template-columns:100px 1fr;gap:1px 8px;padding:4px 0}
+ .app.recording-hud .laws-card .law>span{grid-column:1;grid-row:1/3;font-size:12px;margin:0}
+ .app.recording-hud .laws-card .law strong{grid-column:2;font-size:16px;line-height:1.1}
+ .app.recording-hud .laws-card .law p{grid-column:2;font-size:13px;line-height:1.1;margin:0}
+ .app.recording-hud .backing-card .asset-composition{margin:8px 0}
+ .app.recording-hud .payment-timeline{margin:8px 0 24px}
+ .app.recording-hud .vault-card h2{font-size:20px}
+ .app.recording-hud .scene-location{max-width:45%}
+}
+@media(max-height:280px) and (min-aspect-ratio:4/3){
+ .app.recording-hud .laws-card .law{grid-template-columns:78px 1fr;padding:2px 0}
+ .app.recording-hud .laws-card .law>span{font-size:10px}
+ .app.recording-hud .laws-card .law strong{font-size:12px}
+ .app.recording-hud .laws-card .law p{font-size:10px}
+}
+
+.recording-hud .bottom-panel{z-index:21}
+.recording-hud .topbar,.recording-hud .bottom-panel{z-index:28}
+.recording-hud .ending-line{inset:var(--film-top) 0 calc(var(--film-bottom) + var(--film-log) + 8px)}
+@media(max-height:480px) and (min-aspect-ratio:4/3){
+ .recording-hud .question-card{grid-template-columns:1.5fr 1fr;align-items:center}
+ .recording-hud .contradiction-card{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-content:center}
+ .recording-hud .contradiction-card>.eyebrow,.recording-hud .contradiction-card>h2{grid-column:1/-1}
+ .recording-hud .promises-card h2{font-size:21px}
+}
+
+/* Fit all ten invariants above the live ledger in 360p recordings. */
+@media (min-height:281px) and (max-height:480px) and (min-aspect-ratio:4/3) {
+ .app.recording-hud .vault-card .vault-columns{grid-template-columns:minmax(0,1fr) minmax(0,1.55fr);gap:16px;align-items:start}
+ .app.recording-hud .vault-card .vault-columns dl>div{font-size:14px;line-height:18px;padding:1px 0}
+ .app.recording-hud .vault-card .invariant-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 8px;align-content:start}
+ .app.recording-hud .vault-card .invariant-list>.eyebrow{grid-column:1/-1;font-size:12px;line-height:15px;margin:0 0 2px}
+ .app.recording-hud .vault-card .invariant-list>div{min-width:0;font-size:12px;line-height:15px;padding:0;gap:5px;align-items:baseline}
+ .app.recording-hud .vault-card .check-light{flex:0 0 5px;width:5px;height:5px}
+}
+
+/* 240p has only ~105px between the brand and the visible ledger. Keep the
+   six balances beside five paired invariant rows, with an explicit type rhythm. */
+@media (max-height:280px) and (min-aspect-ratio:4/3) {
+ .app.recording-hud .vault-card{width:100%;height:100%;padding:2px 8px;display:flex;flex-direction:column;justify-content:flex-start}
+ .app.recording-hud .vault-card>.eyebrow{display:block;font-size:10px;line-height:11px;letter-spacing:.5px}
+ .app.recording-hud .vault-card h2{font-size:14px;line-height:16px;letter-spacing:-.3px;margin:1px 0 3px}
+ .app.recording-hud .vault-card .vault-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:8px;align-items:start}
+ .app.recording-hud .vault-card .vault-columns dl>div{font-size:10px;line-height:10px;padding:0;min-width:0}
+ .app.recording-hud .vault-card .vault-columns dt,.app.recording-hud .vault-card .vault-columns dd{white-space:nowrap}
+ .app.recording-hud .vault-card .invariant-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 5px;align-content:start}
+ .app.recording-hud .vault-card .invariant-list>.eyebrow{display:block;grid-column:1/-1;font-size:10px;line-height:11px;letter-spacing:.5px;margin:0}
+ .app.recording-hud .vault-card .invariant-list>div{font-size:10px;line-height:11px;padding:0;min-width:0;gap:3px;align-items:baseline}
+ .app.recording-hud .vault-card .check-light{flex:0 0 4px;width:4px;height:4px}
+}

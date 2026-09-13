@@ -6,6 +6,9 @@ declare global {
   interface Window {
     Telegram?: { WebApp?: import('./platform/telegram.ts').TelegramApp };
     __cascade?: {
+      bookmarks: import("./camera/primitives.ts").CameraBookmark[];
+      addBookmark:()=>import("./camera/primitives.ts").CameraBookmark; exportBookmarks:()=>Promise<string>;
+      loadBookmarks:(json:string)=>import("./camera/primitives.ts").Bookmark[];fromBookmarks:(list:import("./camera/primitives.ts").BookmarkInput[])=>number;
       shots: typeof import('./director/shots.ts').SHOTS;playScene:(id:number)=>void;playFilm:()=>void;
       sceneTransitions:{sceneIndex:number;sceneId:number;tMs:number}[];readonly filmStartMs:number|null;
       engine: PlaybackEngine; globe: GlobeInstance; pool: ArcPool;
