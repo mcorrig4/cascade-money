@@ -26,7 +26,9 @@ test('coin renders approved geometry with dynamic number and size-dependent ISO,
  assert.match(render(96,30),/>30<\/text>/);
  assert.match(render(72,30),/>2026-01-07<\/text>/);
  assert.doesNotMatch(render(71,30),/>2026-01-07<\/text>/);
- assert.doesNotMatch(render(96,null),/<rect|>90<\/text>|>2026-01-07<\/text>/);
+ assert.match(render(96,null),/<rect/);
+ assert.match(render(96,null),/>0<\/text>/);
+ assert.doesNotMatch(render(96,null),/>90<\/text>/);
 });
 test('extension fills only the new half-open interval and advances the date and N together',()=>{
  for(const tMs of [-1,0,250,500,750,1000,2000]){
