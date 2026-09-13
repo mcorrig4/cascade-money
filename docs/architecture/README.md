@@ -47,7 +47,7 @@ The local USYC yield trace covers rising prices, claims and share withdrawal;
 `contracts/test/USYC.t.sol` contains the Solidity loss and reserve-floor cases.
 
 Deployment plan recorded for this submission: the USDC vault is verified on Arc
-testnet at `0x57838A35f05a43aD519204D7A6Ce63F52d7C1987`. Arc mainnet deployment is
+testnet at `0x4E7D5b438d38b93b811F7f847613100023d7DafE`. Arc mainnet deployment is
 planned after the September 16, 2026 launch. The vault's backing asset is USYC,
 Circle's tokenized money market fund; the testnet build holds USDC (and a mock
 USYC for the yield demonstration), and real USYC is used once Circle allowlists
