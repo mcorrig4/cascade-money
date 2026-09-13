@@ -26,7 +26,7 @@ assert.equal(settledCount, 6943, `expected 6,943 settled invoices at day 365, sa
 // --- Shot 3: three orders including Sony ---
 await page.evaluate(() => { window.__cascade.engine.seek(0); window.__cascade.playScene(3); });
 await page.waitForFunction(() => window.__cascade.engine.state.shot === 3, null, { timeout: 15000 });
-await page.evaluate(() => window.__cascade.engine.tick(8));
+await page.evaluate(() => window.__cascade.engine.tick(14));
 await page.waitForTimeout(200);
 const bodyText = await page.evaluate(() => document.body.innerText);
 const ordersFound = ['Samsung Display', 'Corning', 'Sony'].filter(name => bodyText.includes(name));
