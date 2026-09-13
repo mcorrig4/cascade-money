@@ -190,6 +190,38 @@ const framingRamp = (sc: SceneDef, localFrame: number, durationInFrames: number,
   return target;
 };
 
+// Scenes 4/10 retain their authored framing; 9 retains its rostrum camera.
+// Scene 12 is intentionally excluded: it authors a closing card, not an app capture.
+const WINDOWED_SCENES = new Set([2, 3, 5, 6, 7, 8, 11]);
+const WINDOW_TARGET_SCALE = 0.62;
+// At progress=1: left=19%, width=62%, right=19% (364.8px each at 1920px).
+const WINDOW_CENTER_ANCHOR_FRAC = (1 - WINDOW_TARGET_SCALE) / 2;
+const WINDOW_SKEW_DEG = 0;
+const WINDOW_PERSPECTIVE_PX = 1800;
+type SceneCapture = {src: string; captureDurationInFrames: number; startFrom: number};
+
+/** App content is windowed; film overlays retain full-frame coordinates and timing. */
+const WindowedBeat: React.FC<{
+  cap?: SceneCapture | null;
+  app?: React.ReactNode;
+  children?: React.ReactNode;
+}> = ({cap, app, children}) => (
+  <>
+    <BrowserFrame
+      mode="framed"
+      progress={1}
+      chrome="browser"
+      targetScale={WINDOW_TARGET_SCALE}
+      anchorLeftFrac={WINDOW_CENTER_ANCHOR_FRAC}
+      skewYDeg={WINDOW_SKEW_DEG}
+      perspectivePx={WINDOW_PERSPECTIVE_PX}
+    >
+      {app ?? (cap ? <CaptureScene {...cap} mode="bleed" /> : <AbsoluteFill style={{background: color.bgOuter}} />)}
+    </BrowserFrame>
+    {children}
+  </>
+);
+
 /** A scene that plays a capture (real or fallback), framed per framingRamp, with optional overlay. */
 const CaptureBeat: React.FC<{
   sc: SceneDef;
@@ -202,6 +234,9 @@ const CaptureBeat: React.FC<{
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const progress = framingRamp(sc, frame, duration, fps);
+  if (WINDOWED_SCENES.has(sc.num)) {
+    return <WindowedBeat cap={cap}>{children}</WindowedBeat>;
+  }
   return (
     <CaptureScene
       src={cap.src}
@@ -302,6 +337,9 @@ const GraphicBeat: React.FC<{sc: SceneDef; duration: number; children: React.Rea
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const progress = framingRamp(sc, frame, duration, fps);
+  if (WINDOWED_SCENES.has(sc.num)) {
+    return <WindowedBeat>{children}</WindowedBeat>;
+  }
   return (
     <BrowserFrame mode={sc.frame as FrameMode} progress={progress}>
       {children}
@@ -598,15 +636,21 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   if(source==='live'){
     const app=<LiveAppFrame scene={sceneIndex} loadingFrames={loadingFrames} absoluteTimeline />;
     if(sceneIndex===1){
-      const pullbackFrames=at30(SCENE1_PULLBACK_FRAMES_AT_30,fps);
-      const pullback=interpolate(frame,[0,pullbackFrames],[0,1],{...CLAMP,easing:Easing.out(Easing.cubic)});
-      const reveal=cueFrame(CUE_TIMES[1],'phone-reveal',fps,cueFrame(CUE_TIMES[1],'phone-reveal-fallback',fps,scene1PhoneRevealFrame(duration)));
-      const lead=Math.round((SCENE1_PHONE_FADE_MS/1000)*fps),start=Math.max(loadingFrames,reveal-lead);
-      visual=<><BrowserFrame mode="framed" progress={pullback} chrome="browser" targetScale={SCENE1_WINDOW_TARGET_SCALE} anchorLeftFrac={SCENE1_WINDOW_LEFT_MARGIN_FRAC} skewYDeg={SCENE1_WINDOW_SKEW_DEG} perspectivePx={SCENE1_WINDOW_PERSPECTIVE_PX}>{app}</BrowserFrame><Sequence from={start} durationInFrames={duration-start} layout="none"><PhoneRevealOverlay cueFrame={reveal-start}/></Sequence></>;
+      visual=<Scene1Beat duration={duration} app={app} phoneEarliestFrame={loadingFrames} />;
+    }else if(WINDOWED_SCENES.has(sceneIndex)){
+      visual=<WindowedBeat app={app}>{filmOverlay}</WindowedBeat>;
     }else visual=<BrowserFrame mode={sc.frame as FrameMode} progress={progress}>{app}{filmOverlay}</BrowserFrame>;
   }else{
     const cap=captureFor(sc,captureOverrides,duration);
-    visual=cap?<CaptureBeat sc={sc} duration={duration} cap={cap}>{filmOverlay}</CaptureBeat>:<GraphicBeat sc={sc} duration={duration}>{filmOverlay??<AbsoluteFill />}</GraphicBeat>;
+    if (sceneIndex === 1) {
+      visual = <Scene1Beat duration={duration} cap={cap} />;
+    } else {
+      visual = cap ? (
+        <CaptureBeat sc={sc} duration={duration} cap={cap}>{filmOverlay}</CaptureBeat>
+      ) : (
+        <GraphicBeat sc={sc} duration={duration}>{filmOverlay ?? <AbsoluteFill />}</GraphicBeat>
+      );
+    }
   }
   // NOTE: the captures path draws Scene4DateCornerLabel and ExampleGlobeLabels
   // as siblings of the capture (see below); the live path deliberately does
@@ -649,27 +693,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             const sc1 = sceneByNum(1);
             const dur1 = durationFor(durations, 1);
             const cap1 = captureFor(sc1, captureOverrides, dur1);
-            const revealFrame1 = cueFrame(
-              CUE_TIMES[1],
-              'phone-reveal',
-              fps,
-              cueFrame(CUE_TIMES[1], 'phone-reveal-fallback', fps, scene1PhoneRevealFrame(dur1)),
-            );
-            // The fade-in pre-roll (SCENE1_PHONE_FADE_MS) has to run BEFORE
-            // the cue lands, so the overlay's own Sequence starts earlier
-            // than the landing frame — PhoneRevealOverlay receives how many
-            // local frames until landing via cueFrame (clamped at the top
-            // of the scene if the cue resolves very early).
-            const fadeLeadFrames = Math.round((SCENE1_PHONE_FADE_MS / 1000) * fps);
-            const overlayStart1 = Math.max(0, revealFrame1 - fadeLeadFrames);
-            return (
-              <>
-                <Scene1AppWindow cap={cap1} />
-                <Sequence from={overlayStart1} durationInFrames={dur1 - overlayStart1} layout="none">
-                  <PhoneRevealOverlay cueFrame={revealFrame1 - overlayStart1} />
-                </Sequence>
-              </>
-            );
+            return <Scene1Beat duration={dur1} cap={cap1} />;
           })()}
           <SceneVO num={1} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
@@ -713,7 +737,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             const sc = sceneByNum(3);
             const dur = durationFor(durations, 3);
             const cap = captureFor(sc, captureOverrides, dur);
-            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
+            return <WindowedBeat cap={cap} />;
           })()}
           <Scene4DateCornerLabel />
           <ExampleGlobeLabels durationInFrames={durationFor(durations, 3)} cues={CUE_TIMES[3]} />
@@ -732,7 +756,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             const sc = sceneByNum(5);
             const dur = durationFor(durations, 5);
             const cap = captureFor(sc, captureOverrides, dur);
-            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
+            return <WindowedBeat cap={cap} />;
           })()}
           <SceneVO num={5} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
@@ -754,7 +778,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
               <CaptureBeat sc={sc} duration={dur} cap={cap}>
                 {!captureOverrides[6] && <Scene08Counters durationInFrames={dur} cues={CUE_TIMES[6]} />}
               </CaptureBeat>
-            ) : null;
+            ) : <WindowedBeat />;
           })()}
           <SceneVO num={6} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
@@ -764,7 +788,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             const sc = sceneByNum(7);
             const dur = durationFor(durations, 7);
             const cap = captureFor(sc, captureOverrides, dur);
-            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
+            return <WindowedBeat cap={cap} />;
           })()}
           <SceneVO num={7} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
@@ -774,7 +798,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             const sc = sceneByNum(8);
             const dur = durationFor(durations, 8);
             const cap = captureFor(sc, captureOverrides, dur);
-            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : null;
+            return <WindowedBeat cap={cap} />;
           })()}
           <SceneVO num={8} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
@@ -826,7 +850,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
         </Series.Sequence>
 
         <Series.Sequence name="Scene 11 — Beneath it" durationInFrames={dur11}>
-          {cap11 ? <CaptureBeat sc={sc11} duration={dur11} cap={cap11} /> : null}
+          <WindowedBeat cap={cap11} />
           <SceneVO num={11} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
@@ -869,23 +893,59 @@ const scene1PhoneRevealFrame = (scene1DurationInFrames: number): number =>
  * round-3 brief (2026-09-13 v2): "fake browser UI that floats towards left
  * side of screen, right edge slightly skewed back giving perspective view."
  * BrowserFrame's 'framed'/chrome="browser" pull-back scale is overridden via
- * its optional targetScale/anchorLeftFrac/skewYDeg/perspectivePx props (all
- * default to the old centred/flat 5%-padding look, so every other caller —
- * there are none on chrome="browser" today, but the props stay opt-in on
- * principle — is unaffected) to settle at ~62% frame width, ~4% left
+ * its optional targetScale/anchorLeftFrac/skewYDeg/perspectivePx props
+ * to settle at ~62% frame width, ~4% left
  * margin, rotateY +8° (round 4, Liam correction 2026-09-13: round 3's -8°
  * read backwards — left edge closer, right edge receding into perspective
- * 1800px, sign flipped from round 3's -8° to +8°).
+ * 1800px, sign flipped from round 3's -8° to +8°). The final 0.9s swings
+ * flat and centres at the same scale, sharing progress with the phone fade.
  */
 const SCENE1_PULLBACK_FRAMES_AT_30 = 36; // ~1.2s ease into the framed window
-const SCENE1_WINDOW_TARGET_SCALE = 0.62; // ~62% of frame width
+const SCENE1_WINDOW_TARGET_SCALE = WINDOW_TARGET_SCALE; // ~62% of frame width
 const SCENE1_WINDOW_LEFT_MARGIN_FRAC = 0.04; // ~4% left margin
 const SCENE1_WINDOW_SKEW_DEG = 8; // rotateY at settle — left closer, right recedes (round 4: sign flip from round 3's -8°)
-const SCENE1_WINDOW_PERSPECTIVE_PX = 1800;
+const SCENE1_WINDOW_PERSPECTIVE_PX = WINDOW_PERSPECTIVE_PX;
+
+const SCENE1_SWING_FRAMES_AT_30 = 27; // 0.9s between endpoints, finishing on D-1
+
+/** Compute the exit once in scene time, before the phone's offset Sequence. */
+const Scene1Beat: React.FC<{
+  duration: number;
+  cap?: SceneCapture | null;
+  app?: React.ReactNode;
+  phoneEarliestFrame?: number;
+}> = ({duration, cap = null, app, phoneEarliestFrame = 0}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const endFrame = duration - 1;
+  const swingProgress = interpolate(
+    frame,
+    [endFrame - at30(SCENE1_SWING_FRAMES_AT_30, fps), endFrame],
+    [0, 1],
+    {...CLAMP, easing: Easing.inOut(Easing.cubic)},
+  );
+  const reveal = cueFrame(
+    CUE_TIMES[1], 'phone-reveal', fps,
+    cueFrame(CUE_TIMES[1], 'phone-reveal-fallback', fps, scene1PhoneRevealFrame(duration)),
+  );
+  // Preserve entrance pre-roll: the phone's local cue still lands on reveal.
+  const lead = Math.round((SCENE1_PHONE_FADE_MS / 1000) * fps);
+  const start = Math.max(phoneEarliestFrame, reveal - lead);
+  return (
+    <>
+      <Scene1AppWindow cap={cap} app={app} swingProgress={swingProgress} />
+      <Sequence from={start} durationInFrames={duration - start} layout="none">
+        <PhoneRevealOverlay cueFrame={reveal - start} swingProgress={swingProgress} />
+      </Sequence>
+    </>
+  );
+};
 
 const Scene1AppWindow: React.FC<{
-  cap: {src: string; captureDurationInFrames: number; startFrom: number} | null;
-}> = ({cap}) => {
+  cap: SceneCapture | null;
+  app?: React.ReactNode;
+  swingProgress: number;
+}> = ({cap, app, swingProgress}) => {
   const {fps} = useVideoConfig();
   const pullbackFrames = at30(SCENE1_PULLBACK_FRAMES_AT_30, fps);
   const progress = interpolate(useCurrentFrame(), [0, pullbackFrames], [0, 1], {
@@ -907,11 +967,11 @@ const Scene1AppWindow: React.FC<{
       progress={progress}
       chrome="browser"
       targetScale={SCENE1_WINDOW_TARGET_SCALE}
-      anchorLeftFrac={SCENE1_WINDOW_LEFT_MARGIN_FRAC}
-      skewYDeg={SCENE1_WINDOW_SKEW_DEG}
+      anchorLeftFrac={SCENE1_WINDOW_LEFT_MARGIN_FRAC + (WINDOW_CENTER_ANCHOR_FRAC - SCENE1_WINDOW_LEFT_MARGIN_FRAC) * swingProgress}
+      skewYDeg={SCENE1_WINDOW_SKEW_DEG + (WINDOW_SKEW_DEG - SCENE1_WINDOW_SKEW_DEG) * swingProgress}
       perspectivePx={SCENE1_WINDOW_PERSPECTIVE_PX}
     >
-      {video}
+      {app ?? video}
     </BrowserFrame>
   );
 };
@@ -934,20 +994,20 @@ const Scene1AppWindow: React.FC<{
  * plain opacity fade-in finishes exactly on that frame — no strobe, no
  * color tint, no shake, no unfold/skew on the image itself. On and after
  * the cue: full opacity with a quick 120ms scale settle (1.03->1.0), then
- * held.
+ * held until the scene-local swingProgress fades it out with the window swing.
  */
 const SCENE1_PHONE_HEIGHT_FRAC = 0.8; // of the 1080-tall frame
 const SCENE1_PHONE_ASPECT = 1429 / 1101; // public/assets/iphone-duo-hands.png
 const SCENE1_PHONE_FADE_MS = 700; // plain opacity fade-in, landing on the cue
 const SCENE1_LAND_SETTLE_MS = 120; // scale 1.03 -> 1.0 once landed
 
-const PhoneRevealOverlay: React.FC<{cueFrame: number}> = ({cueFrame}) => {
+const PhoneRevealOverlay: React.FC<{cueFrame: number; swingProgress: number}> = ({cueFrame, swingProgress}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const ms = (frame / fps) * 1000;
   const cueMs = (cueFrame / fps) * 1000;
 
-  const opacity = interpolate(ms, [cueMs - SCENE1_PHONE_FADE_MS, cueMs], [0, 1], CLAMP);
+  const opacity = interpolate(ms, [cueMs - SCENE1_PHONE_FADE_MS, cueMs], [0, 1], CLAMP) * (1 - swingProgress);
   const settleP = interpolate(ms - cueMs, [0, SCENE1_LAND_SETTLE_MS], [0, 1], {
     ...CLAMP,
     easing: Easing.out(Easing.cubic),
