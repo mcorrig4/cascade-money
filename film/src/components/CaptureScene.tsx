@@ -13,6 +13,16 @@ export const CaptureScene: React.FC<{
   src: string;
   captureDurationInFrames: number;
   startFrom?: number;
+  /**
+   * Source-time scale (boundary-bleed fix, 2026-09-13). The capture harness
+   * cuts each scene at the app's own authored shot length; the film sizes the
+   * scene from the real narration clip. When the narration is LONGER, a rate
+   * below 1 stretches the capture's own footage across the whole scene
+   * instead of letting the video run past its last authored frame into the
+   * next shot's opening (which the recorder's cut carries a couple of tenths
+   * of). Defaults to 1 — identity, no behavior change.
+   */
+  playbackRate?: number;
   mode: FrameMode;
   /** 0-1, precomputed by the caller (see CascadeFilm.tsx framing ramps). */
   progress?: number;
@@ -29,6 +39,7 @@ export const CaptureScene: React.FC<{
   src,
   captureDurationInFrames,
   startFrom = 0,
+  playbackRate = 1,
   mode,
   progress = 0,
   vignette = false,
@@ -37,6 +48,10 @@ export const CaptureScene: React.FC<{
 }) => {
   const frame = useCurrentFrame();
   const capFrame = Math.min(frame, captureDurationInFrames - 1);
+  // The SOURCE frame the held image must show: playbackRate scales
+  // composition frames onto source frames, so the freeze has to scale too or
+  // it would hold a frame the moving video never reached.
+  const freezeFrame = startFrom + Math.round(capFrame * playbackRate);
 
   const video = (
     // overflow:hidden clips a zoomed (videoStyle-scaled) capture to the
@@ -45,9 +60,13 @@ export const CaptureScene: React.FC<{
     <AbsoluteFill style={{overflow: 'hidden'}}>
       <AbsoluteFill style={videoStyle}>
         {frame < captureDurationInFrames ? (
-          <OffthreadVideo src={staticFile(`captures/${src}`)} startFrom={startFrom} />
+          <OffthreadVideo
+            src={staticFile(`captures/${src}`)}
+            startFrom={startFrom}
+            playbackRate={playbackRate}
+          />
         ) : (
-          <Freeze frame={startFrom + capFrame}>
+          <Freeze frame={freezeFrame}>
             <OffthreadVideo src={staticFile(`captures/${src}`)} />
           </Freeze>
         )}

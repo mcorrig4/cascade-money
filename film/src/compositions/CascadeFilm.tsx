@@ -42,6 +42,7 @@ import {at30, CLAMP} from '../motion/timing';
 import {cameraAt, cameraStyle, FULL_FRAME, RostrumMove} from '../motion/rostrumCamera';
 import {cueFrame} from '../cues';
 import cueTimesData from '../generated/cues.json';
+import captureDurations from '../generated/capture-durations.json';
 
 import {TheQuestion} from './motion-graphics/TheQuestion';
 import {Scene08Counters} from './motion-graphics/Scene08Counters';
@@ -143,21 +144,61 @@ const durationFor = (durations: number[], num: number): number => {
   return durations[idx];
 };
 
+/**
+ * How much of the tail of a per-scene recapture is the RECORDER's overshoot
+ * rather than the scene's own picture (boundary-bleed fix, 2026-09-13).
+ * record-take-v6.mjs cuts each clip at the app's authored shot boundary, and
+ * its measured per-scene deltas run up to +0.27s past that boundary — i.e.
+ * the last few tenths of every clip are already the NEXT shot's opening
+ * card. Discarding a flat 0.3s covers every measured overshoot in
+ * out-v6/take-report.json without eating a visible amount of real footage.
+ */
+const CAPTURE_TAIL_TRIM_SECONDS = 0.3;
+
+/**
+ * Slowest the capture layer is allowed to run. Below this, a capture is so
+ * much shorter than its scene that stretching it would read as slow motion;
+ * the remainder holds on the last real frame instead (still never the next
+ * shot's picture). Any scene that hits this floor wants a recapture at the
+ * narration's own length, not a film-side fix.
+ */
+const MIN_CAPTURE_PLAYBACK_RATE = 0.55;
+
 /** The resolved capture for a scene: the scene-NN.mp4 recapture if it exists, else the fallback. */
 const captureFor = (
   sc: SceneDef,
   overrides: Record<number, boolean>,
   resolvedDuration: number,
-): {src: string; captureDurationInFrames: number; startFrom: number} | null => {
+  fps: number,
+): {src: string; captureDurationInFrames: number; startFrom: number; playbackRate: number} | null => {
   if (overrides[sc.num]) {
-    // A fresh recapture is assumed cut to the scene's own length.
-    return {src: captureFileFor(sc.num), captureDurationInFrames: resolvedDuration, startFrom: 0};
+    // A recapture is cut to the APP's authored shot length, which is a
+    // word-count estimate — not this scene's narration length. Measure it
+    // (generated/capture-durations.json) and stretch the real footage across
+    // the scene rather than sampling past its end into the next shot.
+    const measured = (captureDurations as Record<string, number>)[String(sc.num)];
+    const src = captureFileFor(sc.num);
+    if (measured === undefined) {
+      return {src, captureDurationInFrames: resolvedDuration, startFrom: 0, playbackRate: 1};
+    }
+    const usableFrames = Math.max(1, Math.floor((measured - CAPTURE_TAIL_TRIM_SECONDS) * fps));
+    const playbackRate =
+      usableFrames >= resolvedDuration
+        ? 1
+        : Math.max(MIN_CAPTURE_PLAYBACK_RATE, usableFrames / resolvedDuration);
+    return {
+      src,
+      captureDurationInFrames: Math.min(resolvedDuration, Math.floor(usableFrames / playbackRate)),
+      startFrom: 0,
+      playbackRate,
+    };
   }
   if (!sc.fallbackCapture) return null;
   return {
     src: sc.fallbackCapture,
     captureDurationInFrames: sc.fallbackCaptureDurationInFrames ?? resolvedDuration,
     startFrom: sc.fallbackCaptureStartFrom ?? 0,
+    playbackRate: 1,
   };
 };
 
@@ -199,7 +240,7 @@ const WINDOW_TARGET_SCALE = 0.62;
 const WINDOW_CENTER_ANCHOR_FRAC = (1 - WINDOW_TARGET_SCALE) / 2;
 const WINDOW_SKEW_DEG = 0;
 const WINDOW_PERSPECTIVE_PX = 1800;
-type SceneCapture = {src: string; captureDurationInFrames: number; startFrom: number};
+type SceneCapture = {src: string; captureDurationInFrames: number; startFrom: number; playbackRate: number};
 
 /** App content is windowed; film overlays retain full-frame coordinates and timing. */
 const WindowedBeat: React.FC<{
@@ -227,7 +268,7 @@ const WindowedBeat: React.FC<{
 const CaptureBeat: React.FC<{
   sc: SceneDef;
   duration: number;
-  cap: {src: string; captureDurationInFrames: number; startFrom: number};
+  cap: {src: string; captureDurationInFrames: number; startFrom: number; playbackRate: number};
   /** Rostrum-camera transform for the video layer only — see CaptureScene's videoStyle. Undefined for every caller but Scene 9. */
   videoStyle?: React.CSSProperties;
   children?: React.ReactNode;
@@ -243,6 +284,7 @@ const CaptureBeat: React.FC<{
       src={cap.src}
       captureDurationInFrames={cap.captureDurationInFrames}
       startFrom={cap.startFrom}
+      playbackRate={cap.playbackRate}
       mode={sc.frame as FrameMode}
       progress={progress}
       videoStyle={videoStyle}
@@ -267,7 +309,7 @@ const CaptureBeat: React.FC<{
 const Scene9Capture: React.FC<{
   sc: SceneDef;
   duration: number;
-  cap: {src: string; captureDurationInFrames: number; startFrom: number};
+  cap: {src: string; captureDurationInFrames: number; startFrom: number; playbackRate: number};
 }> = ({sc, duration, cap}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
@@ -322,6 +364,7 @@ const Scene9Capture: React.FC<{
       src={cap.src}
       captureDurationInFrames={cap.captureDurationInFrames}
       startFrom={cap.startFrom}
+      playbackRate={cap.playbackRate}
       mode={sc.frame as FrameMode}
       progress={progress}
       videoStyle={cameraStyle(camera)}
@@ -645,7 +688,7 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
       visual=<WindowedBeat app={app}>{filmOverlay}</WindowedBeat>;
     }else visual=<BrowserFrame mode={sc.frame as FrameMode} progress={progress}>{app}{filmOverlay}</BrowserFrame>;
   }else{
-    const cap=captureFor(sc,captureOverrides,duration);
+    const cap=captureFor(sc, captureOverrides, duration, fps);
     if (sceneIndex === 1) {
       visual = <Scene1Beat duration={duration} cap={cap} />;
     } else {
@@ -691,7 +734,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc1 = sceneByNum(1);
             const dur1 = durationFor(durations, 1);
-            const cap1 = captureFor(sc1, captureOverrides, dur1);
+            const cap1 = captureFor(sc1, captureOverrides, dur1, fps);
             return <Scene1Beat duration={dur1} cap={cap1} />;
           })()}
           <SceneVO num={1} narration={narration} narrationControls={narrationControls} />
@@ -701,7 +744,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(2);
             const dur2 = durationFor(durations, 2);
-            const cap = captureFor(sc, captureOverrides, dur2);
+            const cap = captureFor(sc, captureOverrides, dur2, fps);
             // Capture (Apple Park orbit -> arch swoop -> pull-out to Earth
             // with the HUD) is unchanged — product owner's round-2 brief
             // (2026-09-13) only replaces the OLD narration overlay (there
@@ -735,7 +778,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(3);
             const dur = durationFor(durations, 3);
-            const cap = captureFor(sc, captureOverrides, dur);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
             return <WindowedBeat cap={cap} />;
           })()}
           <Scene4DateCornerLabel />
@@ -744,9 +787,27 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
         </Series.Sequence>
 
         <Series.Sequence name="Scene 4 — The question" durationInFrames={durationFor(durations, 4)}>
-          <GraphicBeat sc={sceneByNum(4)} duration={durationFor(durations, 4)}>
-            <TheQuestion durationInFrames={durationFor(durations, 4)} cues={CUE_TIMES[4]} />
-          </GraphicBeat>
+          {(() => {
+            // Scene 4 was authored as a pure motion graphic (schedule.ts
+            // fallbackCapture: null) back when no shot matched the beat. The
+            // app now HAS the beat — shot 16 centres the Apple obligation and
+            // grows it into the dated-dollar coin, and scene-04.mp4 captures
+            // it (Director frame check, 2026-09-13: the coin is in the
+            // capture, the film was drawing an opaque card over it). Play the
+            // capture underneath whenever the recapture exists and let the
+            // card sit on a scrim instead of a solid background.
+            const sc = sceneByNum(4);
+            const dur = durationFor(durations, 4);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
+            const overlay = (
+              <TheQuestion durationInFrames={dur} cues={CUE_TIMES[4]} overCapture={Boolean(cap)} />
+            );
+            return cap ? (
+              <CaptureBeat sc={sc} duration={dur} cap={cap}>{overlay}</CaptureBeat>
+            ) : (
+              <GraphicBeat sc={sc} duration={dur}>{overlay}</GraphicBeat>
+            );
+          })()}
           <SceneVO num={4} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
@@ -754,7 +815,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(5);
             const dur = durationFor(durations, 5);
-            const cap = captureFor(sc, captureOverrides, dur);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
             return <WindowedBeat cap={cap} />;
           })()}
           <SceneVO num={5} narration={narration} narrationControls={narrationControls} />
@@ -764,7 +825,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(6);
             const dur = durationFor(durations, 6);
-            const cap = captureFor(sc, captureOverrides, dur);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
             // The scene-06 recapture is the app's own recording, which
             // already burns in the $100M/$400M/4-companies counters
             // (app/src/director/ShotOverlays.tsx, overlay 'totals', stage
@@ -786,7 +847,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(7);
             const dur = durationFor(durations, 7);
-            const cap = captureFor(sc, captureOverrides, dur);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
             return <WindowedBeat cap={cap} />;
           })()}
           <SceneVO num={7} narration={narration} narrationControls={narrationControls} />
@@ -796,7 +857,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(8);
             const dur = durationFor(durations, 8);
-            const cap = captureFor(sc, captureOverrides, dur);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
             return <WindowedBeat cap={cap} />;
           })()}
           <SceneVO num={8} narration={narration} narrationControls={narrationControls} />
@@ -806,7 +867,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(9);
             const dur = durationFor(durations, 9);
-            const cap = captureFor(sc, captureOverrides, dur);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
             return cap ? <Scene9Capture sc={sc} duration={dur} cap={cap} /> : null;
           })()}
           {/*
@@ -829,7 +890,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
           {(() => {
             const sc = sceneByNum(10);
             const dur = durationFor(durations, 10);
-            const cap = captureFor(sc, captureOverrides, dur);
+            const cap = captureFor(sc, captureOverrides, dur, fps);
             // scene-10 recapture already burns in "Composable." plus the
             // Loans/Forwards/Bonds/Derivatives + "Money plus time" beats
             // (app's 'composable' overlay). Scene14ZoomOut duplicates that;
@@ -954,7 +1015,7 @@ const Scene1AppWindow: React.FC<{
 
   const video = cap ? (
     <AbsoluteFill>
-      <OffthreadVideo src={staticFile(`captures/${cap.src}`)} startFrom={cap.startFrom} />
+      <OffthreadVideo src={staticFile(`captures/${cap.src}`)} startFrom={cap.startFrom} playbackRate={cap.playbackRate} />
     </AbsoluteFill>
   ) : (
     <AbsoluteFill style={{background: color.bgOuter}} />

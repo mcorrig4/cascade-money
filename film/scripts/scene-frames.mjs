@@ -85,6 +85,26 @@ const main = async () => {
     return {scene: sc.num, title: sc.title, from, to, frames, seconds: Number((frames / FPS).toFixed(2))};
   });
 
+  // Contiguity gate (boundary-bleed fix, 2026-09-13): render-scenes.sh cuts
+  // each part straight from these ranges, so a gap would drop frames from the
+  // film and an overlap would print the same frames into two parts. Both are
+  // silent in the output — the splice still concatenates — so assert here,
+  // where the ranges are produced, rather than trusting the arithmetic above.
+  rows.forEach((row, i) => {
+    if (row.frames <= 0) throw new Error(`scene ${row.scene} has ${row.frames} frames`);
+    if (row.to !== row.from + row.frames - 1)
+      throw new Error(`scene ${row.scene} range ${row.from}-${row.to} does not match ${row.frames} frames`);
+    if (i === 0) {
+      if (row.from !== 0) throw new Error(`first scene starts at frame ${row.from}, not 0`);
+      return;
+    }
+    const prev = rows[i - 1];
+    if (row.from !== prev.to + 1)
+      throw new Error(
+        `scenes ${prev.scene} and ${row.scene} are not contiguous: ${prev.from}-${prev.to} then ${row.from}-${row.to}`,
+      );
+  });
+
   console.log(
     JSON.stringify(
       [...rows, {total: {frames: cursor, seconds: Number((cursor / FPS).toFixed(2))}}],

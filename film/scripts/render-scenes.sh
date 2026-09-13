@@ -102,6 +102,12 @@ node "$FILM_DIR/scripts/cues-from-words.mjs" >&2
 echo "Checking cues are not stale against the installed narration..." >&2
 node "$FILM_DIR/scripts/check-cues.mjs" >&2
 
+# Measure the per-scene recaptures so the film can stretch each one across
+# its own scene instead of sampling past its end into the next shot's
+# opening (boundary-bleed fix, 2026-09-13 — see captureFor in CascadeFilm.tsx).
+echo "Measuring per-scene capture lengths..." >&2
+node "$FILM_DIR/scripts/capture-durations.mjs" >&2
+
 echo "Reading scene frame ranges..." >&2
 # node directly, not `pnpm scene-frames -- <fps>` — pnpm's `--dir` flag
 # leaves the literal "--" in argv (verified: without --dir it's stripped,

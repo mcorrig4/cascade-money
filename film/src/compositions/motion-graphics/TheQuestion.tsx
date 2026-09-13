@@ -14,10 +14,25 @@ import {at30, enter, exit} from '../../motion/timing';
 import {cueFrame, SceneCues} from '../../cues';
 import {bgGradient, color, font} from '../../brand/tokens';
 
-export const TheQuestion: React.FC<{durationInFrames: number; cues?: SceneCues}> = ({
-  durationInFrames: dur,
-  cues,
-}) => {
+/**
+ * Scrim used when the capture plays underneath: dark enough at the centre
+ * for the headline to hold contrast, clear at the edges so the app's own
+ * question card (left) and the growing coin (right) stay readable.
+ */
+const QUESTION_SCRIM =
+  'radial-gradient(ellipse at 50% 50%, rgba(1,6,9,0.62) 0%, rgba(1,6,9,0.42) 45%, rgba(1,6,9,0.18) 100%)';
+
+export const TheQuestion: React.FC<{
+  durationInFrames: number;
+  cues?: SceneCues;
+  /**
+   * True when the app capture (scene-04.mp4 — the Apple obligation centring
+   * and becoming the dated-dollar coin) is playing underneath. The card then
+   * sits on a scrim instead of the opaque brand gradient, which is what hid
+   * the coin entirely in the v7 draft.
+   */
+  overCapture?: boolean;
+}> = ({durationInFrames: dur, cues, overCapture = false}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const cardAt = cueFrame(cues, 'question-card', fps, cueFrame(cues, 'question-card-fallback', fps, at30(4, fps)));
@@ -30,7 +45,12 @@ export const TheQuestion: React.FC<{durationInFrames: number; cues?: SceneCues}>
   const x = exit(frame, exitAt, at30(16, fps), 'fade');
 
   return (
-    <AbsoluteFill style={{background: bgGradient, fontFamily: font.family}}>
+    <AbsoluteFill
+      style={{
+        background: overCapture ? QUESTION_SCRIM : bgGradient,
+        fontFamily: font.family,
+      }}
+    >
       <AbsoluteFill style={{display: 'grid', placeItems: 'center'}}>
         <div
           style={{

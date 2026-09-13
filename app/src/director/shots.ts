@@ -13,7 +13,18 @@ export const CALIFORNIA_HOLD=p(37.65,-122.45,.18);
 export const APPLE_MARKER_APPROACH=p(APPLE.lat,APPLE.lng,.06);
 export const CALIFORNIA_EXIT=p(OPENING_WIDE.lat,APPLE.lng,1.65);
 export type OrderCue={word:'Samsung'|'Corning'|'Sony';beat:string;at:number};
-export type ShotDefinition={id:number;title:string;words:number;end:Pose;motion:string;overlay:string;allowRoll?:boolean;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];orderCues?:OrderCue[]};
+/**
+ * `seconds` is an AUTHORED duration override. Without it a shot runs for
+ * `baseSeconds` — a word-count estimate (words/150*60 + 1s) that has no
+ * relationship to how long the finished narration for that scene actually
+ * is. Shot 5 ("Run the year") is the case that broke: its 43 words estimate
+ * to 18.2s while the recorded VO for the film's scene 9 runs 32.6s, so the
+ * captured year run finished at day 365 fourteen seconds before the scene
+ * did and the film showed the NEXT shot's card under the narration
+ * (Director frame check, 2026-09-13). Set this whenever a shot's recorded
+ * narration is the real clock.
+ */
+export type ShotDefinition={id:number;title:string;words:number;seconds?:number;end:Pose;motion:string;overlay:string;allowRoll?:boolean;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];orderCues?:OrderCue[]};
 const table:ShotDefinition[]=[
  {id:1,title:"The object of desire",words:14,end:OPENING_WIDE,motion:'wide globe rotation',overlay:'none'},
  {id:2,title:"California",words:38,end:CALIFORNIA_EXIT,motion:'California hold · Apple marker approach · full globe',overlay:'none'},
@@ -33,7 +44,10 @@ const table:ShotDefinition[]=[
  {id:17,title:"Let it land",words:30,end:p(34,-112,2),motion:'idle drift',overlay:'totals'},
  {id:6,title:"A dollar with a date",words:67,end:p(34.6,135.5,1.6),motion:'Pacific drift',overlay:'coin'},
  {id:18,title:"Underneath it",words:49,end:p(30,145,2),motion:'east drift',overlay:'backing'},
- {id:5,title:"Run the year",words:43,end:p(34,-118,2.35),motion:'global sweep',overlay:'none'},
+ // 35.6s = the film's own scene-9 length (narration 32.6s + settle + the
+ // 2.5s stress-result flash the film lays over the tail), so the capture
+ // covers the whole scene. See YEAR_RUN_TAIL_SECONDS for where day 365 lands.
+ {id:5,title:"Run the year",words:43,seconds:35.6,end:p(34,-118,2.35),motion:'global sweep',overlay:'none'},
  {id:11,title:"Zoom out",words:42,end:p(37.3349,-122.009,2.6),motion:'pull-out + east sweep',overlay:'composable'},
  // Scene-11-delete pass (2026-09-13, Liam 04:15 EDT): shot 10 ("New York" —
  // the store flight + stair descent) is CUT, the store visit dropped. Shot
@@ -65,7 +79,7 @@ export function buildShots(durations:NarrationDurations={}) {
   const baseSeconds=Math.round((s.words*60/150+1)*10)/10;
   // Bookmark travel and holds remain a duration floor for explicitly authored paths.
   const pathFloor=s.path?Math.round(fromBookmarks(s.path).at(-1)!.t*10)/10:0;
-  const seconds=Math.max(durations[String(i+1)]??baseSeconds,pathFloor),startTime=time;time+=seconds;
+  const seconds=Math.max(durations[String(i+1)]??s.seconds??baseSeconds,pathFloor),startTime=time;time+=seconds;
   // The closing card is captured after its line-to-wordmark transition.
   const captureAt=seconds*(s.id===12?.9:s.id===11?.5:s.id===13?.55:.8);
   if(!(captureAt>0&&captureAt<seconds))throw new Error('Capture must be strictly inside scene');
@@ -235,6 +249,15 @@ export function shotAvailable(_engine:PlaybackEngine,id:number){return SHOTS.som
 const chase:Ease={kind:'bezier',points:[.12,.65,.18,1]};
 export function nextShot(id:number,direction=1){return SHOTS[Math.max(0,Math.min(SHOTS.length-1,SHOTS.findIndex(s=>s.id===id)+direction))].id;}
 export function playFilm(engine:PlaybackEngine):void|Promise<void>{if(!engine.isReady)return engine.ready().then(()=>playFilm(engine));engine.update({tMs:0});playShot(engine,SHOTS[0].id,true);}
+/**
+ * How long shot 5's year view keeps holding after it reaches day 365. The
+ * year run is scaled to the shot so the scrubber lands on the last day just
+ * before the narration ends, leaving the film's closing stress-result flash
+ * (2.5s, CascadeFilm.tsx's StressResultFlash) something settled to sit over
+ * instead of a scrubber still travelling under it.
+ */
+const YEAR_RUN_TAIL_SECONDS=3;
+
 export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const shot=SHOTS.find(s=>s.id===id);if(!shot)return;
  const duration=shot.path?Math.max(shot.seconds,fromBookmarks(shot.path).at(-1)!.t):shot.seconds;
@@ -283,7 +306,7 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
   at(19.2,()=>fly(shot.end,ms-19200*scale,'west'));
  }else if(id===15||id===16||id===17){fly(shot.end,ms,'east');if(id===17)engine.update({presentationTotals:DEFAULT_CASCADE});}
  else if(id===5){
-  engine.update({speed:'year',caption:true});engine.playRange(0,365,shot.seconds);
+  engine.update({speed:'year',caption:true});engine.playRange(0,365,Math.max(1,shot.seconds-YEAR_RUN_TAIL_SECONDS));
   fly(p(25,-242,2.35),ms/3,'west');
   engine.after(shot.seconds/3,()=>fly(p(35,-362,2.35),ms/3,'west'));
   engine.after(shot.seconds*2/3,()=>fly(shot.end,ms/3,'west'));
