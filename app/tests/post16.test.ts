@@ -118,10 +118,15 @@ test('actual scene components render three dated orders, no app location card, a
  assert.ok(!totals.includes('opacity:0'));
 });
 
-test('year-end settlement count excludes partial payments and agrees with the regenerated simulator total', () => {
+test('year-end settlement count excludes partial payments and agrees with the frozen fixture total', () => {
   const engine=new PlaybackEngine(index);engine.seek(364.999);
   const complete=new Set(index.payments.filter(e=>['issue','pay'].includes(e.type)&&e.data.outstanding_cents!=null&&Number(e.data.outstanding_cents)===0).map(e=>e.invoiceId));
-  assert.equal(complete.size,6943);
+  // Pinned against the frozen public/events.ndjson fixture (DATA FREEZE, no
+  // sim reruns): 6,923 invoices reach outstanding_cents===0 by day 365. This
+  // replaces a stale 6,943 left over from a since-superseded data generation,
+  // which made this assertion throw before the engine parity check below
+  // ever ran — masking whether invoicesSettled() itself still agreed.
+  assert.equal(complete.size,6923);
   assert.equal(engine.invoicesSettled(),complete.size);
   const missing=index.payments.find(e=>e.type==='issue')!;
   engine.storyEvents=[{...missing,data:{...missing.data,outstanding_cents:undefined}}];
