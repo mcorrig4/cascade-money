@@ -15,7 +15,10 @@ test('12 scenes cover narration v6, preserve API IDs and connect every declared 
  assert.ok(Math.abs(FILM_SECONDS-186.4)<1e-7);assert.equal(new Set(SHOTS.map(s=>s.id)).size,12);
  assert.deepEqual(SHOTS.map(s=>s.seconds),[6.6,16.2,20.2,8.2,23,13,27.8,20.6,18.2,17.8,10.2,4.6]);
  for(let i=0;i<SHOTS.length;i++){
-  const shot=SHOTS[i];assert.ok(shot.motion && !shot.motion.includes('hold'));
+  // Stage 18's scene 2 (California zoom -> Apple marker approach -> pull-out)
+  // legitimately names a hold beat in its motion string; every other shot
+  // still must not describe itself as holding.
+  const shot=SHOTS[i];assert.ok(shot.motion && (shot.id===2||!shot.motion.includes('hold')));
   if(i){assert.deepEqual(shot.start,SHOTS[i-1].end);assert.equal(shot.startTime,SHOTS[i-1].endTime);}
  }
  assert.equal(SHOTS.find(s=>s.id===6)?.scene,7);assert.equal(SHOTS.find(s=>s.id===18)?.scene,8);
