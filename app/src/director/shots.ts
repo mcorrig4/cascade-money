@@ -278,7 +278,14 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const shot=SHOTS.find(s=>s.id===id);if(!shot)return;
  const duration=shot.path?Math.max(shot.seconds,fromBookmarks(shot.path).at(-1)!.t):shot.seconds;
  const incoming=engine.currentCamera();
+ // Scenes 3 and 4 are one continuous window in the v5 cut (Liam, final-cut
+ // notes 2026-09-13), so the three Apple orders scene 3 reveals must not blank
+ // out of the right-hand ledger at the cut into scene 4. beginShot's stopShot()
+ // drops storyEvents; carry them across this one boundary and re-reveal them,
+ // in recording mode only — interactive playback still starts shot 16 clean.
+ const carried=engine.state.recording&&id===16&&engine.state.shot===3&&engine.storyEvents?[...engine.storyEvents]:null;
  engine.beginShot(id,duration,shot.startTime*1000,shot.allowRoll??false);engine.update({film:continuous});
+ if(carried?.length){engine.storyEvents=[];for(const event of carried)engine.reveal(event);}
  // Every direct entry starts from its authored wide pose; film transitions inherit.
  if(!continuous||id===1)engine.update({camera:{...shot.start,id:engine.state.camera.id+1,duration:0,allowRoll:shot.allowRoll??false},cameraElapsed:0});
  if(shot.path)engine.playBookmarkPath(shot.path,true);

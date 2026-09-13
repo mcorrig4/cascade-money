@@ -479,3 +479,24 @@ test('shot 6 keeps the simulation day while recording and still resets it intera
  playShot(interactive,6);
  assert.equal(interactive.state.day,0,'interactive shot 6 still anchors the coin beat at day 0');
 });
+
+// Scenes 3 and 4 read as one continuous window in the v5 cut (Liam, final-cut
+// notes 2026-09-13), so the orders scene 3 reveals must still be in the
+// right-hand ledger when scene 4 opens. beginShot's stopShot() drops
+// storyEvents, which blanked the sidebar at that cut in take v11.
+test('scene 3 -> 4 carries the revealed orders into the ledger while recording',()=>{
+ const recorded=new PlaybackEngine(index);
+ recorded.update({recording:true});
+ playShot(recorded,3);
+ recorded.tick(14);
+ const revealed=recorded.storyEvents?.length??0;
+ assert.ok(revealed>0,'scene 3 must reveal at least one order to carry');
+ playShot(recorded,16);
+ assert.equal(recorded.storyEvents?.length??0,revealed,'scene 4 keeps scene 3 revealed orders');
+
+ const interactive=new PlaybackEngine(index);
+ playShot(interactive,3);
+ interactive.tick(14);
+ playShot(interactive,16);
+ assert.equal(interactive.storyEvents,null,'interactive shot 16 still starts clean');
+});
