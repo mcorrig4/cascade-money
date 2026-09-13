@@ -453,7 +453,6 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
   let filmOverlay: React.ReactNode = null;
   if(sceneIndex===2) filmOverlay=<Hook durationInFrames={duration} cues={CUE_TIMES[2]} sceneStartFrame={durations[0]} />;
   else if(sceneIndex===3) filmOverlay=<RewindSequence durationInFrames={duration} cues={CUE_TIMES[3]} />;
-  else if(sceneIndex===4) filmOverlay=<Scene4DateCornerLabel />;
   else if(sceneIndex===6) filmOverlay=<TheQuestion durationInFrames={duration} cues={CUE_TIMES[6]} />;
   else if(sceneIndex===17) filmOverlay=<Scene17Close durationInFrames={duration} />;
 
@@ -471,7 +470,12 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
     const cap=captureFor(sc,captureOverrides,duration);
     visual=cap?<CaptureBeat sc={sc} duration={duration} cap={cap}>{filmOverlay}</CaptureBeat>:<GraphicBeat sc={sc} duration={duration}>{filmOverlay??<AbsoluteFill />}</GraphicBeat>;
   }
-  return <AbsoluteFill style={{background:color.bgOuter}}>{visual}{includeAudio?<SceneVO num={sceneIndex} narration={narration} narrationControls={narrationControls}/>:null}</AbsoluteFill>;
+  // Scene 4's date/location corner label is a plain screen-space overlay
+  // (the captures path renders it as a sibling of the capture, never nested
+  // in any transform) — rendered as a direct sibling here too, NOT inside
+  // `filmOverlay` (which BrowserFrame passes through its own skew/scale/
+  // perspective transform for the framed browser-mockup scenes).
+  return <AbsoluteFill style={{background:color.bgOuter}}>{visual}{sceneIndex===4?<Scene4DateCornerLabel/>:null}{includeAudio?<SceneVO num={sceneIndex} narration={narration} narrationControls={narrationControls}/>:null}</AbsoluteFill>;
 };
 
 export const CascadeFilm: React.FC<CascadeFilmProps> = ({
