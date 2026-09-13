@@ -45,11 +45,9 @@ test('scene captions contain only locations and narration fades on the shot cloc
   // 19 (Beneath it) now opens the fifth-avenue site itself. The stale
   // shot-13 "Apple Park" entry (dead well before this pass — no shot 13
   // exists in the table) is dropped rather than left pointing nowhere.
-  // Stage 18 replaced the Apple Park opening with the wide globe and the
-  // California hook, so shot 1 carries no location caption at all and shot 2's
-  // reads "Apple · Cupertino, California". Shot 19 (Beneath it) keeps the store.
   assert.deepEqual(SCENE_LOCATIONS, [
-    {shot:2,name:'Apple',place:'Cupertino, California'},
+    {shot:1,name:'Apple Park',place:'Cupertino, California'},
+    {shot:2,name:'Apple Park',place:'Cupertino, California'},
     {shot:19,name:'Apple Store NYC',place:'Fifth Avenue, New York City'},
   ]);
   for (const cue of SCENE_TEXT_BEATS) {

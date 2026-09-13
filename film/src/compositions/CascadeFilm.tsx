@@ -237,7 +237,19 @@ const framingRamp = (sc: SceneDef, localFrame: number, durationInFrames: number,
 
 // Scenes 4/10 retain their authored framing; 9 retains its rostrum camera.
 // Scene 12 is intentionally excluded: it authors a closing card, not an app capture.
-const WINDOWED_SCENES = new Set([2, 3, 5, 6, 7, 8, 11]);
+// Scene 3 LEFT this set (product owner, 2026-09-13 11:04 EDT): it is now a
+// near-full window that hands over to scene 4 with no size change — see
+// NEAR_FULL_SCENES below.
+const WINDOWED_SCENES = new Set([2, 5, 6, 7, 8, 11]);
+// Scenes 3 and 4 are ONE continuous window: the app fills the frame bar a
+// 2.5% margin on every edge (product owner's measurement), scene 3 is
+// `frame: 'framed'` in schedule.ts so framingRamp sees a framed neighbour on
+// both sides of the 3->4 boundary and neither scene ramps there.
+const NEAR_FULL_SCENES = new Set([3, 4]);
+// 1 - 2*0.025: a centred 1920x1080 window inset 48px/27px on each edge.
+const NEAR_FULL_TARGET_SCALE = 0.95;
+const targetScaleFor = (num: number): number | undefined =>
+  NEAR_FULL_SCENES.has(num) ? NEAR_FULL_TARGET_SCALE : undefined;
 const WINDOW_TARGET_SCALE = 0.62;
 // At progress=1: left=19%, width=62%, right=19% (364.8px each at 1920px).
 const WINDOW_CENTER_ANCHOR_FRAC = (1 - WINDOW_TARGET_SCALE) / 2;
@@ -290,6 +302,7 @@ const CaptureBeat: React.FC<{
       playbackRate={cap.playbackRate}
       mode={sc.frame as FrameMode}
       progress={progress}
+      targetScale={targetScaleFor(sc.num)}
       videoStyle={videoStyle}
     >
       {children}
@@ -388,7 +401,7 @@ const GraphicBeat: React.FC<{sc: SceneDef; duration: number; children: React.Rea
     return <WindowedBeat>{children}</WindowedBeat>;
   }
   return (
-    <BrowserFrame mode={sc.frame as FrameMode} progress={progress}>
+    <BrowserFrame mode={sc.frame as FrameMode} progress={progress} targetScale={targetScaleFor(sc.num)}>
       {children}
     </BrowserFrame>
   );
@@ -692,7 +705,7 @@ export const CascadeLiveScene: React.FC<CascadeLiveSceneProps> = ({
       visual=<Scene1Beat duration={duration} app={app} phoneEarliestFrame={loadingFrames} />;
     }else if(WINDOWED_SCENES.has(sceneIndex)){
       visual=<WindowedBeat app={app}>{filmOverlay}</WindowedBeat>;
-    }else visual=<BrowserFrame mode={sc.frame as FrameMode} progress={progress}>{app}{filmOverlay}</BrowserFrame>;
+    }else visual=<BrowserFrame mode={sc.frame as FrameMode} progress={progress} targetScale={targetScaleFor(sceneIndex)}>{app}{filmOverlay}</BrowserFrame>;
   }else{
     const cap=captureFor(sc, captureOverrides, duration, fps);
     if (sceneIndex === 1) {
@@ -785,7 +798,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
             const sc = sceneByNum(3);
             const dur = durationFor(durations, 3);
             const cap = captureFor(sc, captureOverrides, dur, fps);
-            return <WindowedBeat cap={cap} />;
+            return cap ? <CaptureBeat sc={sc} duration={dur} cap={cap} /> : <GraphicBeat sc={sc} duration={dur}><AbsoluteFill /></GraphicBeat>;
           })()}
           <Scene4DateCornerLabel />
           <ExampleGlobeLabels durationInFrames={durationFor(durations, 3)} cues={CUE_TIMES[3]} />

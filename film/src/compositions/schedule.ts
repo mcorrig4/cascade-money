@@ -53,7 +53,7 @@ export interface SceneDef {
 export const SCENES: SceneDef[] = [
   {num: 1, id: 'scene01', title: 'The object of desire', estimateFrames: 163, fallbackCapture: null, frame: 'tilt', motionGraphic: true},
   {num: 2, id: 'scene02', title: 'Apple Park', estimateFrames: 441, fallbackCapture: 'shot-01-apple-park.mp4', fallbackCaptureDurationInFrames: 89, frame: 'bleed', motionGraphic: false},
-  {num: 3, id: 'scene03', title: 'The hidden supply chain', estimateFrames: 557, fallbackCapture: 'shot-02-network.mp4', fallbackCaptureDurationInFrames: 239, frame: 'bleed', motionGraphic: false},
+  {num: 3, id: 'scene03', title: 'The hidden supply chain', estimateFrames: 557, fallbackCapture: 'shot-02-network.mp4', fallbackCaptureDurationInFrames: 239, frame: 'framed', motionGraphic: false},
   {num: 4, id: 'scene04', title: 'The question', estimateFrames: 209, fallbackCapture: null, frame: 'framed', motionGraphic: true},
   {num: 5, id: 'scene05', title: 'The cascade', estimateFrames: 639, fallbackCapture: 'shot-04-the-cascade.mp4', fallbackCaptureDurationInFrames: 359, frame: 'bleed', motionGraphic: false},
   {num: 6, id: 'scene06', title: 'Let it land', estimateFrames: 348, fallbackCapture: 'shot-04-the-cascade.mp4', fallbackCaptureDurationInFrames: 359, frame: 'bleed', motionGraphic: false},

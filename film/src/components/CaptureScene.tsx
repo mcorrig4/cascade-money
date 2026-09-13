@@ -26,6 +26,8 @@ export const CaptureScene: React.FC<{
   mode: FrameMode;
   /** 0-1, precomputed by the caller (see CascadeFilm.tsx framing ramps). */
   progress?: number;
+  /** Settle scale for 'framed' mode. Undefined keeps BrowserFrame's default. */
+  targetScale?: number;
   vignette?: boolean;
   /**
    * Optional per-frame CSS transform applied ONLY to the video itself — not
@@ -42,6 +44,7 @@ export const CaptureScene: React.FC<{
   playbackRate = 1,
   mode,
   progress = 0,
+  targetScale,
   vignette = false,
   videoStyle,
   children,
@@ -83,7 +86,7 @@ export const CaptureScene: React.FC<{
   );
 
   return (
-    <BrowserFrame mode={mode} progress={progress}>
+    <BrowserFrame mode={mode} progress={progress} targetScale={targetScale}>
       {video}
       {children}
     </BrowserFrame>
