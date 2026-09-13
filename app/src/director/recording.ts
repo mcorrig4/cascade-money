@@ -1,3 +1,4 @@
+import { OVERLAY_OWNERS, type OverlayKind } from './shots.ts';
 import type { PlaybackEngine, PlaybackState } from '../playback/engine.ts';
 
 /** Cover UI and external recording-mode entry without coupling capture bookkeeping
@@ -6,19 +7,30 @@ export function recordingOrientationPatch(state:PlaybackState,patch:Partial<Play
  return patch.recording===true&&!state.recording
   ? {orientationRevision:state.orientationRevision+1}:{};
 }
+/** Every entry path, including external recorder updates, must retain the product HUD.
+ * Normalize after caller fields so hud:false cannot silently strip a running take. */
+export function recordingStatePatch(state:PlaybackState,patch:Partial<PlaybackState>) {
+ return {...recordingOrientationPatch(state,patch),...patch,...((patch.recording??state.recording)?{hud:true}:{})};
+}
 export function setRecordingMode(engine:PlaybackEngine,recording:boolean) {
  engine.update({recording});
 }
 
-export function recordingVisibility(recording:boolean,hud=true) {
- return {hud:!recording||hud,director:!recording,story:!recording,network:!recording};
+export function recordingVisibility(recording:boolean) {
+ return {hud:true,director:!recording,story:!recording,network:!recording};
+}
+
+/** One ownership boundary for cards, copy and scrims; product visibility keeps its HUD rules. */
+export function recordingElementVisible(recording:boolean,kind:OverlayKind) {
+ return !recording||OVERLAY_OWNERS[kind]==='product';
 }
 
 /** Shared overlay/recorder boundary: shot identity plus its nonnegative film clock. */
 export function shotOverlayVisible(
- state:{shot:number|null;shotElapsed:number;tMs:number}, shot:{id:number;startTime:number},
+ state:{shot:number|null;shotElapsed:number;tMs:number;recording?:boolean}, shot:{id:number;startTime:number}, kind?:OverlayKind,
 ) {
- return state.shot===shot.id && state.shotElapsed>=0 && state.tMs>=shot.startTime*1000-1e-6;
+ // Capture bookkeeping omits kind: a hidden slide must still publish its scene transition.
+ return (kind===undefined||recordingElementVisible(state.recording??false,kind)) && state.shot===shot.id && state.shotElapsed>=0 && state.tMs>=shot.startTime*1000-1e-6;
 }
 export type SceneTransition={sceneIndex:number;sceneId:number;tMs:number;filmTMs?:number};
 /** Recorder timestamps use the capture's performance-clock origin, never authored durations. */

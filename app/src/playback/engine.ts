@@ -1,5 +1,5 @@
 import { CUE_NAMES, type CueName } from '../director/cues.ts';
-import { recordingOrientationPatch } from '../director/recording.ts';
+import { recordingStatePatch } from '../director/recording.ts';
 import { RenderReadiness } from '../globe/readiness.ts';
 import { fromBookmarks, type BookmarkInput, sampleCamera, type CameraCommand, type Pose, type Center, type Ease, type Route, type Keyframe, orbitAt } from '../camera/primitives.ts';
 import { DAYS } from '../data/types.ts';
@@ -54,7 +54,7 @@ export class PlaybackEngine {
   }
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   getSnapshot = () => this.state;
-  update(patch: Partial<PlaybackState>) { this.state = { ...this.state, ...recordingOrientationPatch(this.state,patch), ...patch }; this.listeners.forEach(fn => fn()); }
+  update(patch: Partial<PlaybackState>) { this.state = { ...this.state, ...recordingStatePatch(this.state,patch) }; this.listeners.forEach(fn => fn()); }
   resetOrientation(allowRoll=false) {
     this.update({allowRoll,orientationRevision:this.state.orientationRevision+1,camera:{...this.state.camera,allowRoll}});
   }

@@ -13,10 +13,11 @@ import { SceneLabels } from './director/SceneLabels.tsx';
 import { ShotOverlays } from './director/ShotOverlays.tsx';
 import { OnchainPanel } from './components/OnchainPanel.tsx';
 import { FilmEffects } from './director/FilmEffects.tsx';
-import { SHOTS, playShot, loadNarrationDurations } from './director/shots.ts';
+import { SHOTS, playShot, loadNarrationDurations, ledgerSidebar } from './director/shots.ts';
 import './stage.css';
 import './film.css';
-import { recordingVisibility, setRecordingMode } from './director/recording.ts';
+import { recordingElementVisible, recordingVisibility, setRecordingMode, shotOverlayVisible } from './director/recording.ts';
+
 
 function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: () => void; onError: (message: string) => void }) {
   const [engine] = useState(() => { const value = new PlaybackEngine(index); value.prepareScene(); return value; });
@@ -79,9 +80,10 @@ function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: ()
     };
     window.addEventListener('keydown',keyboard);return()=>window.removeEventListener('keydown',keyboard);
   },[director]);
-  const visibility=recordingVisibility(state.recording,state.hud);
+  const visibility=recordingVisibility(state.recording);
+  const scene=SHOTS.find(s=>s.id===state.shot),overlayActive=scene&&!['none','title'].includes(scene.overlay)&&shotOverlayVisible(state,scene,scene.overlay);
   const tesla = [...index.firms.values()].some(f => f.id.toLowerCase().includes('tesla'));
-  return <main className={`app ${state.shot===2?'california-hook':''} ${state.camera.site?'site-focused':''} ${state.recording ? visibility.hud?'recording recording-hud':'recording clean-frame' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${SHOTS.find(s=>s.id===state.shot)?.overlay!=='none'&&state.shot?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
+  return <main className={`app ${state.shot===2?'california-hook':''} ${state.camera.site?'site-focused':''} ${state.recording ? visibility.hud?'recording recording-hud':'recording clean-frame' : ''} ${ledgerSidebar(state.recording,state.shot) ? 'ledger-sidebar' : ''} ${ledgerOpen ? 'ledger-open' : ''} ${state.shot ? 'director-active' : ''} ${overlayActive?'overlay-active':''} ${[1,2,13,10,19,12].includes(state.shot??0)?'scene-clean':''} ${state.shot===12?'ending-wordmark':''}`}>
     <div className={state.timelapse&&state.timelapse.elapsed<state.timelapse.duration?'time-lapse-blur':''}><Suspense fallback={<div className="globe-placeholder" aria-label="Loading globe" />}><GlobeScene engine={engine} /></Suspense></div>
     <header className="topbar"><Brand onDirector={openDirector} />
       <span className="brand-subtitle">DATED DOLLARS</span><nav className="story-selector" aria-label="Featured supply chain">{['all', 'apple', 'tesla'].map(story => <button key={story} disabled={story === 'tesla' && !tesla} aria-pressed={state.story === story} onClick={() => { engine.update({ story }); if (story !== 'all') playShot(engine, 3); else { engine.stopShot(); engine.fly(36, -145, 2.15); } }}>{story === 'all' ? 'Global network' : story[0].toUpperCase() + story.slice(1)}</button>)}</nav>
@@ -89,17 +91,17 @@ function LoadedApp({ index, onReady, onError }: { index: EventIndex; onReady: ()
       <button className="onchain-trigger" onClick={openOnchain}>On-chain</button>
       <div className="network-status"><span className="status-dot" />PAYMENTS IN MOTION</div>
     </header>
-    <section className="scene-heading" aria-label="Cascade introduction"><span className="eyebrow">MONEY THAT MOVES THROUGH TIME</span><h1>One dollar.<br />Many payments.</h1><p>Money with a date.</p></section>
+    {recordingElementVisible(state.recording,'scene-heading')&&<section className="scene-heading" aria-label="Cascade introduction"><span className="eyebrow">MONEY THAT MOVES THROUGH TIME</span><h1>One dollar.<br />Many payments.</h1><p>Money with a date.</p></section>}
     <div className="globe-coordinate" aria-hidden="true"><span>CASCADE</span><span>GLOBAL PAYMENT NETWORK</span></div>
     <button className="ledger-toggle" aria-expanded={ledgerOpen} aria-controls="daily-ledger" onClick={() => setLedgerOpen(v => !v)}>{ledgerOpen ? 'Close transactions' : 'Transactions'}<span aria-hidden="true">{ledgerOpen ? '−' : '+'}</span></button>
     <DayLedger rewindPosition={state.timelapse?.direction===-1&&state.timelapse.elapsed<2000?state.position:undefined} index={index} day={state.day} cursor={state.cursor} running={state.playing || state.shotRunning} rate={speedRate(state.speed)} waiting={state.paymentPresentation==='waiting'} presentation={engine.storyEvents!==null?{events:engine.storyEvents,amount:state.paymentAmount??undefined,date:state.paymentMaturity}:undefined} />
     <Timeline engine={engine} state={state} />
 
-    {state.showDebt && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
-    {state.caption && <p className="year-caption">Global supply chain</p>}
+    {state.showDebt && recordingElementVisible(state.recording,'debt-card') && <div className="debt-card"><span>UNPAID SUPPLIER INVOICES</span><strong>$56 billion</strong></div>}
+    {state.caption && recordingElementVisible(state.recording,'year-caption') && <p className="year-caption">Global supply chain</p>}
     <ShotOverlays engine={engine} state={state} onVerify={openOnchain} />
-    <SceneLabels payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?engine.storyEvents??[]:[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
-    {(onchain || state.onchainGlimpse) && <OnchainPanel tMs={state.tMs} onClose={() => {setOnchain(false);engine.update({onchainGlimpse:false});}} />}
+    <SceneLabels recording={state.recording} payments={state.shot===4?engine.storyEvents??[]:[]} orders={state.shot===3?engine.storyEvents??[]:[]} shot={state.shot} elapsed={state.shotElapsed} cues={state.cues} /><FilmEffects state={state} />
+    {(onchain || (state.onchainGlimpse&&recordingElementVisible(state.recording,'onchain-glimpse'))) && <OnchainPanel tMs={state.tMs} onClose={() => {setOnchain(false);engine.update({onchainGlimpse:false});}} />}
     {director && visibility.director && <ShotPanel engine={engine} state={state} onClose={() => setDirector(false)} />}
   </main>;
 }

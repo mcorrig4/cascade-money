@@ -2,7 +2,7 @@ import { shotOverlayVisible, SceneRecording, type SceneTransition } from '../dir
 import { sampleRewindEvents } from './rewind-events.ts';
 import { companyCues } from '../director/company-cues.ts';
 import { CameraBookmarks } from '../director/bookmarks.ts';
-import { ORDER_SITES, proofMaturity, SHOTS, playShot, playFilm, shotSite } from '../director/shots.ts';
+import { ORDER_SITES, proofMaturity, SHOTS, playShot, playFilm, shotSite, ledgerSidebar } from '../director/shots.ts';
 import { applyCameraOrientation, cameraOrientation } from '../camera/orientation.ts';
 import { cameraAllowsRoll, easeAt, sampleCamera, EARTH_METERS, SITE_CLEARANCE_METERS, clampCamera, cameraClearance, cameraGround } from '../camera/primitives.ts';
 import { useEffect, useRef, useState } from 'react';
@@ -20,6 +20,7 @@ import { AmountLayer } from './amount-layer.ts';
 import { updateArcMaterials } from './arc-material.ts';
 import { arcLifetime, IdleMotion } from './animation.ts';
 import { CompanyLayer } from './company-layer.ts';
+import { logoFor } from './brands.ts';
 import { createEarthEffects } from './earth-effects.ts';
 import { createFifthAvenueCube } from './landmarks.ts';
 import { atlasUv, GEO_REFERENCES } from './geography.ts';
@@ -426,9 +427,9 @@ export function GlobeScene({ engine }: { engine: PlaybackEngine }) {
       applyCameraOrientation(camera,controls.target,allowRoll);
       const landscape=root.clientWidth/root.clientHeight>=4/3;
       const filmScale=landscape?Math.min(root.clientWidth/1920,root.clientHeight/1080):1;
-      const ledgerLeft = !landscape?root.clientWidth-12:state.recording?root.clientWidth-24*filmScale:root.clientWidth-760*filmScale;
+      const ledgerLeft = !landscape?root.clientWidth-12:state.recording&&!ledgerSidebar(state.recording,state.shot)?root.clientWidth-24*filmScale:root.clientWidth-760*filmScale;
       layer.update(globe, state.shot===3||state.shot===4?[]:pool.arcs, time, ledgerLeft, root.clientHeight - 330*filmScale,filmScale,state.day);
-      companyLayer.update(globe, state.shot===2?named.filter(f=>f.id==='Apple'):named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
+      companyLayer.update(globe, state.shot===2?named.filter(f=>f.id==='Apple'):state.shot===5?named.filter(f=>logoFor(f.name)!==undefined):named, new Set(pool.arcs.flatMap(arc => [arc.event.from ?? '', arc.event.to ?? ''])), ledgerLeft,
         root.clientHeight - 330*filmScale, close, !landscape,filmScale);
       companyLayer.updateCallouts(globe,named,state.shot===3||state.shot===4?[]:companyCues(state),state.shot===null?state.tMs:state.shotElapsed*1000,landscape?filmScale:root.clientWidth/1920,root.clientHeight-330*filmScale);
       if (schedule) raf = requestAnimationFrame(frame);

@@ -7,7 +7,7 @@ import {clamp} from '../camera/primitives.ts';
 /** Exposure and typography share the narration clock, including manual capture. */
 export function FilmEffects({state}:{state:PlaybackState}) {
  const scene=SHOTS.find(s=>s.id===state.shot);
- const closing=!!scene&&scene.id===12&&shotOverlayVisible(state,scene);
+ const closing=!!scene&&scene.id===12&&shotOverlayVisible(state,scene,'ending-line');
  const closeAt=scene?cueMs(state,'wordmark',2.5,scene.baseSeconds)/1000:2.5;
  const rewind=state.timelapse?.direction===-1&&state.timelapse.elapsed<2000;
  const rewindUtc=new Date(START+state.position*86400000);

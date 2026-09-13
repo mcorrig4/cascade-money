@@ -13,6 +13,17 @@ export const CALIFORNIA_HOLD=p(37.65,-122.45,.18);
 export const APPLE_MARKER_APPROACH=p(APPLE.lat,APPLE.lng,.06);
 export const CALIFORNIA_EXIT=p(OPENING_WIDE.lat,APPLE.lng,1.65);
 export type OrderCue={word:'Samsung'|'Corning'|'Sony';beat:string;at:number};
+// W1 (product owner, 2026-09-13): the film owns slides and token animations;
+// only globe/data-layer coins belong inside the recorded application window.
+export const OVERLAY_OWNERS={
+ none:'product',title:'product',vault:'product',
+ question:'presentation',totals:'presentation',coin:'presentation',backing:'presentation',
+ composable:'presentation',contradiction:'presentation',laws:'presentation',wordmark:'presentation',
+ 'scene-narration':'presentation','ending-line':'presentation','year-caption':'presentation',
+ 'vault-heading':'presentation','globe-dimmer':'presentation',
+ 'onchain-glimpse':'presentation','debt-card':'presentation','scene-heading':'presentation',
+} as const;
+export type OverlayKind=keyof typeof OVERLAY_OWNERS;
 /**
  * `seconds` is an AUTHORED duration override. Without it a shot runs for
  * `baseSeconds` — a word-count estimate (words/150*60 + 1s) that has no
@@ -24,7 +35,7 @@ export type OrderCue={word:'Samsung'|'Corning'|'Sony';beat:string;at:number};
  * (Director frame check, 2026-09-13). Set this whenever a shot's recorded
  * narration is the real clock.
  */
-export type ShotDefinition={id:number;title:string;words:number;seconds?:number;end:Pose;motion:string;overlay:string;allowRoll?:boolean;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];orderCues?:OrderCue[]};
+export type ShotDefinition={id:number;title:string;words:number;seconds?:number;end:Pose;motion:string;overlay:OverlayKind;allowRoll?:boolean;site?:'apple-park'|'fifth-avenue';path?:Bookmark[];orderCues?:OrderCue[]};
 const table:ShotDefinition[]=[
  {id:1,title:"The object of desire",words:14,end:OPENING_WIDE,motion:'wide globe rotation',overlay:'none'},
  {id:2,title:"California",words:38,end:CALIFORNIA_EXIT,motion:'California hold · Apple marker approach · full globe',overlay:'none'},
@@ -245,6 +256,11 @@ export function californiaPath(from:Pose,seconds:number,incomingLngVelocity=0):K
   {...APPLE_MARKER_APPROACH,t:seconds*.75,tangent:zero},
   {...table[1].end,t:seconds,tangent:zero}];
 }
+// Scenes 3-10 keep the product's right-hand event ledger on screen while recording
+// (Liam 2026-09-13: the film keeps the app UI). Shot ids, in scene order: 3, 16, 4, 17, 6, 18, 5, 11.
+// The opening two scenes and the two store-interior scenes stay clean.
+export const LEDGER_SIDEBAR_SHOTS=[3,16,4,17,6,18,5,11];
+export function ledgerSidebar(recording:boolean,shot:number|null){return recording&&LEDGER_SIDEBAR_SHOTS.includes(shot??0);}
 export function shotAvailable(_engine:PlaybackEngine,id:number){return SHOTS.some(s=>s.id===id);}
 const chase:Ease={kind:'bezier',points:[.12,.65,.18,1]};
 export function nextShot(id:number,direction=1){return SHOTS[Math.max(0,Math.min(SHOTS.length-1,SHOTS.findIndex(s=>s.id===id)+direction))].id;}
@@ -262,7 +278,14 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  const shot=SHOTS.find(s=>s.id===id);if(!shot)return;
  const duration=shot.path?Math.max(shot.seconds,fromBookmarks(shot.path).at(-1)!.t):shot.seconds;
  const incoming=engine.currentCamera();
+ // Scenes 3 and 4 are one continuous window in the v5 cut (Liam, final-cut
+ // notes 2026-09-13), so the three Apple orders scene 3 reveals must not blank
+ // out of the right-hand ledger at the cut into scene 4. beginShot's stopShot()
+ // drops storyEvents; carry them across this one boundary and re-reveal them,
+ // in recording mode only — interactive playback still starts shot 16 clean.
+ const carried=engine.state.recording&&id===16&&engine.state.shot===3&&engine.storyEvents?[...engine.storyEvents]:null;
  engine.beginShot(id,duration,shot.startTime*1000,shot.allowRoll??false);engine.update({film:continuous});
+ if(carried?.length){engine.storyEvents=[];for(const event of carried)engine.reveal(event);}
  // Every direct entry starts from its authored wide pose; film transitions inherit.
  if(!continuous||id===1)engine.update({camera:{...shot.start,id:engine.state.camera.id+1,duration:0,allowRoll:shot.allowRoll??false},cameraElapsed:0});
  if(shot.path)engine.playBookmarkPath(shot.path,true);
@@ -313,7 +336,13 @@ export function playShot(engine:PlaybackEngine,id:number,continuous=false) {
  }else if(id===6){
   fly(shot.end,ms,'west');
   // The primitive extends a maturity while its simulation day stays fixed.
-  engine.setPosition(0,true);
+  // The day-0 reset existed only for the app-drawn coin card, whose maturity
+  // meter reads DAY 0 / 30 / 90 against it. That card is film-drawn now (v5,
+  // Liam 2026-09-13), so in a recording the reset has no remaining consumer and
+  // its only effect is to empty the right-hand ledger — which must stay
+  // populated wherever the simulation is running (scenes 3, 5-10). Interactive
+  // use keeps the reset so the coin beat still reads correctly on the site.
+  if(!engine.state.recording)engine.setPosition(0,true);
  }else if(id===18){
   fly(shot.end,ms,'east');engine.setPosition(364.999,true);
   at(15.6,()=>engine.update({onchainGlimpse:true}));
