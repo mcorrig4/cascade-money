@@ -49,7 +49,6 @@ import {Scene08Counters} from './motion-graphics/Scene08Counters';
 import {Scene12Stress} from './motion-graphics/Scene12Stress';
 import {ConservationLaws} from './motion-graphics/ConservationLaws';
 import {Scene14ZoomOut} from './motion-graphics/Scene14ZoomOut';
-import {ChainOfPromises} from './motion-graphics/ChainOfPromises';
 import {Scene17Close} from './motion-graphics/Scene17Close';
 
 ensureFontsLoaded();
@@ -594,9 +593,7 @@ export const CascadeFilm: React.FC<CascadeFilmProps> = ({
                     startFrom: descentStart16,
                   }
             }
-          >
-            <ChainOfPromises durationInFrames={dur16} />
-          </CaptureBeat>
+          />
           <SceneVO num={16} narration={narration} narrationControls={narrationControls} />
         </Series.Sequence>
 
