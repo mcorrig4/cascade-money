@@ -128,7 +128,8 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
   }) === 1;
   const enter = progress(beat.pair, .6);
   const principal = progress(beat.principal, .5);
-  const payment = progress(beat.earlier, 1.2);
+  const accepted = progress(beat.earlier, .5);
+  const billOpacity = 1 - progress(beat.extend, .4);
   const finalProgress = progress(beat.final, .5);
   const dim = 1 - finalProgress;
   const extension = extensionState(frame, at('extend'), at('coin-yield'));
@@ -141,9 +142,8 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
   }));
   const extending = on(beat.extend);
   const maturityDay = extending ? extension.maturityDay : 30;
-  const paymentX = dayX(30 + 60 * payment);
-  // Extension starts a new interval example at DAY 30, as specified by its cue.
-  const soloX = extending ? dayX(maturityDay) : on(beat.earlier) ? paymentX : dayX(30);
+  // Paying a later bill leaves the token's date unchanged; only extension moves it.
+  const soloX = dayX(maturityDay);
   const caption = on(beat.yield) ? 'Yield for the added interval only'
     : on(beat.face) ? 'At face value'
     : on(beat.earlier) ? 'Earlier pays later'
@@ -169,6 +169,10 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
   return <section className="film-coin" aria-label="Dated dollar">
     <div className="film-coin-kicker" style={{opacity: progress(beat.coin, .3) * dim}}>THE PRIMITIVE</div>
     <div className="film-coin-axis" style={{left: axisLeft, width: axisRight - axisLeft, top: axisY, opacity: dim}}>
+      {on(beat.earlier) && <div className="film-coin-accepted" style={{
+        top: -56 * unit, height: 56 * unit, opacity: billOpacity,
+        clipPath: `inset(0 ${(1 - accepted) * 100}% 0 0)`,
+      }}/>}
       <div className="film-coin-hairline" style={{transform: `scaleX(${progress(beat.coin, .6)})`}}/>
       <div className="film-coin-elapsed" style={{width: `${100 / 3}%`, transform: `scaleX(${Math.min(1, 3 * progress(beat.coin, .6))})`}}/>
       {extending && <div className="film-coin-extension" style={{left: `${100 / 3}%`, width: `${extension.addedDays / 90 * 100}%`}}/>}
@@ -181,13 +185,13 @@ const CoinPresentation: React.FC<{at: (name: string) => number; geometry: Window
         <i/>
         <span className="film-coin-day" style={{transform: `translateX(${day === 0 ? 0 : day === 90 ? -100 : -50}%)`}}>DAY {day}</span>
         {day === 30 && on(beat.date) && <span className="film-coin-redeemable">REDEEMABLE</span>}
+        {day === 90 && on(beat.earlier) && <span className="film-coin-bill-due" style={{opacity: billOpacity}}>BILL DUE</span>}
         {day !== 0 && on(beat.face) && <span className="film-coin-face">1.00</span>}
       </div>)}
       {on(beat.yield) && <span className="film-coin-yield" style={{left: (dayX(30) + dayX(maturityDay)) / 2, top: soloY - soloSize * 82 / 170 - 16 * unit}}>
         {extension.addedDays} days of yield
       </span>}
     </div>
-    {on(beat.earlier) && !extending && payment < 1 && token(dayX(90), soloY, soloSize, 90, illustrativeDate(90), 1 - payment)}
     {on(beat.pair) && <>
       {/* After the exchange, token 0 occupies the lower of the two heights. */}
       {principal < 1 && token(pairPoses[1].x, pairPoses[1].y, pairSize, 30, undefined, 1 - principal)}
