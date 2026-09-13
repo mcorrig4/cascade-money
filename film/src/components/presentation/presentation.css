@@ -93,7 +93,7 @@
 }
 .app.film-app-surface.film-presentation .film-coin-kicker {
   position: absolute; left: 0; top: 0;
-  font-size: calc(11 * var(--film-unit)); letter-spacing: calc(2.2 * var(--film-unit));
+  font-size: calc(15 * var(--film-unit)); letter-spacing: calc(2.6 * var(--film-unit));
   font-weight: 500; text-transform: uppercase; color: #8297a5;
 }
 .app.film-app-surface.film-presentation .film-coin-axis {
@@ -101,7 +101,7 @@
 }
 .app.film-app-surface.film-presentation .film-coin-accepted {
   position: absolute; left: 0; width: 100%; box-sizing: border-box;
-  background: rgba(105,230,192,0.14); border-right: 3px solid var(--money, #69e6c0);
+  background: rgba(105,230,192,0.14); border-right: calc(3 * var(--film-unit)) solid var(--money, #69e6c0);
 }
 .app.film-app-surface.film-presentation .film-coin-hairline,
 .app.film-app-surface.film-presentation .film-coin-elapsed {
@@ -114,10 +114,14 @@
 .app.film-app-surface.film-presentation .film-coin-extension {
   position: absolute; top: calc(-3 * var(--film-unit)); height: calc(6 * var(--film-unit)); background: #e8b768;
 }
+.app.film-app-surface.film-presentation .film-coin-marker {
+  position: absolute; width: calc(14 * var(--film-unit)); height: calc(14 * var(--film-unit));
+  transform: translate(-50%, -50%); background: var(--money, #69e6c0);
+}
 .app.film-app-surface.film-presentation .film-coin-annotations {position: absolute; inset: 0;}
 .app.film-app-surface.film-presentation .film-coin-tick {position: absolute;}
 .app.film-app-surface.film-presentation .film-coin-tick i {
-  position: absolute; top: 0; width: calc(1 * var(--film-unit)); height: calc(10 * var(--film-unit)); background: var(--line);
+  position: absolute; top: calc(10 * var(--film-unit)); width: calc(1 * var(--film-unit)); height: calc(10 * var(--film-unit)); background: var(--line);
 }
 .app.film-app-surface.film-presentation .film-coin-day,
 .app.film-app-surface.film-presentation .film-coin-redeemable,
@@ -126,33 +130,34 @@
   position: absolute; transform: translateX(-50%); white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .app.film-app-surface.film-presentation .film-coin-day {
-  top: calc(28 * var(--film-unit)); font-size: calc(14 * var(--film-unit));
+  top: calc(28 * var(--film-unit)); font-size: calc(16 * var(--film-unit));
   letter-spacing: calc(1.8 * var(--film-unit)); color: #718692;
 }
 .app.film-app-surface.film-presentation .film-coin-redeemable {
-  top: calc(-28 * var(--film-unit)); font-size: calc(12 * var(--film-unit));
+  bottom: calc(48 * var(--film-unit)); font-size: calc(14 * var(--film-unit));
   letter-spacing: calc(1.8 * var(--film-unit)); color: var(--money, #69e6c0);
 }
 .app.film-app-surface.film-presentation .film-coin-bill-due {
-  bottom: calc(64 * var(--film-unit)); font-size: calc(12 * var(--film-unit));
+  bottom: calc(48 * var(--film-unit)); font-size: calc(14 * var(--film-unit)); transform: translateX(-100%);
   letter-spacing: calc(1.8 * var(--film-unit)); color: var(--money, #69e6c0);
 }
 .app.film-app-surface.film-presentation .film-coin-face {
-  top: calc(52 * var(--film-unit)); font-size: calc(18 * var(--film-unit)); color: var(--money, #69e6c0);
+  top: calc(56 * var(--film-unit)); font-size: calc(20 * var(--film-unit)); color: var(--money, #69e6c0);
 }
 .app.film-app-surface.film-presentation .film-coin-yield {
   position: absolute; transform: translate(-50%, -100%); white-space: nowrap;
-  font-size: calc(20 * var(--film-unit)); font-variant-numeric: tabular-nums; color: #e8b768;
+  font-size: calc(22 * var(--film-unit)); font-variant-numeric: tabular-nums; color: #e8b768;
 }
 .app.film-app-surface.film-presentation .film-coin-drop {
-  position: absolute; width: calc(1 * var(--film-unit)); background: rgba(170,199,204,.16);
+  position: absolute; inset: 0; overflow: visible; fill: none;
+  stroke: rgba(170,199,204,.16); stroke-width: calc(1 * var(--film-unit));
 }
 .app.film-app-surface.film-presentation .film-coin-token {
   position: absolute;
 }
 .app.film-app-surface.film-presentation .film-coin-caption {
   position: absolute; inset: 0; overflow: visible;
-  font-family: inherit; font-size: calc(34 * var(--film-unit)); font-weight: 400; fill: #abc0bd;
+  font-family: inherit; font-size: calc(36 * var(--film-unit)); font-weight: 400; fill: #abc0bd;
 }
 .app.film-app-surface.film-presentation .film-coin-final {font-size: calc(45 * var(--film-unit));}
 .app.film-app-surface.film-presentation .film-backing .asset-composition {display: flex; flex-direction: column; align-items: flex-start;}
